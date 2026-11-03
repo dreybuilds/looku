@@ -2,6 +2,8 @@ import freighter from '@stellar/freighter-api'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
 import { BASE, ITEM, NETWORK, PASSPHRASE, SKU } from './common.mjs'
 
+export { generateWallet, unlockWallet } from './local-wallet.mjs'
+
 const endpoint = new URL(BASE + '/', import.meta.url)
 const key = (address, sku) => 'looku-checkout:' + address + ':' + sku
 export async function connectWallet() {
@@ -20,9 +22,9 @@ async function read(path, opts = {}) {
 }
 export const getCatalog = () => read('catalog')
 export const getReceipt = id => read('orders/' + encodeURIComponent(id))
-export async function buyPiece({sku = SKU, address, onStatus = () => {}, onOrder = () => {}}) {
+export async function buyPiece({sku = SKU, address, signer, onStatus = () => {}, onOrder = () => {}}) {
   if (sku !== SKU) throw Error('Unknown demo product.')
-  const active = await connectWallet()
+  const active = signer?.address || await connectWallet()
   if (address && active !== address) throw Error('The connected wallet has changed. Review this order again.')
   const storageKey = key(active, sku)
   let id = localStorage.getItem(storageKey)
@@ -53,8 +55,8 @@ export async function buyPiece({sku = SKU, address, onStatus = () => {}, onOrder
       offer.amount !== '10000000' || !offer.extra.areFeesSponsored) {
     throw Error('The testnet payment terms changed. Review the quote again.')
   }
-  onStatus('Approve ' + ITEM.amount + ' test XLM in Freighter.')
-  const scheme = new ExactStellarScheme({address:active, signAuthEntry:freighter.signAuthEntry})
+  onStatus(signer ? 'Signing the testnet purchase on this device…' : 'Approve ' + ITEM.amount + ' test XLM in Freighter.')
+  const scheme = new ExactStellarScheme(signer || {address:active, signAuthEntry:freighter.signAuthEntry})
   const authorization = await scheme.createPaymentPayload(2, offer)
   const payment = {...authorization, accepted:offer, resource:challenge.resource}
   onStatus('Confirming the purchase and affiliate payout on Stellar Testnet…')

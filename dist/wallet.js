@@ -1,3 +1,4 @@
+import {mountDeviceWallet} from './local-wallet.js';
 const networks = {
   testnet: { label: 'Stellar testnet', host: 'https://horizon-testnet.stellar.org', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' },
   stellar: { label: 'Stellar mainnet', host: 'https://horizon.stellar.org', issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN' },
@@ -34,12 +35,12 @@ export async function readWalletBalance(network, address, signal) {
   return { usdc: Number(line?.balance || 0), xlm: Number(native?.balance || 0), needsTrustline: !line };
 }
 
-export function mountWallet(element) {
+export async function mountWallet(element) {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(storageKey)) || {}; }
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-  element.innerHTML = `<div class="wallet-grid">
+  element.innerHTML = `<div class="wallet-grid"><section class="panel wallet-panel" data-device-wallet></section>
     <section class="panel wallet-panel">
       <h3>Your wallet</h3><p>Check a public address to see what you have for your next look.</p>
       <form data-account>
@@ -163,4 +164,17 @@ export function mountWallet(element) {
     persist();
   });
   setNetwork();
+  const panel = element.querySelector('[data-device-wallet]');
+  function selectDeviceAddress(value) {
+    network.value = 'testnet';
+    setNetwork();
+    address.value = value;
+    networkState.address = value;
+    persist();
+    status.textContent = 'Device wallet selected. Choose Get test XLM to fund it, or Check balance.';
+  }
+  try {
+    const existing = await mountDeviceWallet(panel, selectDeviceAddress);
+    if (existing && network.value === 'testnet' && !address.value) selectDeviceAddress(existing);
+  } catch (e) { panel.textContent = e.message; }
 }

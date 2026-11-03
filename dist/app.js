@@ -1,3 +1,4 @@
+import { walletRecord } from './local-wallet.js';
 import {devicePanel,deviceAction} from './device.js';
 import {garment} from './garments.js';
 import {categories,occasions,sample,read,write,styleLook,processPhoto} from './model.js';
@@ -41,9 +42,47 @@ const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';
 function drawReceipts(){document.querySelector('#receipts').innerHTML=receipts.length?receipts.map(r=>`<div class="receipt"><h3>${esc(r.item||'Cropped jacket')}</h3><p class="status">${esc(r.status)} · Commission ${esc(r.commission??'0.10')} test XLM</p><div class="row">${txLink(r.purchaseTx,'Purchase transaction')}${txLink(r.payoutTx,'Affiliate payout')}<button class="secondary small" data-refresh="${esc(r.id)}">Refresh receipt</button></div></div>`).join(''):'<p class="empty">Your first test purchase and its affiliate payout will appear here.</p>'}
 async function record(r){const next=[r,...receipts.filter(x=>x.id!==r.id)];await write('receipts',next);receipts=next}
-function checkout(){
- modal(`<div class="eyebrow">Demo boutique / Stellar testnet</div><h2>Cropped jacket</h2><p>Order total <b>1 test XLM</b>. The boutique pays looku a 0.10 test XLM commission from this sale. No physical item ships.</p><div class="actions"><button id="connect-pay">Connect testnet wallet</button></div><p class="fine status" role="status"></p>`);
- const btn=body.querySelector('#connect-pay'),msg=body.querySelector('[role=status]');let address,api;btn.onclick=async()=>{btn.disabled=true;try{api??=await paymentAPI();if(!address){address=await api.connectWallet();msg.textContent='Connected '+address;btn.textContent='Approve 1 test XLM purchase';return}const r=await api.buyPiece({sku:'cropped-jacket',address,onOrder:id=>{if(!receipts.some(r=>r.id===id))record({id,status:'awaiting_signature',commission:'0.10'}).catch(()=>notice('Receipt storage unavailable'))},onStatus:t=>{msg.textContent=String(t)}});await record(r);dialog.close();location.hash='wallet';notice('Order receipt saved')}catch(e){msg.textContent=/import|module|fetch dynamically/i.test(e.message)?'Checkout could not load. Refresh the studio and try again.':e.message}finally{btn.disabled=false}}
+async function checkout() {
+  modal(`<div class="eyebrow">Demo boutique / Stellar testnet</div><h2>Cropped jacket</h2><p>Order total <b>1 test XLM</b>. The boutique pays looku a 0.10 test XLM commission. No physical item ships.</p>
+    <form class="stack" data-local-pay hidden><label>Wallet passphrase<input type="password" name="phrase" autocomplete="current-password" required></label><button>Pay 1 test XLM with device wallet</button></form>
+    <div class="actions"><button class="secondary" data-freighter>Connect Freighter</button><a href="#wallet" data-create>Create a testnet wallet</a></div>
+    <p role="status"></p>`);
+  const local = body.querySelector('[data-local-pay]');
+  const extension = body.querySelector('[data-freighter]');
+  const create = body.querySelector('[data-create]');
+  const message = body.querySelector('[role=status]');
+  create.onclick = () => dialog.close();
+  let wallet, address;
+  try { wallet = await walletRecord(); } catch (e) { message.textContent = e.message; }
+  if (wallet) { local.hidden = false; create.hidden = true; }
+  async function submit(useLocal) {
+    const controls = [extension, local.querySelector('button')];
+    if (controls.some(button => button.disabled)) return;
+    controls.forEach(button => button.disabled = true);
+    try {
+      const api = await paymentAPI();
+      if (!useLocal && !address) {
+        address = await api.connectWallet();
+        message.textContent = 'Connected ' + address;
+        extension.textContent = 'Approve 1 test XLM in Freighter';
+        return;
+      }
+      const signer = useLocal ? await api.unlockWallet(wallet, local.elements.phrase.value) : undefined;
+      local.reset();
+      if (!dialog.open || !local.isConnected) return;
+      const receipt = await api.buyPiece({sku:'cropped-jacket', address:useLocal ? wallet.address : address, signer,
+        onOrder:id => { if (!receipts.some(r => r.id === id)) record({id,status:'awaiting_signature',commission:'0.10'}).catch(() => notice('Receipt storage unavailable')); },
+        onStatus:text => { message.textContent = text; }});
+      await record(receipt);
+      dialog.close();
+      location.hash = 'wallet';
+      notice('Order receipt saved');
+    } catch (e) { message.textContent = e.message; }
+    finally { local.reset(); controls.forEach(button => button.disabled = false); }
+  }
+  extension.onclick = () => submit(false);
+  local.onsubmit = event => { event.preventDefault(); submit(true); };
+  dialog.addEventListener('close', () => local.reset(), {once:true});
 }
 main.addEventListener('input',e=>{if(e.target.id==='store-search'&&stores)drawStores(e.target.value)});
 main.addEventListener('change',async e=>{try{if(e.target.id==='filter'){filter=e.target.value;render()}if(e.target.id==='occasion'){occasion=e.target.value;variation=0;render()}if(e.target.id==='inspo'&&e.target.files[0]){const next=await processPhoto(e.target.files[0]);await write('inspo',next);inspo=next;render()}}catch(err){notice(err.message)}});

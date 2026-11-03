@@ -4,7 +4,7 @@ A personal wardrobe studio for the EmpowerHer agentic payments hackathon. Intend
 ## Try it
 Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four illustrated pieces are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
 
-When a look has no layer, review the demo boutique’s cropped jacket. Connect a funded Freighter **Stellar Testnet** account and approve the quoted **1 test XLM**. The x402 client signs the Stellar authorization entry. The boutique receives the payment, then sends **0.10 test XLM** to the platform account. Open Wallet → Purchase receipts and refresh pending entries. A separate verified demo sale links to both ledger records. No physical merchandise ships.
+When a look has no layer, review the demo boutique’s cropped jacket. Create a device wallet in Wallet, download its encrypted recovery file, and choose Get test XLM. Use its passphrase at checkout, or connect a funded Freighter **Stellar Testnet** account and approve the quoted **1 test XLM**. The x402 client signs the Stellar authorization entry. The boutique receives the payment, then sends **0.10 test XLM** to the platform account. Open Wallet → Purchase receipts and refresh pending entries. A separate verified demo sale links to both ledger records. No physical merchandise ships.
 
 Wallet goals track funds held in the shopper’s own wallet. Testnet goals use XLM. Stellar mainnet and Base mainnet goals use USDC. MiniSend’s documented hosted Buy flow currently delivers USDC on Base. Start it explicitly under Base mainnet; real funding is unnecessary for the demo.
 
@@ -21,7 +21,7 @@ cd ..
 node dev.mjs
 ```
 
-Visit http://127.0.0.1:4173 in a browser with Freighter for interactive signing. Friendbot provides free test XLM. Test backend settlement separately with `npm run test:live` inside payments. Setup generates test-only keys in an ignored file and activates disposable accounts. To collect commissions into your own demo wallet, configure its activated public testnet address instead.
+Visit http://127.0.0.1:4173 in a browser for interactive signing. Friendbot provides free test XLM. Test backend settlement separately with `npm run test:live` inside payments. Setup generates test-only keys in an ignored file and activates disposable accounts. To collect commissions into your own demo wallet, configure its activated public testnet address instead.
 
 ## Architecture
 | Layer | Responsibility | Persistence |
