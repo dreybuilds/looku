@@ -40,25 +40,25 @@ export async function mountWallet(element) {
   try { saved = JSON.parse(localStorage.getItem(storageKey)) || {}; }
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-  const heading = (number, title, description) => `<div class="wallet-heading"><span class="eyebrow">Wallet / ${number}</span><h3>${title}</h3><p>${description}</p></div>`;
-  element.innerHTML = `<div class="wallet-grid"><section class="panel wallet-panel">${heading('01','Create or see your address','Your public Stellar address lives here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></section>
-    <section class="panel wallet-panel" data-funding></section>
-    <section class="panel wallet-panel">
-      ${heading('03','Check a balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
+  const heading = (number, title, description) => `<summary><span class="eyebrow" aria-hidden="true">${number}</span><span>${title}</span></summary><p class="wallet-description">${description}</p>`;
+  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','See or create wallet','Your public Stellar address lives here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></details>
+    <details name="wallet-tool" class="panel wallet-panel" data-funding></details>
+    <details name="wallet-tool" class="panel wallet-panel">
+      ${heading('03','Check balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
       <form data-account>
         <label>Network<select name="network"><option value="testnet">Stellar testnet · demo funds</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
         <label>Public wallet address<input name="address" required autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="56"></label>
         <button class="btn" type="submit">Check balance</button>
       </form><p data-balance role="status"></p></div>
-    </section>
-    <section class="panel wallet-panel">
+    </details>
+    <details name="wallet-tool" class="panel wallet-panel">
       ${heading('04','Save for a piece','Track a wardrobe goal against your balance. Your funds stay available to you.')}<div class="wallet-body">
       <form data-goal>
         <label>What are you saving for?<input name="piece" maxlength="70" placeholder="A cropped jacket" required></label>
         <label>Target in <span data-unit>USDC</span><input name="amount" type="number" min="0.01" max="10000000" step="0.01" placeholder="35.00" required></label>
         <button class="btn" type="submit">Save goal</button>
       </form><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
-    </section>
+    </details>
     </div>`;
   const account = element.querySelector('[data-account]');
   const goalForm = element.querySelector('[data-goal]');

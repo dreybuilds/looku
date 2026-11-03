@@ -3,6 +3,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 const require=createRequire(import.meta.url);
 const photo=fileURLToPath(new URL('../dist/orchid-detail.webp',import.meta.url));
+async function toggleWallet(page,title){await page.locator('.wallet-panel > summary').filter({hasText:title}).click()}
 async function nav(page,name){await page.getByRole('navigation').getByRole('link',{name,exact:true}).click()}
 test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await page.goto('/');
@@ -35,6 +36,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await page.goto('/#stylist');
  await page.getByRole('button',{name:'Review purchase'}).click();
  await page.getByRole('link',{name:'Create a testnet wallet'}).click();
+ await toggleWallet(page,'See or create wallet');
  const form=page.locator('[data-device-wallet] form').first();
  const phrase=crypto.randomUUID();
  await form.getByLabel('Wallet passphrase').fill(phrase);
@@ -55,11 +57,14 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  const download=page.waitForEvent('download');
  await page.getByRole('button',{name:'Download recovery file'}).click();
  const file=await (await download).path();
+ await toggleWallet(page,'Save for a piece');
  await page.getByLabel('What are you saving for?').fill('Cropped jacket');
  await page.getByLabel('Target in').fill('12');
  await page.getByRole('button',{name:'Save goal'}).click();
  await page.reload();
+ await toggleWallet(page,'Save for a piece');
  await expect(page.getByText(/Cropped jacket · 12 XLM/)).toBeVisible();
+ await toggleWallet(page,'See or create wallet');
  await page.getByRole('button',{name:'Return to checkout'}).click();
  const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
  await dialog.getByLabel('Wallet passphrase').fill('incorrect phrase');
@@ -69,6 +74,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  const fresh=await browser.newContext();
  try{
    const restored=await fresh.newPage();await restored.goto('http://127.0.0.1:4315/#wallet');
+ await toggleWallet(restored,'See or create wallet');
    await restored.getByText('Restore a wallet',{exact:true}).click();
    const restore=restored.locator('[data-device-wallet] details form');
    await restore.getByLabel('looku recovery file').setInputFiles(file);
@@ -118,7 +124,15 @@ test('accessible pages, dialog names and viewport fit',async({page})=>{
  for(const route of ['studio','wardrobe','stylist','wallet','shops']){
    await page.goto('/#'+route);
    const heading=page.getByRole('heading',{level:1});await expect(heading).toBeVisible();
-   if(route==='wallet')await expect(page.getByRole('button',{name:'Create wallet',exact:true})).toBeVisible();
+   if(route==='wallet'){
+     const rows=page.locator('.wallet-panel > summary');
+     await expect(rows).toHaveCount(4);
+     await expect(page.locator('.wallet-panel[open]')).toHaveCount(0);
+     await rows.first().focus();await page.keyboard.press('Enter');
+     await expect(page.getByRole('button',{name:'Create wallet',exact:true})).toBeVisible();
+     await rows.nth(1).click();await expect(page.locator('.wallet-panel[open]')).toHaveCount(1);
+     await rows.nth(1).click();await expect(page.locator('.wallet-panel[open]')).toHaveCount(0);
+   }
    await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
    const problems=await page.evaluate(async()=> (await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>v.id+' '+v.nodes.map(n=>n.target.join(' ')).slice(0,5).join(',')));
    failures.push(...problems.map(p=>route+' '+p));
@@ -187,6 +201,7 @@ test('preset survives refresh and funding uses the displayed testnet destination
  await expect(sea).toHaveAttribute('aria-pressed','true');
  await expect(page.getByText(/Colour match: Sea Glass/)).toBeVisible();
  await page.goto('/#wallet');
+ await toggleWallet(page,'Get testnet XLM');
  const funding=page.getByLabel('Testnet funding address');
  const destination='G'+'A'.repeat(55);
  await funding.fill(destination);
@@ -196,7 +211,9 @@ test('preset survives refresh and funding uses the displayed testnet destination
  await page.getByRole('button',{name:'Get test XLM'}).click();
  expect(new URL((await request).url()).searchParams.get('addr')).toBe(destination);
  await expect(page.locator('[data-faucet-status]')).toContainText('Friendbot funded');
+ await toggleWallet(page,'Check balance');
  await page.getByRole('combobox',{name:'Network',exact:true}).selectOption('base');
  await expect(funding).toHaveCount(0);
+ await toggleWallet(page,'Fund with MiniSend');
  await expect(page.getByRole('link',{name:/Open MiniSend/})).toBeVisible();
 });

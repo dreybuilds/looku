@@ -44,10 +44,13 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 
 /* The wallet is a sequence of tasks, with room for long public addresses. */
 .wallet-grid{grid-template-columns:minmax(0,1fr);gap:16px}
-.wallet-grid>.wallet-panel{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);align-items:start;column-gap:clamp(20px,5vw,80px);border-radius:20px;padding:clamp(20px,3vw,40px);background:#fffbff;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.wallet-grid>.wallet-panel{display:block;border-radius:20px;padding:0;background:#fffbff;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
 .wallet-grid>.wallet-panel:first-child{background:#f3e7f6}
 .wallet-grid>.wallet-panel[data-funding]{background:#f9eaf0}
-.wallet-heading{display:grid;gap:10px}.wallet-heading h3{font:normal clamp(27px,3vw,42px)/1.04 Georgia,serif;letter-spacing:-.045em}.wallet-heading p{color:var(--muted);max-width:38ch}
+.wallet-panel>summary{display:flex;align-items:center;gap:clamp(12px,2vw,24px);list-style:none;cursor:pointer;padding:clamp(16px,2vw,25px);border-radius:inherit;font:normal clamp(22px,2.4vw,32px)/1.15 Georgia,serif;letter-spacing:-.04em}
+.wallet-panel>summary::-webkit-details-marker{display:none}.wallet-panel>summary .eyebrow{color:var(--muted)}
+.wallet-panel>summary::after{content:"";width:9px;height:9px;border-right:2px solid;border-bottom:2px solid;transform:rotate(45deg);margin-left:auto;margin-right:4px}.wallet-panel[open]>summary::after{transform:rotate(225deg)}
+.wallet-panel[open]>:not(summary){margin:0 clamp(16px,2vw,25px) 18px}.wallet-description{color:var(--muted)}
 .wallet-body{min-width:0;display:grid;gap:12px}.wallet-body input,.wallet-body select{width:100%;min-width:0}.wallet-body [data-public]{font:500 14px/1.6 ui-monospace,monospace;letter-spacing:.02em}.wallet-body .actions{margin-top:0}.wallet-body [data-wallet-account]{border-top:1px solid var(--line);padding-top:14px}
 .wallet-body button{border-radius:11px}.wallet-body p:empty{display:none}
 .palette-library{display:grid;gap:16px}.palette-library h2{font-size:clamp(30px,3.4vw,46px)}.palette-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
