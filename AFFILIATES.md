@@ -1,6 +1,6 @@
 # looku affiliate directory
 
-Last checked November 3, 2026. The directory covers 26 publicly documented programs across Kenyan retail, African fashion and international stores. Each link opens the merchant’s or network’s program information. looku still needs merchant approval and its own publisher identifiers to generate commission-earning product links. The region describes the program page or market. Delivery to a shopper’s address and acceptance of a Kenya-based publisher must be checked individually.
+Last checked November 3, 2026. The directory lists merchant programs and partnership leads across Kenyan retail, African fashion and international stores. Each link opens the merchant’s or network’s program information. looku still needs merchant approval and its own publisher identifiers to generate commission-earning product links. The region describes the program page or market. Delivery to a shopper’s address and acceptance of a Kenya-based publisher must be checked individually.
 
 For the first local footwear integration, VaaBay has the clearest documented path from application to a tracking link. For a broader catalogue, Mytheresa explicitly offers a product feed after approval. Both require confirming that looku’s styling app and its intended placement of links qualify. [VaaBay program](https://www.vaabay.co.ke/affiliate) · [Mytheresa program](https://www.mytheresa.com/gb/en/affiliates)
 
@@ -32,6 +32,8 @@ For the first local footwear integration, VaaBay has the clearest documented pat
 | Etsy | International | Handmade and vintage pieces. Website publishers can apply through the affiliate route. Eligibility rules apply. | [Program page](https://www.etsy.com/affiliates) |
 | eBay | Multiple markets | Marketplace with resale and vintage fashion. eBay Partner Network offers publisher links and developer integrations. | [Program page](https://partnernetwork.ebay.com/) |
 | Amazon Associates | US program | Marketplace with a fashion catalogue. The US program reviews applicants and the channels where links appear. | [Program page](https://affiliate-program.amazon.com/) |
+
+See the [Kenya application checklist](KENYA-APPLICATIONS.md) for current priorities and direct outreach.
 
 ## Additional leads to revisit
 

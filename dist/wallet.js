@@ -42,7 +42,7 @@ export async function mountWallet(element) {
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
   element.innerHTML = `<div class="wallet-grid"><section class="panel wallet-panel" data-device-wallet></section>
     <section class="panel wallet-panel">
-      <h3>Your wallet</h3><p>Check a public address to see what you have for your next look.</p>
+      <h3>Check a balance</h3><p>Check a public address to see what you have for your next look.</p>
       <form data-account>
         <label>Network<select name="network"><option value="testnet">Stellar testnet · demo funds</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
         <label>Public wallet address<input name="address" required autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="56"></label>
@@ -118,7 +118,7 @@ export async function mountWallet(element) {
     const destination = address.value.trim();
     const note = element.querySelector('[data-faucet-status]');
     if (!/^G[A-Z2-7]{55}$/.test(destination)) {
-      note.textContent = 'Enter your public testnet G-address above first.';
+      note.textContent = 'Create a device wallet or enter a public Stellar testnet address first.';
       address.focus();
       return;
     }

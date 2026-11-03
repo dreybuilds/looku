@@ -1,3 +1,4 @@
+import {account} from './account.mjs';
 // R2's conditional writes choose one signed envelope per order before any broadcast.
 import { makeChain, nativeAsset, HttpError } from '../payments/chain.mjs';
 import { ITEM, SKU, NETWORK, BASE } from '../payments/common.mjs';
@@ -34,6 +35,7 @@ function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Obj
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(p==='/api/account'||p.startsWith('/api/account/')||p==='/api/stylist/gpt')return account(request,env);
  if(p==='/api/wardrobe-backup')return backup(request,env);
  if(p==='/api/pinterest/search')return searchPins(request,env);
  if(!p.startsWith(BASE+'/'))return json(404,{error:'Not found'});

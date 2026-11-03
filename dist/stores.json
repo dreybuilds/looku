@@ -3,25 +3,37 @@
     "name": "VaaBay",
     "region": "Kenya",
     "url": "https://www.vaabay.co.ke/affiliate",
-    "note": "Footwear. Approved affiliates can generate referral links and track sales. The published rate is up to 5.5%."
+    "note": "Footwear. Approved affiliates can generate referral links and track sales. The published rate is up to 5.5%.",
+    "shop": "https://www.vaabay.co.ke/",
+    "application": "Apply",
+    "nextStep": "Create a retailer account, then apply for footwear referral links."
   },
   {
     "name": "Shana",
     "region": "Kenya",
     "url": "https://shana.co.ke/faqs/",
-    "note": "The FAQ describes product links and payout by M-Pesa or bank. Its registration page timed out during this check."
+    "note": "The FAQ describes product links and payout by M-Pesa or bank. Its registration page timed out during this check.",
+    "shop": "https://shana.co.ke/",
+    "application": "Apply via FAQ",
+    "nextStep": "Use the Regular Affiliate route. Confirm the sign-up page opens and request product links."
   },
   {
     "name": "Savanna Galore",
     "region": "Kenya",
     "url": "https://savannagalore.co.ke/become-an-affiliate/",
-    "note": "The store carries ladies’ fashion and describes sale referrals. Its public form displayed an unrendered registration shortcode."
+    "note": "The store carries ladies’ fashion and describes sale referrals. Its public form displayed an unrendered registration shortcode.",
+    "shop": "https://savannagalore.co.ke/",
+    "application": "Request a working form",
+    "nextStep": "Ask the merchant for enrollment. The public registration form displays a shortcode."
   },
   {
     "name": "Jumia",
     "region": "Africa · Kenya market",
     "url": "https://group.jumia.com/business/marketplace",
-    "note": "The group describes unique tracking links and commission on delivered orders. Kenyan publisher intake still needs confirmation."
+    "note": "The group describes unique tracking links and commission on delivered orders. Kenyan publisher intake still needs confirmation.",
+    "shop": "https://www.jumia.co.ke/",
+    "application": "Confirm Kenya intake",
+    "nextStep": "Ask for the Kenyan publisher enrollment route and permission to deep-link from a PWA."
   },
   {
     "name": "The Afropolitan Shop",
@@ -154,5 +166,32 @@
     "region": "US program",
     "url": "https://affiliate-program.amazon.com/",
     "note": "Marketplace with a fashion catalogue. The US program reviews applicants and the channels where links appear."
+  },
+  {
+    "name": "Enda",
+    "region": "Kenya",
+    "url": "https://www.endasportswear.com/pages/become-an-enda-affiliate",
+    "note": "Kenyan running shoes and apparel. Ask for the current advertiser ID before applying.",
+    "shop": "https://www.endasportswear.com/",
+    "application": "Confirm current network",
+    "nextStep": "Kenyan running shoes and apparel. Ask for the current advertiser ID before applying."
+  },
+  {
+    "name": "SOKO",
+    "region": "Kenya",
+    "url": "https://shopsoko.com/pages/affiliates",
+    "note": "Kenyan artisan jewellery. Ask the team for its current affiliate application.",
+    "shop": "https://shopsoko.com/",
+    "application": "Request application",
+    "nextStep": "Kenyan artisan jewellery. Ask the team for its current affiliate application."
+  },
+  {
+    "name": "Oak Apparel",
+    "region": "Kenya",
+    "url": "https://oakapparel.co.ke/partners",
+    "note": "Nairobi graphic tees. Apply for a branded storefront if looku will offer original designs. Ask separately about promo attribution for existing tees.",
+    "shop": "https://oakapparel.co.ke/",
+    "application": "Partner storefront",
+    "nextStep": "Nairobi graphic tees. Apply for a branded storefront if looku will offer original designs. Ask separately about promo attribution for existing tees."
   }
 ]

@@ -18,11 +18,43 @@ export async function walletRecord(newWallet) {
   } finally { db.close(); }
 }
 
+export async function accountCall(path, data) {
+ const response=await fetch(path,data?{method:'POST',headers:{'Content-Type':'application/json','X-Looku-Action':'wallet-account'},body:JSON.stringify(data)}:{cache:'no-store'});
+ let info;
+ try {info=await response.json()} catch {throw Error('Go online and open the hosted studio to sign in.')}
+ if(!response.ok)throw Error(info.error||'Account service unavailable.');
+ return info;
+}
+async function mountAccount(panel,wallet) {
+ panel.innerHTML='<h3>looku account</h3><p>Your testnet wallet is your account. Sign a message to sign in for 12 hours.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
+ const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
+ function signedIn(){
+   form.hidden=true;
+   note.textContent='Signed in with this device wallet.';
+   const button=document.createElement('button');
+   button.textContent='Sign out';button.className='secondary';
+   button.onclick=async()=>{try{await accountCall('/api/account/logout',{});await mountAccount(panel,wallet)}catch(e){note.textContent=e.message}};
+   panel.append(button);
+ }
+ form.onsubmit=async event=>{
+   event.preventDefault();
+   const button=form.querySelector('button');button.disabled=true;
+   try{
+     const {signLookuLogin}=await import('/api/payments/client.js');
+     const challenge=await accountCall('/api/account/challenge',{address:wallet.address});
+     const signature=await signLookuLogin(wallet,form.elements.pass.value,challenge);
+     await accountCall('/api/account/verify',{address:wallet.address,nonce:challenge.nonce,signature});
+     signedIn();
+   }catch(e){note.textContent=e.message}finally{form.reset();button.disabled=false}
+ };
+ try{const state=await accountCall('/api/account');if(state.address===wallet.address&&!form.hidden)signedIn()}catch{/* Local wallet remains usable offline. */}
+}
 export async function mountDeviceWallet(panel, selectAddress) {
   let wallet = await walletRecord();
   function showWallet() {
-    panel.innerHTML = '<h3>Your device wallet</h3><p>Stellar testnet · demo funds</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p>';
+    panel.innerHTML = '<h3>Your device wallet</h3><p>Stellar testnet · demo funds</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p><section data-wallet-account class="stack"></section>';
     panel.querySelector('[data-public]').textContent = wallet.address;
+    mountAccount(panel.querySelector('[data-wallet-account]'),wallet);
     panel.querySelector('[data-use]').onclick = () => selectAddress(wallet.address);
     panel.querySelector('[data-export]').onclick = () => {
       const link = document.createElement('a');
@@ -50,7 +82,7 @@ export async function mountDeviceWallet(panel, selectAddress) {
       if (form.elements.backup) {
         const file = form.elements.backup.files[0];
         if (!file || file.size > 4096) throw Error('Choose a looku wallet recovery file.');
-        record = JSON.parse(await file.text());
+        try { record = JSON.parse(await file.text()); } catch { throw Error('Choose the JSON recovery file you downloaded from looku.'); }
         await unlockWallet(record, pass);
       } else {
         if (pass !== form.elements.repeat.value) throw Error('Enter the same passphrase twice.');

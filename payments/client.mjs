@@ -2,7 +2,7 @@ import freighter from '@stellar/freighter-api'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
 import { BASE, ITEM, NETWORK, PASSPHRASE, SKU } from './common.mjs'
 
-export { generateWallet, unlockWallet } from './local-wallet.mjs'
+export { generateWallet, unlockWallet, signLookuLogin } from './local-wallet.mjs'
 
 const endpoint = new URL(BASE + '/', import.meta.url)
 const key = (address, sku) => 'looku-checkout:' + address + ':' + sku
@@ -32,7 +32,7 @@ export async function buyPiece({sku = SKU, address, signer, onStatus = () => {},
     const previous = await getReceipt(id)
     if (previous.status !== 'awaiting_signature') {
       if (['complete','failed'].includes(previous.status)) localStorage.removeItem(storageKey)
-      onOrder(id)
+      await onOrder(id)
       return previous
     }
   } else {
@@ -40,7 +40,7 @@ export async function buyPiece({sku = SKU, address, signer, onStatus = () => {},
     id = order.id
     localStorage.setItem(storageKey,id)
   }
-  onOrder(id)
+  await onOrder(id)
   const url = new URL('orders/' + id + '/checkout',endpoint)
   const response = await fetch(url,{method:'POST'})
   const challenge = await response.json()

@@ -1,0 +1,182 @@
+import {test,expect,chromium} from '@playwright/test';
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+const require=createRequire(import.meta.url);
+const photo=fileURLToPath(new URL('../dist/orchid-detail.webp',import.meta.url));
+async function nav(page,name){await page.getByRole('navigation').getByRole('link',{name,exact:true}).click()}
+test('upload, prompt, save, reload, filter and remove',async({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Add a piece',exact:true}).first().click();
+ const dialog=page.getByRole('dialog',{name:'Add a piece'});
+ await dialog.getByLabel('Clothing photo').setInputFiles(photo);
+ await dialog.getByLabel('Piece name').fill('Lilac linen shirt');
+ await dialog.getByRole('button',{name:'Add to wardrobe'}).click();
+ await expect(dialog).toBeHidden();
+ await nav(page,'Stylist');
+ const prompt='Lilac linen shirt and jeans for brunch, no dress';
+ await page.getByLabel('Describe your look').fill(prompt);
+ await page.getByRole('button',{name:'Build my look'}).click();
+ await expect(page.getByRole('heading',{name:'Weekend edit'})).toBeFocused();
+ await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toBeVisible();
+ await expect(page.getByRole('article').filter({hasText:'Slip dress'})).toHaveCount(0);
+ await page.getByRole('button',{name:'Save outfit'}).click();
+ await page.getByRole('link',{name:'View saved outfits'}).click();
+ await expect(page.getByRole('heading',{name:prompt})).toBeVisible();
+ await page.reload();
+ await expect(page.getByRole('heading',{name:prompt})).toBeVisible();
+ await page.getByLabel('Category').selectOption('jacket');
+ await expect(page.getByText('No pieces in this category yet.')).toBeVisible();
+ await page.getByLabel('Category').selectOption('shirt');
+ page.once('dialog',d=>d.accept());
+ await page.getByRole('article').filter({hasText:'Lilac linen shirt'}).locator('..').getByRole('button').click();
+ await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toHaveCount(0);
+});
+test('checkout detour, wallet recovery, savings and wrong signing passphrase',async({page,browser})=>{
+ await page.goto('/#stylist');
+ await page.getByRole('button',{name:'Review purchase'}).click();
+ await page.getByRole('link',{name:'Create a testnet wallet'}).click();
+ const form=page.locator('[data-device-wallet] form').first();
+ const phrase=crypto.randomUUID();
+ await form.getByLabel('Wallet passphrase').fill(phrase);
+ await form.getByLabel('Confirm passphrase').fill('mismatch');
+ await form.getByRole('button').click();
+ await expect(page.getByText('Enter the same passphrase twice.')).toBeVisible();
+ await form.getByLabel('Confirm passphrase').fill(phrase);
+ await form.getByRole('button').click();
+ const account=page.locator('[data-wallet-account]');
+ await account.getByLabel('Sign-in passphrase').fill(phrase);
+ await account.getByRole('button',{name:'Sign in with this wallet'}).click();
+ await expect(account.getByRole('status')).toContainText('Signed in');
+ await account.getByRole('button',{name:'Sign out'}).click();
+ await expect(account.getByLabel('Sign-in passphrase')).toBeVisible();
+ const address=page.getByLabel('Public wallet address');
+ await expect(address).toHaveValue(/^G[A-Z2-7]{55}$/);
+ const publicKey=await address.inputValue();
+ const download=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Download recovery file'}).click();
+ const file=await (await download).path();
+ await page.getByLabel('What are you saving for?').fill('Cropped jacket');
+ await page.getByLabel('Target in').fill('12');
+ await page.getByRole('button',{name:'Save goal'}).click();
+ await page.reload();
+ await expect(page.getByText(/Cropped jacket · 12 XLM/)).toBeVisible();
+ await page.getByRole('button',{name:'Return to checkout'}).click();
+ const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
+ await dialog.getByLabel('Wallet passphrase').fill('incorrect phrase');
+ await dialog.getByRole('button',{name:'Pay 1 test XLM with device wallet'}).click();
+ await expect(dialog.getByRole('status')).toContainText('Could not unlock');
+ await dialog.getByRole('button',{name:'Close dialog'}).click();
+ const fresh=await browser.newContext();
+ try{
+   const restored=await fresh.newPage();await restored.goto('http://127.0.0.1:4315/#wallet');
+   await restored.getByText('Restore a wallet',{exact:true}).click();
+   const restore=restored.locator('[data-device-wallet] details form');
+   await restore.getByLabel('looku recovery file').setInputFiles(file);
+   await restore.getByLabel('Wallet passphrase').fill(phrase);
+   await restore.getByRole('button',{name:'Restore wallet'}).click();
+   await expect(restored.getByLabel('Public wallet address')).toHaveValue(publicKey);
+ }finally{await fresh.close()}
+});
+test('offline reload, navigation, store search, styling and 3D rotation',async({page,context})=>{
+ await page.goto('/');
+ await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}))});
+ await context.setOffline(true);await page.reload();
+ await expect(page.getByRole('heading',{name:'The Orchid Edit.'})).toBeVisible();
+ await page.getByRole('slider').press('ArrowRight');
+ await expect(page.getByRole('slider')).toHaveAttribute('aria-valuetext','15 degrees');
+ await page.getByRole('button',{name:'Style this palette'}).click();
+ await expect(page.getByText('Colour #a77bb6')).toBeVisible();
+ await nav(page,'Stores');await page.getByLabel('Find a program').fill('nonexistentzzz');
+ await expect(page.getByText('No programs match your search.')).toBeVisible();
+ await page.getByLabel('Find a program').fill('');
+ expect(await page.locator('#store-list article').count()).toBeGreaterThan(20);
+});
+test('native PWA metadata and install affordance',async({},testInfo)=>{
+ const context=await chromium.launchPersistentContext(testInfo.outputPath('disposable-profile'),{channel:'chrome',viewport:testInfo.project.use.viewport});
+ try {
+ const page=await context.newPage();
+ await page.goto('http://127.0.0.1:4315/');
+ const cdp=await context.newCDPSession(page);
+ await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
+ expect((await cdp.send('Page.getAppManifest')).errors).toEqual([]);
+ expect((await cdp.send('Page.getInstallabilityErrors')).installabilityErrors).toEqual([]);
+ await page.evaluate(()=>{
+   const event=new Event('beforeinstallprompt',{cancelable:true});
+   event.prompt=async()=>{document.body.dataset.installOpened='yes'};event.userChoice=Promise.resolve({outcome:'dismissed'});
+   window.dispatchEvent(event);
+ });
+ await page.getByRole('button',{name:'Install looku',exact:true}).click();
+ await expect(page.locator('body')).toHaveAttribute('data-install-opened','yes');
+ await page.getByRole('button',{name:'Install looku',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Install looku'})).toBeVisible();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toBeHidden();
+ }finally{await context.close()}
+});
+test('accessible pages, dialog names and viewport fit',async({page})=>{
+ const failures=[];
+ page.on('pageerror',e=>failures.push(e.message));
+ for(const route of ['studio','wardrobe','stylist','wallet','shops']){
+   await page.goto('/#'+route);
+   const heading=page.getByRole('heading',{level:1});await expect(heading).toBeVisible();
+   if(route==='wallet')await expect(page.getByRole('button',{name:'Create wallet',exact:true})).toBeVisible();
+   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+   const problems=await page.evaluate(async()=> (await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>v.id+' '+v.nodes.map(n=>n.target.join(' ')).slice(0,5).join(',')));
+   failures.push(...problems.map(p=>route+' '+p));
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+ expect(failures).toEqual([]);
+});
+test('custom palette persistence, sample portraits and local retailer applications',async({page})=>{
+ await page.goto('/');
+ const images=page.locator('.sample-photo');await expect(images).toHaveCount(4);
+ expect(await images.evaluateAll(imgs=>imgs.every(i=>i.complete&&i.naturalWidth>0))).toBe(true);
+ await nav(page,'Stylist');
+ await page.getByText('Custom style palette',{exact:true}).click();
+ await page.getByLabel('Palette name').fill('Orchid weekend');
+ await page.getByLabel('Colour 2',{exact:true}).fill('#301533');
+ await page.getByRole('button',{name:'Save and style'}).click();
+ await expect(page.getByText(/Colour match: Orchid weekend/)).toBeVisible();
+ await page.reload();await expect(page.getByText(/Colour match: Orchid weekend/)).toBeVisible();
+ await nav(page,'Stores');
+ await page.getByText('Kenya applications and next steps').click();
+ await expect(page.locator('#kenya-applications li')).toHaveCount(7);
+ await expect(page.getByRole('link',{name:'Shop VaaBay'})).toHaveAttribute('href','https://www.vaabay.co.ke/');
+});
+test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',async({page},info)=>{
+ // Run once: the temporary test site has one synthetic signed-in backup owner.
+ test.skip(info.project.name==='phone');
+ await page.goto('/#wardrobe');
+ await page.getByText('Install looku & manage storage').click();
+ const pass=page.locator('[data-pass]');const phrase=crypto.randomUUID();
+ await pass.fill(phrase);page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Back up online'}).click();
+ await expect(page.locator('[data-device-status]')).toContainText('Encrypted wardrobe backed up');
+ await pass.fill('definitely-wrong-qa');page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Restore online backup'}).click();
+ await expect(page.locator('[data-device-status]')).toContainText('Could not unlock');
+ await pass.fill(phrase);page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Restore online backup'}).click();
+ await expect(pass).toBeHidden();
+ await page.getByText('Install looku & manage storage').click();
+ page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Delete online backup'}).click();
+ await expect(page.locator('[data-device-status]')).toContainText('deleted');
+ await nav(page,'Stylist');await page.getByText('Find inspiration on Pinterest').click();
+ await page.getByLabel('Search Pins').fill('lilac streetwear');
+ await page.getByRole('button',{name:'Search Pinterest'}).click();
+ await expect(page.locator('#pin-status')).toContainText('waiting for an authorized');
+});
+test('invalid wallet proofs never grant a session and a valid challenge is single use',async({request,baseURL})=>{
+ const {Keypair}=await import('../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js');
+ const wallet=Keypair.random(),address=wallet.publicKey();
+ const headers={Origin:baseURL,'X-Looku-Action':'wallet-account'};
+ const challenge=await (await request.post('/api/account/challenge',{headers,data:{address}})).json();
+ const verify=signature=>request.post('/api/account/verify',{headers,data:{address,nonce:challenge.nonce,signature}});
+ expect((await verify('invalid')).status()).toBe(401);
+ const signature=Buffer.from(wallet.sign(Buffer.from(challenge.message))).toString('base64');
+ expect((await verify(signature)).status()).toBe(200);
+ expect((await verify(signature)).status()).toBe(401);
+ expect((await (await request.get('/api/account')).json()).address).toBe(address);
+ await request.post('/api/account/logout',{headers,data:{}});
+ expect((await (await request.get('/api/account')).json()).address).toBeNull();
+});

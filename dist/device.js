@@ -19,13 +19,28 @@ export async function decryptBackup(buffer,secret){
 }
 let installPrompt;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});
+const headerInstall = document.querySelector('#install-looku');
+const standalone = matchMedia('(display-mode: standalone)');
+function updateInstall() { headerInstall.hidden = standalone.matches || navigator.standalone === true; }
+updateInstall();
+standalone.addEventListener('change', updateInstall);
+window.addEventListener('appinstalled', () => { installPrompt=null; headerInstall.hidden=true; });
+export async function requestInstall() {
+ if (standalone.matches || navigator.standalone) return 'looku is already installed on this device.';
+ if (installPrompt) {
+   const prompt = installPrompt;
+   installPrompt = null;
+   try { await prompt.prompt(); await prompt.userChoice; return ''; } catch { /* Show browser guidance. */ }
+ }
+ if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)) return 'Open looku in Safari, tap Share, then Add to Home Screen.';
+ if (/Macintosh/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/Chrome|Chromium/.test(navigator.userAgent)) return 'In Safari, open File → Add to Dock. If you opened looku inside another app, open it in Safari first.';
+ return 'Open looku in Chrome or Edge. Select the install icon in the address bar, or open the browser menu and choose Install looku or Install page as app.';
+}
 export function devicePanel(){return `<details class="panel"><summary>Install looku &amp; manage storage</summary><div class="stack"><p>Your photos, references and outfits stay on this phone or laptop. Open looku once online to prepare it for offline use. Clearing browser data removes your local wardrobe.</p><button class="secondary" data-install>Install looku on this device</button><p class="fine">Optional online backup saves an encrypted snapshot to your signed-in account. It includes clothing photos, the inspiration reference and saved outfits. Wallet addresses, receipts and savings goals stay outside the backup. Choose Back up again after making changes.</p><label>Backup passphrase · keep this to restore on another device<input type="password" data-pass autocomplete="off" minlength="12" placeholder="At least 12 characters"></label><div class="row"><button data-backup="save">Back up online</button><button class="secondary" data-backup="restore">Restore online backup</button><button class="secondary" data-backup="delete">Delete online backup</button></div><p role="status" data-device-status></p></div></details>`;}
 export async function deviceAction(button,snapshot){
  const el=button.closest('details'),status=el.querySelector('[data-device-status]');
  if(button.hasAttribute('data-install')){
-  if(matchMedia('(display-mode: standalone)').matches){status.textContent='looku is running as an installed app.';return}
-  if(installPrompt){await installPrompt.prompt();await installPrompt.userChoice;installPrompt=null}
-  else status.textContent='On iPhone or iPad, use Safari → Share → Add to Home Screen. On Android or desktop, open the browser menu and select Install app or Add to Home Screen if available.';
+  status.textContent = await requestInstall();
   return;
  }
  const op=button.dataset.backup,field=el.querySelector('[data-pass]'),secret=field.value;

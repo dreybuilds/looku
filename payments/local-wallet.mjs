@@ -18,7 +18,7 @@ export async function generateWallet(passphrase) {
   const encrypted = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, pair.rawSecretKey())
   return {format:'looku-testnet-1', address:pair.publicKey(), salt:encode(salt), iv:encode(iv), encrypted:encode(new Uint8Array(encrypted))}
 }
-export async function unlockWallet(wallet, passphrase) {
+async function decryptPair(wallet, passphrase) {
   try {
     if (wallet.format !== 'looku-testnet-1') throw Error()
     const key = await encryptionKey(passphrase, decode(wallet.salt))
@@ -26,6 +26,16 @@ export async function unlockWallet(wallet, passphrase) {
     const pair = Keypair.fromRawEd25519Seed(bytes)
     bytes.fill(0)
     if (pair.publicKey() !== wallet.address) throw Error()
-    return createEd25519Signer(pair.secret(), NETWORK)
+    return pair
   } catch { throw Error('Could not unlock this wallet. Check the passphrase and recovery file.') }
+}
+
+export async function unlockWallet(wallet, passphrase) {
+  return createEd25519Signer((await decryptPair(wallet,passphrase)).secret(), NETWORK)
+}
+export async function signLookuLogin(wallet, passphrase, challenge) {
+  const [label,origin,network,address,nonce,expires,...extra]=challenge.message.split('\n')
+  if (extra.length || label !== 'looku wallet sign-in' || origin !== location.origin || network !== 'Stellar testnet' || address !== wallet.address || nonce !== challenge.nonce || !(Number(expires)>Date.now())) throw Error('Invalid wallet sign-in request.')
+  const pair=await decryptPair(wallet,passphrase)
+  return encode(pair.sign(new TextEncoder().encode(challenge.message)))
 }
