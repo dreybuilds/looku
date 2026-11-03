@@ -22,7 +22,24 @@ function gallery(){
  const subset=items.filter(x=>!filter||x.type===filter);
  return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
 }
-function studio(){return `<section class="hero"><div class="hero-copy"><div class="eyebrow">✳ &nbsp; Personal wardrobe studio</div><h1>A new look.<br><em>Already yours.</em></h1><p>Build an outfit around what you own. Find the finishing piece when you need it.</p><div class="actions"><a class="button" href="#stylist">Style an outfit ↗</a><button class="secondary" data-add>＋ Add a piece</button></div></div><div class="hero-art" aria-label="Illustrated study of a camp shirt and denim trousers"><div class="plate">${garment('shirt','#d6c194','hero1').replace('<svg','<svg class="p1"')}${garment('trousers','#708395','hero2').replace('<svg','<svg class="p2"')}</div><span class="stamp label">LOOK STUDY / 001</span><div class="swatches"><i style="--c:#d6c194"></i><i style="--c:#708395"></i><i style="--c:#414835"></i></div></div></section><div class="sectionhead"><div><div class="eyebrow">01 / The collection</div><h2>Wardrobe rail</h2></div><a class="link" href="#wardrobe">View all ${items.length} →</a></div><div class="grid cards4">${items.slice(0,4).map(card).join('')||'<p>Add your first piece to get started.</p>'}</div><p class="fine" style="margin-top:16px">Illustrated pieces are samples. Add a photo to style your own clothes.</p>`;}
+function studio() {
+ return `<section class="hero campaign">
+   <div class="hero-copy"><div class="eyebrow"><span class="spark">✷</span> Lookbook &nbsp;/&nbsp; Vol. 01</div>
+   <h1>The Orchid<br><em>Edit.</em></h1><p>Lilac nylon, dark denim, a flash of pink. Find your own take with the pieces on your rail.</p>
+   <div class="actions"><button data-edit-palette>Style this palette ↗</button><a class="link" href="#stylist">Open stylist</a></div></div>
+   <div class="campaign-images"><img class="portrait" src="/orchid-portrait.webp" alt="Model in plum sunglasses and a lilac windbreaker with pink piping" fetchpriority="high"><img class="textile" src="/orchid-detail.webp" alt="Silver zipper, lilac nylon and indigo denim in detail"><span class="plate-caption">01 &nbsp;/&nbsp; ORCHID</span></div>
+ </section>
+ <div class="studio-tools">
+   <section class="studio-shortcuts"><div class="eyebrow">Your studio</div><h2>On the rail</h2>
+   <div class="shortcut-list"><button data-add><span>Add a piece</span><span aria-hidden="true">＋</span></button>
+   <a href="#wardrobe"><span>Your wardrobe <small>${items.length} pieces</small></span><span aria-hidden="true">↗</span></a>
+   <a href="#wallet"><span>Your wallet</span><span aria-hidden="true">↗</span></a></div></section>
+   <section class="object-study"><div class="object-head"><div><div class="eyebrow">Object study &nbsp;/&nbsp; 001</div><h2>Orchid frames</h2></div><span class="chip">3D</span></div>
+   <div class="turntable" role="img" aria-label="Rotatable 3D study of glossy orchid sunglasses with smoked lenses"></div>
+   <div class="object-controls"><label>Rotate the frames<input aria-label="Rotate the frames" id="turn-frame" type="range" min="0" max="23" value="0" aria-valuetext="0 degrees"></label><a href="/orchid-frames.glb" download="looku-orchid-frames.glb">3D file ↓</a></div></section>
+ </div>
+ <div class="sectionhead"><div><div class="eyebrow">Your collection</div><h2>Wardrobe rail</h2></div><a class="link" href="#wardrobe">View all ${items.length} →</a></div><div class="grid cards4">${items.slice(0,4).map(card).join('')||'<p>Add your first piece to get started.</p>'}</div><p class="fine" style="margin-top:16px">Illustrated pieces are samples. Add a photo to style your own clothes.</p>`;
+}
 function stylist(){
  const look=styleLook(items,occasion,inspo?.color,variation);
  return title('Studio / Outfit builder','Style an outfit','Choose where you’re going. Add a reference photo to match its colour with pieces on your rail.')+`<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2>${esc(occasion)} edit</h2></div></div><div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>1 test XLM</strong><p class="fine">Includes a 0.10 test XLM referral commission to looku. Test purchase only.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
@@ -84,11 +101,25 @@ async function checkout() {
   local.onsubmit = event => { event.preventDefault(); submit(true); };
   dialog.addEventListener('close', () => local.reset(), {once:true});
 }
+main.addEventListener('input', e => {
+ if (e.target.id !== 'turn-frame') return;
+ const frame = e.target.valueAsNumber;
+ main.querySelector('.turntable').style.backgroundPosition = (frame % 6 * 20) + '% ' + (Math.floor(frame / 6) * 100 / 3) + '%';
+ e.target.setAttribute('aria-valuetext', (frame * 15) + ' degrees');
+});
 main.addEventListener('input',e=>{if(e.target.id==='store-search'&&stores)drawStores(e.target.value)});
 main.addEventListener('change',async e=>{try{if(e.target.id==='filter'){filter=e.target.value;render()}if(e.target.id==='occasion'){occasion=e.target.value;variation=0;render()}if(e.target.id==='inspo'&&e.target.files[0]){const next=await processPhoto(e.target.files[0]);await write('inspo',next);inspo=next;render()}}catch(err){notice(err.message)}});
 main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
  if(b.hasAttribute('data-install')||b.hasAttribute('data-backup')){await deviceAction(b,()=>({items,looks:saved,inspo}));return}
  if(b.dataset.pin){const pin=foundPins.find(p=>p.id===b.dataset.pin);if(!pin)return;const color=b.parentElement.querySelector('input').value;const ref={pinId:pin.id,title:pin.title,color};await write('inspo',ref);inspo=ref;render();notice('Pin palette applied');return}
+ if(b.hasAttribute('data-edit-palette')) {
+   const reference = {photo:'/orchid-detail.webp',color:'#a77bb6',title:'The Orchid Edit'};
+   await write('inspo', reference);
+   inspo = reference;
+   variation = 0;
+   location.hash = 'stylist';
+   return;
+ }
  if(b.hasAttribute('data-add'))addPiece();
  if(b.dataset.remove){const next=items.filter(p=>p.id!==b.dataset.remove);await write('items',next);items=next;render()}
  if(b.hasAttribute('data-remix')){const prior=styleLook(items,occasion,inspo?.color,variation).pieces.map(p=>p.id).join();variation++;render();if(styleLook(items,occasion,inspo?.color,variation).pieces.map(p=>p.id).join()===prior)notice('Add another piece in the same category for more combinations.')}

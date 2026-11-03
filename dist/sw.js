@@ -1,5 +1,5 @@
-const CACHE='looku-shell-20261103-4';
-const SHELL=['/','/index.html','/style.css','/app.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png'];
+const CACHE='looku-shell-20261103-orchid-1';
+const SHELL=['/','/index.html','/style.css','/app.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/orchid-frames.glb'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  await Promise.all(SHELL.map(async path=>{
