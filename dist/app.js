@@ -12,16 +12,26 @@ let items=await read('items',sample),saved=await read('looks',[]),receipts=await
 let foundPins=[];
 let lookRequest = null;
 let paletteBook = await read('palette-book',{active:'',entries:[]});
-const activePalette = () => paletteBook.entries.find(entry => entry.id === paletteBook.active);
+const presets = [
+ {id:'orchid',name:'Orchid Hour',colors:['#a77bb6','#544160','#d599ae']},
+ {id:'citrus',name:'Citrus Market',colors:['#e2df70','#648454','#f5a562']},
+ {id:'denim',name:'Blue Note',colors:['#354e75','#86a9c4','#e5dcd0']},
+ {id:'clay',name:'Clay Studio',colors:['#b85f47','#dcad88','#715548']},
+ {id:'noir',name:'After Dark',colors:['#292530','#70677c','#c1bac8']},
+ {id:'coast',name:'Sea Glass',colors:['#387773','#a2c7b5','#e8d7b9']}
+];
+const activePalette = () => [...presets,...paletteBook.entries].find(entry => entry.id === paletteBook.active);
 function paletteEditor() {
  const palette=activePalette();
  const colors=palette?.colors || ['#a77bb6','#544160','#d599ae'];
- return `<details class="panel"><summary>Custom style palette${palette?' · '+esc(palette.name):''}</summary><form id="custom-palette" class="stack">
- <label>Saved palette<select id="saved-palette">${options([['','New palette'],...paletteBook.entries.map(p=>[p.id,p.name])],paletteBook.active)}</select></label>
+ return `<section class="panel palette-library" aria-labelledby="palette-title"><span class="eyebrow">Stylist / Colour</span><h2 id="palette-title">Choose a palette</h2>
+ <div class="palette-list">${presets.map(p=>`<button type="button" class="palette-choice" data-preset="${p.id}" aria-pressed="${p.id===paletteBook.active}"><span class="colour-strip" aria-hidden="true">${p.colors.map(c=>`<i style="background:${c}"></i>`).join('')}</span>${p.name}<span aria-hidden="true">${p.id===paletteBook.active?'✓':'↗'}</span></button>`).join('')}</div>
+ <details><summary>Custom style palette${palette?' · '+esc(palette.name):''}</summary><form id="custom-palette" class="stack">
+ <label>Saved palette<select id="saved-palette">${options([['','New palette'],...presets.map(p=>[p.id,p.name]),...paletteBook.entries.map(p=>[p.id,p.name])],paletteBook.active)}</select></label>
  <label>Palette name<input name="paletteName" maxlength="48" required value="${esc(palette?.name||'')}" placeholder="Weekend lilacs"></label>
  <div class="row">${colors.map((c,i)=>`<label>Colour ${i+1}<input type="color" name="swatch" value="${esc(c)}"></label>`).join('')}</div>
  <p class="fine">Your outfit uses pieces closest to any of the three colours. Palettes are saved on this device.</p>
- <div class="row"><button>Save and style</button>${palette?'<button type="button" class="secondary" data-palette-off>Stop using palette</button>':''}</div></form></details>`;
+ <div class="row"><button>Save and style</button>${palette?'<button type="button" class="secondary" data-palette-off>Stop using palette</button>':''}</div></form></details></section>`;
 }
 async function setPaletteBook(next) { await write('palette-book',next);paletteBook=next;variation=0;await render(); }
 
@@ -153,6 +163,11 @@ main.addEventListener('input',e=>{if(e.target.id==='store-search'&&stores)drawSt
 main.addEventListener('change',async e=>{try{if(e.target.id==='saved-palette'){await setPaletteBook({...paletteBook,active:e.target.value});const form=main.querySelector('#custom-palette');form.closest('details').open=true;form.elements.paletteName.focus();return}if(e.target.id==='filter'){filter=e.target.value;render()}if(e.target.id==='occasion'){lookRequest=null;occasion=e.target.value;variation=0;render()}if(e.target.id==='inspo'&&e.target.files[0]){lookRequest=null;const next=await processPhoto(e.target.files[0]);await write('inspo',next);inspo=next;render()}}catch(err){notice(err.message)}});
 main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
  if(b.hasAttribute('data-install')||b.hasAttribute('data-backup')){await deviceAction(b,()=>({items,looks:saved,inspo}));return}
+ if(b.dataset.preset){
+   await setPaletteBook({...paletteBook,active:b.dataset.preset});
+   main.querySelector('[data-preset="'+b.dataset.preset+'"]').focus({preventScroll:true});
+   notice(activePalette().name+' palette applied');return
+ }
  if(b.hasAttribute('data-palette-off')){await setPaletteBook({...paletteBook,active:''});return}
  if(b.hasAttribute('data-reset-prompt')){lookRequest=null;variation=0;render();main.querySelector('#look-brief')?.focus();return}
  if(b.dataset.pin){lookRequest=null;const pin=foundPins.find(p=>p.id===b.dataset.pin);if(!pin)return;const color=b.parentElement.querySelector('input').value;const ref={pinId:pin.id,title:pin.title,color};await write('inspo',ref);inspo=ref;render();notice('Pin palette applied');return}
@@ -184,7 +199,7 @@ main.addEventListener('submit',async e=>{
    e.preventDefault();
    const name=e.target.elements.paletteName.value.trim();
    if(!name){notice('Give your palette a name.');return}
-   const id=paletteBook.active || crypto.randomUUID();
+   const id=paletteBook.entries.find(p=>p.id===paletteBook.active)?.id || crypto.randomUUID();
    const colors=new FormData(e.target).getAll('swatch');
    try {
      await setPaletteBook({active:id,entries:[...paletteBook.entries.filter(p=>p.id!==id),{id,name,colors}]});

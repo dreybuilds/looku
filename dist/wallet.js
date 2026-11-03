@@ -40,24 +40,25 @@ export async function mountWallet(element) {
   try { saved = JSON.parse(localStorage.getItem(storageKey)) || {}; }
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-  element.innerHTML = `<div class="wallet-grid"><section class="panel wallet-panel" data-device-wallet></section>
+  const heading = (number, title, description) => `<div class="wallet-heading"><span class="eyebrow">Wallet / ${number}</span><h3>${title}</h3><p>${description}</p></div>`;
+  element.innerHTML = `<div class="wallet-grid"><section class="panel wallet-panel">${heading('01','Create or see your address','Your public Stellar address lives here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></section>
+    <section class="panel wallet-panel" data-funding></section>
     <section class="panel wallet-panel">
-      <h3>Check a balance</h3><p>Check a public address to see what you have for your next look.</p>
+      ${heading('03','Check a balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
       <form data-account>
         <label>Network<select name="network"><option value="testnet">Stellar testnet · demo funds</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
         <label>Public wallet address<input name="address" required autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="56"></label>
         <button class="btn" type="submit">Check balance</button>
-      </form><p data-balance role="status"></p>
+      </form><p data-balance role="status"></p></div>
     </section>
     <section class="panel wallet-panel">
-      <h3>Save for a piece</h3><p>Set a target and track it against your wallet balance. Your funds stay available to you.</p>
+      ${heading('04','Save for a piece','Track a wardrobe goal against your balance. Your funds stay available to you.')}<div class="wallet-body">
       <form data-goal>
         <label>What are you saving for?<input name="piece" maxlength="70" placeholder="A cropped jacket" required></label>
         <label>Target in <span data-unit>USDC</span><input name="amount" type="number" min="0.01" max="10000000" step="0.01" placeholder="35.00" required></label>
         <button class="btn" type="submit">Save goal</button>
-      </form><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress>
+      </form><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
     </section>
-    <section class="panel wallet-panel" data-funding></section>
     </div>`;
   const account = element.querySelector('[data-account]');
   const goalForm = element.querySelector('[data-goal]');
@@ -105,21 +106,23 @@ export async function mountWallet(element) {
     clearBalance();
     const funding = element.querySelector('[data-funding]');
     if (network.value === 'testnet') {
-      funding.innerHTML = '<h3>Fund a demo wallet</h3><p>Paste your public testnet wallet address above, then request free XLM from Stellar Friendbot. Use test XLM for demo purchases.</p><button class="btn" type="button" data-friendbot>Get test XLM</button><p data-faucet-status role="status"></p><p>For real funds through MiniSend, choose Base mainnet above.</p>';
+      funding.innerHTML = heading('02','Get testnet XLM','Request free demo funds from Stellar Friendbot for a test purchase.') + '<div class="wallet-body"><label>Testnet funding address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Get test XLM</button><p data-faucet-status role="status"></p></div>';
+      funding.querySelector('input').value = address.value;
     } else if (network.value === 'base') {
-      funding.innerHTML = '<h3>Fund with MiniSend</h3><p>Open MiniSend, choose Buy, select USDC, and use your own Base wallet address. Review the rate and fees there. Return here to refresh your balance.</p><a href="https://app.minisend.xyz/" target="_blank" rel="noopener noreferrer">Open MiniSend · real funds ↗</a><p>Base deposits stay on Base. Demo checkout uses Stellar testnet.</p>';
+      funding.innerHTML = heading('02','Fund with MiniSend','Base mainnet · real funds') + '<div class="wallet-body"><p>Choose Buy in MiniSend, select USDC, and use your Base wallet address. Review the rate and fees there.</p><a href="https://app.minisend.xyz/" target="_blank" rel="noopener noreferrer">Open MiniSend ↗</a></div>';
     } else {
-      funding.innerHTML = '<h3>Receive Stellar USDC</h3><p>Use your Stellar wallet’s receive screen to fund it on mainnet. For M-Pesa through MiniSend, choose Base mainnet above.</p>';
+      funding.innerHTML = heading('02','Receive Stellar USDC','Stellar mainnet · real funds') + '<p>Use your Stellar wallet’s receive screen to fund it on mainnet.</p>';
     }
   }
   element.querySelector('[data-funding]').addEventListener('click', async event => {
     const button = event.target.closest('[data-friendbot]');
     if (!button || network.value !== 'testnet') return;
-    const destination = address.value.trim();
+    const faucetAddress = element.querySelector('[data-faucet-address]');
+    const destination = faucetAddress.value.trim();
     const note = element.querySelector('[data-faucet-status]');
     if (!/^G[A-Z2-7]{55}$/.test(destination)) {
       note.textContent = 'Create a device wallet or enter a public Stellar testnet address first.';
-      address.focus();
+      faucetAddress.focus();
       return;
     }
     button.disabled = true;
@@ -131,7 +134,12 @@ export async function mountWallet(element) {
     } catch { note.textContent = 'Could not reach Friendbot. Check your balance before trying again.'; }
     finally { button.disabled = false; }
   });
-  address.addEventListener('input', clearBalance);
+  element.addEventListener('input', event => {
+    const faucet = element.querySelector('[data-faucet-address]');
+    if (event.target === address && faucet) faucet.value = address.value;
+    if (event.target === faucet) address.value = faucet.value;
+    if (event.target === address || event.target === faucet) clearBalance();
+  });
   network.addEventListener('change', setNetwork);
   account.addEventListener('submit', async event => {
     event.preventDefault();
@@ -169,6 +177,7 @@ export async function mountWallet(element) {
     network.value = 'testnet';
     setNetwork();
     address.value = value;
+    element.querySelector('[data-faucet-address]').value = value;
     networkState.address = value;
     persist();
     status.textContent = 'Device wallet selected. Choose Get test XLM to fund it, or Check balance.';

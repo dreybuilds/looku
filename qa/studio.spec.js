@@ -180,3 +180,23 @@ test('invalid wallet proofs never grant a session and a valid challenge is singl
  await request.post('/api/account/logout',{headers,data:{}});
  expect((await (await request.get('/api/account')).json()).address).toBeNull();
 });
+test('preset survives refresh and funding uses the displayed testnet destination',async({page})=>{
+ await page.goto('/#stylist');
+ const sea=page.getByRole('button',{name:'Sea Glass',exact:true});
+ await sea.click();await expect(sea).toHaveAttribute('aria-pressed','true');await page.reload();
+ await expect(sea).toHaveAttribute('aria-pressed','true');
+ await expect(page.getByText(/Colour match: Sea Glass/)).toBeVisible();
+ await page.goto('/#wallet');
+ const funding=page.getByLabel('Testnet funding address');
+ const destination='G'+'A'.repeat(55);
+ await funding.fill(destination);
+ await expect(page.getByLabel('Public wallet address')).toHaveValue(destination);
+ await page.route('https://friendbot.stellar.org/**',route=>route.fulfill({status:200,body:'{}'}));
+ const request=page.waitForRequest(req=>req.url().startsWith('https://friendbot.stellar.org/'));
+ await page.getByRole('button',{name:'Get test XLM'}).click();
+ expect(new URL((await request).url()).searchParams.get('addr')).toBe(destination);
+ await expect(page.locator('[data-faucet-status]')).toContainText('Friendbot funded');
+ await page.getByRole('combobox',{name:'Network',exact:true}).selectOption('base');
+ await expect(funding).toHaveCount(0);
+ await expect(page.getByRole('link',{name:/Open MiniSend/})).toBeVisible();
+});
