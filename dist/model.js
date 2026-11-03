@@ -27,3 +27,11 @@ export async function processPhoto(file){
  const color='#'+([...bins].sort((a,b)=>b[1]-a[1])[0]?.[0]||'808080');return {photo:c.toDataURL('image/webp',.8),color}
  }finally{URL.revokeObjectURL(url)}
 }
+export async function restoreWardrobe({items,looks,inspo}){
+ const database=await db;
+ return new Promise((resolve,reject)=>{
+  const tx=database.transaction('state','readwrite'),store=tx.objectStore('state');
+  for(const [key,value] of Object.entries({items,looks,inspo}))store.put(value,key);
+  tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);
+ });
+}

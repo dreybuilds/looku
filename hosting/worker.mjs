@@ -3,6 +3,8 @@ import { makeChain, nativeAsset, HttpError } from '../payments/chain.mjs';
 import { ITEM, SKU, NETWORK, BASE } from '../payments/common.mjs';
 import { StrKey } from '@stellar/stellar-sdk';
 import assets from 'looku:public';
+import {backup} from './backup.mjs';
+import {searchPins} from './pinterest.mjs';
 const json=(status,obj,headers={})=>Response.json(obj,{status,headers:{'Cache-Control':'no-store',...headers}});
 const encoded=obj=>btoa(JSON.stringify(obj));
 function terms(chain){return {scheme:'exact',network:NETWORK,asset:nativeAsset,amount:'10000000',payTo:chain.merchant,maxTimeoutSeconds:120,extra:{areFeesSponsored:true}}}
@@ -31,7 +33,9 @@ async function reconcile(chain,order){
 function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Object.keys(b).length&&Object.entries(b).every(([k,v])=>typeof v==='object'?matches(a[k],v):a[k]===v)}
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
- if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:type==='image/png'?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(p==='/api/wardrobe-backup')return backup(request,env);
+ if(p==='/api/pinterest/search')return searchPins(request,env);
  if(!p.startsWith(BASE+'/'))return json(404,{error:'Not found'});
  if(request.headers.has('origin')&&request.headers.get('origin')!==url.origin)throw new HttpError(403,'Use checkout from the looku studio.');
  const chain=makeChain(env),offer=terms(chain),bucket=env.ORDERS;
