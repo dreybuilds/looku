@@ -6,13 +6,14 @@ import { checkout, makeChain, HttpError } from './checkout.mjs'
 import { BASE, NETWORK } from './common.mjs'
 
 const bytes = value => Buffer.from(JSON.stringify(value)).toString('base64')
-export function service(shop,{origin='http://127.0.0.1:4020', allowedOrigin}={}) {
+export function service(shop,{origin:configuredOrigin, allowedOrigin}={}) {
   return createServer({maxHeaderSize:32768},async (req,res) => {
     const json = (status,value,headers={}) => {
       res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store',...headers})
       res.end(JSON.stringify(value))
     }
     try {
+      const origin = configuredOrigin || 'http://127.0.0.1:' + req.socket.localPort
       const url = new URL(req.url,origin)
       const path = url.pathname
       if (req.headers.origin && req.headers.origin !== new URL(origin).origin && req.headers.origin !== allowedOrigin)

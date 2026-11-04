@@ -34,7 +34,30 @@ async function mountAccount(panel,wallet) {
    const button=document.createElement('button');
    button.textContent='Sign out';button.className='secondary';
    button.onclick=async()=>{try{await accountCall('/api/account/logout',{});await mountAccount(panel,wallet)}catch(e){note.textContent=e.message}};
-   panel.append(button);
+   const history=document.createElement('button');
+   history.type='button';history.textContent='View wallet purchases';history.className='secondary';
+   const list=document.createElement('ul');
+   let cursor=null;
+   history.onclick=async()=>{
+     history.disabled=true;
+     try{
+       const page=await accountCall('/api/account/receipts'+(cursor?'?cursor='+encodeURIComponent(cursor):''));
+       for(const receipt of page.receipts){
+         const entry=document.createElement('li');
+         entry.textContent='Cropped jacket · '+receipt.status+' ';
+         for(const [label,hash] of [['Purchase',receipt.purchaseTx],['Commission',receipt.payoutTx]]){
+           if(!/^[0-9a-f]{64}$/i.test(hash||''))continue;
+           const link=document.createElement('a');link.textContent=label+' ↗ ';
+           link.href='https://stellar.expert/explorer/testnet/tx/'+hash;
+           link.target='_blank';link.rel='noopener noreferrer';entry.append(link);
+         }
+         list.append(entry);
+       }
+       if(!list.children.length)note.textContent='No confirmed purchases indexed for this wallet yet.';
+       cursor=page.next;history.hidden=!cursor;history.textContent='Load more purchases';
+     }catch(e){note.textContent=e.message}finally{history.disabled=false}
+   };
+   panel.append(button,history,list);
  }
  form.onsubmit=async event=>{
    event.preventDefault();

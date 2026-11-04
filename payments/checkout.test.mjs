@@ -49,3 +49,31 @@ test('rejects wrong network, altered price and a swapped order before settling',
   await assert.rejects(shop.pay(id,proof,{url:'/different-order'}),{status:400})
   assert.equal(counts.settles,0)
 })
+
+import {planPurchase,chooseOffer,checkBudget} from './shopping-agent.mjs'
+import {indexPaidOrder,walletReceipts} from '../hosting/wallet-receipts.mjs'
+
+test('agent refuses over-budget, stale, substituted and unsponsored offers before signing',()=>{
+ const {shop,makeOrder}=fixture()
+ const id=makeOrder(),address=shop.receipt(id).address,resource='https://demo.test/orders/'+id+'/checkout'
+ const input={address,sku:SKU,resource}
+ const challenge={x402Version:2,resource:{url:resource},accepts:[shop.offer]}
+ for(const limit of ['0.9999999','1e5','Infinity','-5','0.00000001'])assert.throws(()=>checkBudget(limit))
+ const plan=planPurchase({...input,limit:'2',catalog:shop.catalog},0)
+ assert.equal(chooseOffer(plan,challenge,input,5000),shop.offer)
+ assert.throws(()=>chooseOffer(plan,challenge,input,120000))
+ for(const changes of [{address:'other'},{resource:resource+'/different'},{sku:'other'}])
+   assert.throws(()=>chooseOffer(plan,challenge,{...input,...changes},0))
+ for(const changes of [{amount:'20000000'},{payTo:address},{asset:'USDC'},{network:'stellar:pubnet'},{extra:{areFeesSponsored:false}},{maxTimeoutSeconds:3600}])
+   assert.throws(()=>chooseOffer(plan,{...challenge,accepts:[{...shop.offer,...changes}]},input,0))
+})
+test('a wallet history exposes only its own confirmed orders, including after a retry',async()=>{
+ const rows=new Map()
+ const store={put:async(k,v)=>rows.set(k,v),list:async({prefix})=>({objects:[...rows.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))}),get:async(k)=>rows.has(k)?{json:async()=>rows.get(k)}:null}
+ for(const [id,address,purchaseTx] of [['a','alice','paid'],['b','bob','paid'],['c','alice',null]]){
+   const row={id,address,purchaseTx,status:'complete'}
+   rows.set('orders/'+id,row);await indexPaidOrder(store,row);await indexPaidOrder(store,row)
+ }
+ assert.deepEqual((await walletReceipts(store,'alice')).receipts.map(r=>r.id),['a'])
+ assert.deepEqual((await walletReceipts(store,'bob')).receipts.map(r=>r.id),['b'])
+})

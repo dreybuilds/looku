@@ -1,8 +1,10 @@
 # looku
 A personal wardrobe studio for the EmpowerHer agentic payments hackathon. Intended domain: **lookuwear.xyz**, pending registration and DNS setup.
 
+See the [architecture and Demo Day walkthrough](ARCHITECTURE.md) for the shopping agent, wallet identity, settlement boundaries and pilot roadmap.
+
 ## Try it
-Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four illustrated pieces are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
+Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four sample garment portraits are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
 
 When a look has no layer, review the demo boutique’s cropped jacket. Create a device wallet in Wallet, download its encrypted recovery file, and choose Get test XLM. Use its passphrase at checkout, or connect a funded Freighter **Stellar Testnet** account and approve the quoted **1 test XLM**. The x402 client signs the Stellar authorization entry. The boutique receives the payment, then sends **0.10 test XLM** to the platform account. Open Wallet → Purchase receipts and refresh pending entries. A separate verified demo sale links to both ledger records. No physical merchandise ships.
 

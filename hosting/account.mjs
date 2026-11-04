@@ -1,3 +1,4 @@
+import {walletReceipts} from './wallet-receipts.mjs';
 import {Keypair,StrKey} from '@stellar/stellar-sdk';
 const reply=(status,data,cookie)=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
 const encode=text=>new TextEncoder().encode(text);
@@ -28,6 +29,11 @@ const wardrobeTypes=['shirt','trousers','shoe','jacket','dress'];
 const occasions=['Everyday','Office','Evening','Weekend'];
 export async function account(req,env){
  const url=new URL(req.url),route=url.pathname,store=env.ORDERS;
+ if(route==='/api/account/receipts'&&req.method==='GET'){
+   const user=await session(req,store);
+   if(!user)return reply(401,{error:'Sign in with your wallet to see its purchases.'});
+   return reply(200,await walletReceipts(store,user.address,url.searchParams.get('cursor')));
+ }
  if(route==='/api/account'&&req.method==='GET'){
    const user=await session(req,store);
    return reply(200,{address:user?.address||null,gptAvailable:Boolean(env.OPENAI_API_KEY)});

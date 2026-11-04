@@ -13,6 +13,11 @@ const bucket={
    const entry={etag:crypto.randomUUID(),bytes:typeof value==='string'?new TextEncoder().encode(value):new Uint8Array(value)};
    rows.set(key,entry);return {etag:entry.etag};
  },
+ async list({prefix,limit,cursor}){
+   const keys=[...rows.keys()].filter(key=>key.startsWith(prefix)).sort();
+   const offset=Number(cursor||0),slice=keys.slice(offset,offset+limit);
+   return {objects:slice.map(key=>({key})),truncated:offset+limit<keys.length,cursor:String(offset+limit)};
+ },
  async delete(key){rows.delete(key)}
 };
 const host='http://127.0.0.1:4315';

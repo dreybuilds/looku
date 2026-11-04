@@ -1,3 +1,4 @@
+import { planPurchase, chooseOffer } from './shopping-agent.mjs'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
 import { createEd25519Signer } from '@x402/stellar'
 import { checkout, makeChain } from './checkout.mjs'
@@ -17,7 +18,9 @@ try {
   const response = await fetch(url,{method:'POST'})
   if (response.status !== 402) throw Error('Expected an x402 challenge')
   const challenge = await response.json()
-  const offer = challenge.accepts[0]
+  const catalog = await (await fetch(base+'/catalog')).json()
+  const plan = planPurchase({sku:SKU,address:shopper.address,limit:'1.00',catalog})
+  const offer = chooseOffer(plan,challenge,{sku:SKU,address:shopper.address,resource:url})
   const signed = await new ExactStellarScheme(shopper).createPaymentPayload(2,offer)
   const payload = {...signed,accepted:offer,resource:challenge.resource}
   const paid = await fetch(url,{method:'POST',headers:{'Payment-Signature':Buffer.from(JSON.stringify(payload)).toString('base64')}})

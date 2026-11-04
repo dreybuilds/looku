@@ -143,7 +143,7 @@ test('accessible pages, dialog names and viewport fit',async({page})=>{
 test('custom palette persistence, sample portraits and local retailer applications',async({page})=>{
  await page.goto('/');
  const images=page.locator('.sample-photo');await expect(images).toHaveCount(4);
- expect(await images.evaluateAll(imgs=>imgs.every(i=>i.complete&&i.naturalWidth>0))).toBe(true);
+ await images.evaluateAll(imgs=>Promise.all(imgs.map(image=>image.decode())));
  await nav(page,'Stylist');
  await page.getByText('Custom style palette',{exact:true}).click();
  await page.getByLabel('Palette name').fill('Orchid weekend');
@@ -216,4 +216,17 @@ test('preset survives refresh and funding uses the displayed testnet destination
  await expect(funding).toHaveCount(0);
  await toggleWallet(page,'Fund with MiniSend');
  await expect(page.getByRole('link',{name:/Open MiniSend/})).toBeVisible();
+});
+test('shopping agent explains its decision before wallet access',async({page})=>{
+ await page.goto('/#stylist');
+ await page.getByRole('button',{name:'Review purchase'}).click();
+ const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
+ await dialog.getByLabel('Shopping agent limit').fill('0.75');
+ await dialog.getByRole('button',{name:'Check my limit'}).click();
+ await expect(dialog.getByRole('status')).toContainText('above your limit');
+ await dialog.getByLabel('Shopping agent limit').fill('1');
+ await dialog.getByRole('button',{name:'Check my limit'}).click();
+ await expect(dialog.getByRole('status')).toContainText('fits your limit');
+ const response=await page.request.get('/api/account/receipts');
+ expect(response.status()).toBe(401);
 });

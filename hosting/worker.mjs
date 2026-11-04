@@ -1,3 +1,4 @@
+import {indexPaidOrder} from './wallet-receipts.mjs';
 import {account} from './account.mjs';
 // R2's conditional writes choose one signed envelope per order before any broadcast.
 import { makeChain, nativeAsset, HttpError } from '../payments/chain.mjs';
@@ -50,7 +51,7 @@ async function handle(request,env){
  const route=p.match(/^\/api\/payments\/orders\/([a-f0-9-]{36})(\/checkout)?$/);
  if(!route)throw new HttpError(404,'Unknown route.');
  const order=await load(bucket,route[1]),{row,update}=order;
- if(!route[2]&&request.method==='GET'){await reconcile(chain,order);return json(200,receipt(row))}
+ if(!route[2]&&request.method==='GET'){await reconcile(chain,order);await indexPaidOrder(bucket,row);return json(200,receipt(row))}
  if(!route[2]||request.method!=='POST')throw new HttpError(405,'Unsupported method.');
  if(row.status==='awaiting_signature'){
  const resource={url:url.origin+p,description:'looku demo cropped jacket',mimeType:'application/json'};
@@ -70,6 +71,7 @@ async function handle(request,env){
  }catch(err){if(row.status==='awaiting_signature')throw err;return json(200,receipt(row))}
  }
  try{await reconcile(chain,order)}catch(err){if(err.status)throw err}
+ await indexPaidOrder(bucket,row);
  return json(200,receipt(row),row.purchaseTx?{'Payment-Response':encoded({success:true,network:NETWORK,transaction:row.purchaseTx,payer:row.address})}:{});
 }
 export default {async fetch(request,env){try{return await handle(request,env)}catch(e){if(!e.status)console.error('Checkout unavailable:',e.name);return json(e.status||503,{error:e.status?e.message:'Could not reach the testnet checkout service. Refresh your receipt to retry.'})}}};

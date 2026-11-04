@@ -125,6 +125,7 @@ function drawReceipts(){document.querySelector('#receipts').innerHTML=receipts.l
 async function record(r){const next=[r,...receipts.filter(x=>x.id!==r.id)];await write('receipts',next);receipts=next}
 async function checkout() {
   modal(`<div class="eyebrow">Demo boutique / Stellar testnet</div><h2>Cropped jacket</h2><p>Order total <b>1 test XLM</b>. The boutique pays looku a 0.10 test XLM commission. No physical item ships.</p>
+    <section class="panel stack"><label>Shopping agent limit · test XLM<input data-agent-limit type="text" inputmode="decimal" value="1.00" maxlength="16"></label><p class="fine">Approve one jacket from the demo boutique. The agent checks the price and merchant before your wallet signs.</p><button type="button" class="secondary" data-check-limit>Check my limit</button></section>
     <form class="stack" data-local-pay hidden><label>Wallet passphrase<input type="password" name="phrase" autocomplete="current-password" required></label><button>Pay 1 test XLM with device wallet</button></form>
     <div class="actions"><button class="secondary" data-freighter>Connect Freighter</button><a href="#wallet" data-create>Create a testnet wallet</a></div>
     <p role="status"></p>`);
@@ -132,6 +133,13 @@ async function checkout() {
   const extension = body.querySelector('[data-freighter]');
   const create = body.querySelector('[data-create]');
   const message = body.querySelector('[role=status]');
+  const budget = body.querySelector('[data-agent-limit]');
+  body.querySelector('[data-check-limit]').onclick = async () => {
+    try {
+      (await paymentAPI()).checkBudget(budget.value.trim());
+      message.textContent='The jacket fits your limit. Choose a wallet to approve this purchase.';
+    } catch (error) { message.textContent=error.message; }
+  };
   create.onclick = () => { sessionStorage.setItem('looku.return-to-order','1'); dialog.close(); };
   let wallet, address;
   try { wallet = await walletRecord(); } catch (e) { message.textContent = e.message; }
@@ -142,6 +150,8 @@ async function checkout() {
     controls.forEach(button => button.disabled = true);
     try {
       const api = await paymentAPI();
+      const limit = budget.value.trim();
+      api.checkBudget(limit);
       if (!useLocal && !address) {
         address = await api.connectWallet();
         message.textContent = 'Connected ' + address;
@@ -151,7 +161,7 @@ async function checkout() {
       const signer = useLocal ? await api.unlockWallet(wallet, local.elements.phrase.value) : undefined;
       local.reset();
       if (!dialog.open || !local.isConnected) return;
-      const receipt = await api.buyPiece({sku:'cropped-jacket', address:useLocal ? wallet.address : address, signer,
+      const receipt = await api.buyPiece({limit,sku:'cropped-jacket', address:useLocal ? wallet.address : address, signer,
         onOrder:id => { if (!receipts.some(r => r.id === id)) return record({id,status:'awaiting_signature',commission:'0.10'}).catch(() => notice('Receipt storage unavailable')); },
         onStatus:text => { message.textContent = text; }});
       await record(receipt);

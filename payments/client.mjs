@@ -1,3 +1,5 @@
+import { planPurchase, chooseOffer } from './shopping-agent.mjs'
+export { checkBudget } from './shopping-agent.mjs'
 import freighter from '@stellar/freighter-api'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
 import { BASE, ITEM, NETWORK, PASSPHRASE, SKU } from './common.mjs'
@@ -22,10 +24,20 @@ async function read(path, opts = {}) {
 }
 export const getCatalog = () => read('catalog')
 export const getReceipt = id => read('orders/' + encodeURIComponent(id))
-export async function buyPiece({sku = SKU, address, signer, onStatus = () => {}, onOrder = () => {}}) {
+export function buyPiece(options) {
+  const locks = globalThis.navigator?.locks
+  if (!locks) return executeOrder(options)
+  return locks.request('looku-purchase:' + (options.address || 'extension') + ':' + (options.sku || SKU),
+    {ifAvailable:true}, lock => {
+      if (!lock) throw Error('This purchase is open in another tab. Check its receipt before retrying.')
+      return executeOrder(options)
+    })
+}
+async function executeOrder({sku = SKU, address, signer, limit = ITEM.amount, onStatus = () => {}, onOrder = () => {}}) {
   if (sku !== SKU) throw Error('Unknown demo product.')
   const active = signer?.address || await connectWallet()
   if (address && active !== address) throw Error('The connected wallet has changed. Review this order again.')
+  const plan = planPurchase({limit,address:active,sku,catalog:await getCatalog()})
   const storageKey = key(active, sku)
   let id = localStorage.getItem(storageKey)
   if (id) {
@@ -48,13 +60,7 @@ export async function buyPiece({sku = SKU, address, signer, onStatus = () => {},
     if (!response.ok) throw Error(challenge.error || 'Unable to request payment.')
     return challenge
   }
-  const [offer] = challenge.accepts
-  const catalog = await getCatalog()
-  if (offer.network !== NETWORK || offer.scheme !== 'exact' ||
-      offer.asset !== catalog.asset || offer.payTo !== catalog.merchant ||
-      offer.amount !== '10000000' || !offer.extra.areFeesSponsored) {
-    throw Error('The testnet payment terms changed. Review the quote again.')
-  }
+  const offer = chooseOffer(plan,challenge,{address:active,sku,resource:url.href})
   onStatus(signer ? 'Signing the testnet purchase on this device…' : 'Approve ' + ITEM.amount + ' test XLM in Freighter.')
   const scheme = new ExactStellarScheme(signer || {address:active, signAuthEntry:freighter.signAuthEntry})
   const authorization = await scheme.createPaymentPayload(2, offer)
