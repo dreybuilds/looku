@@ -56,7 +56,7 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 .palette-library{display:grid;gap:16px}.palette-library h2{font-size:clamp(30px,3.4vw,46px)}.palette-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
 .palette-choice{justify-content:start;text-align:left;gap:12px;border:1px solid var(--line);border-radius:12px;background:#fffaff;color:var(--ink);padding:12px;transition:transform .18s ease,box-shadow .18s ease}.palette-choice span:last-child{margin-left:auto}.palette-choice[aria-pressed=true]{border-color:#693078;box-shadow:inset 0 0 0 1px #693078}.colour-strip{display:flex;overflow:hidden;border-radius:6px}.colour-strip i{width:13px;height:26px}
 .palette-library details{border-top:1px solid var(--line);padding-top:12px}.palette-library details form{margin-top:14px}
-@media(hover:hover) and (pointer:fine){.wallet-grid>.wallet-panel:hover,.palette-choice:hover{transform:translateY(-3px);border-color:#b491be;box-shadow:0 8px 22px #4c26551a}}
+@media(hover:hover) and (pointer:fine){.wallet-grid>.wallet-panel:hover,.palette-choice:hover{border-color:#b491be;box-shadow:0 8px 22px #4c26551a}.palette-choice:hover{transform:translateY(-3px)}}
 .wallet-grid>.wallet-panel:focus-within{border-color:#94649d}.palette-choice:focus-visible{outline:3px solid #713980;outline-offset:3px}
 @media(max-width:700px){.wallet-grid>.wallet-panel{grid-template-columns:minmax(0,1fr);gap:18px}}
 @media(prefers-reduced-motion:reduce){.wallet-grid>.wallet-panel,.palette-choice{transition:none}.wallet-grid>.wallet-panel:hover,.palette-choice:hover{transform:none}}
