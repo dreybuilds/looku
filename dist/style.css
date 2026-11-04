@@ -200,13 +200,13 @@ details.panel:not(.wallet-panel)[open] > :not(summary) {
 .email-signin .actions { margin-top: .125rem; }
 .email-signin p[role=status]:not(:empty) { margin-top: 1rem; }
 #admin-workspace .email-signin button { margin: 0; }
-.email-signin::backdrop {
+.account-trigger + dialog::backdrop {
   background: linear-gradient(115deg, #231328a8 20%, #58385b91 50%, #231328a8 80%);
   background-size: 220% 100%;
   background-position: 50% 50%;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .email-signin[open]::backdrop {
+  .account-trigger + dialog[open]::backdrop {
     animation: signin-light 3s ease-in-out infinite alternate;
   }
   @keyframes signin-light {
