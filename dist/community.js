@@ -10,7 +10,7 @@ async function call(path,options){
  let res;
  const auth=await emailHeaders();
  try{res=await fetch('/api/community/'+path,{cache:'no-store',...options,headers:{...options?.headers,...auth}})}catch{throw Error('Go online to use Community.')}
- let data;try{data=await res.json()}catch{throw Error('Community is unavailable. Open the hosted studio and try again.')}
+ let data;try{data=await res.json()}catch{throw Error('Community couldn’t load. Check your connection and try again.')}
  if(!res.ok)throw Object.assign(Error(data.error||'Community is unavailable.'),{status:res.status,id:data.id});
  return data;
 }

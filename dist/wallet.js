@@ -106,7 +106,7 @@ export async function mountWallet(element) {
     clearBalance();
     const funding = element.querySelector('[data-funding]');
     if (network.value === 'testnet') {
-      funding.innerHTML = heading('02','Get testnet XLM','Request free demo funds from Stellar Friendbot for a test purchase.') + '<div class="wallet-body"><label>Testnet funding address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Get test XLM</button><p data-faucet-status role="status"></p></div>';
+      funding.innerHTML = heading('02','Get demo funds','Request free test XLM from Stellar to try a demo purchase.') + '<div class="wallet-body"><label>Demo wallet address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Get test XLM</button><p data-faucet-status role="status"></p></div>';
       funding.querySelector('input').value = address.value;
     } else if (network.value === 'base') {
       funding.innerHTML = heading('02','Fund with MiniSend','Base mainnet · real funds') + '<div class="wallet-body"><p>Choose Buy in MiniSend, select USDC, and use your Base wallet address. Review the rate and fees there.</p><a href="https://app.minisend.xyz/" target="_blank" rel="noopener noreferrer">Open MiniSend ↗</a></div>';

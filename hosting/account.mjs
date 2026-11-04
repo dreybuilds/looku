@@ -47,10 +47,10 @@ export async function account(req,env){
  }
  let data;try{data=await req.json()}catch{return reply(400,{error:'Invalid request.'})}
  if(route==='/api/stylist/gpt'){
-   if(!env.OPENROUTER_API_KEY)return reply(503,{error:'GPT styling is awaiting an API connection. Use on-device styling.'});
-   if(!await session(req,store))return reply(401,{error:'Sign in with your device wallet in Wallet, then try GPT.'});
+   if(!env.OPENROUTER_API_KEY)return reply(503,{error:'Online styling advice is unavailable right now. Choose Build my look to put an outfit together on this device.'});
+   if(!await session(req,store))return reply(401,{error:'Sign in on the Wallet tab, then return here and choose Get styling advice.'});
    if(typeof data.prompt!=='string'||!data.prompt.trim()||data.prompt.length>180)return reply(400,{error:'Describe a look in 1–180 characters.'});
-   if(!await takeQuota(store))return reply(429,{error:'The demo has used its daily GPT allowance. On-device styling is available.'});
+   if(!await takeQuota(store))return reply(429,{error:'Online advice has reached its daily limit. Choose Build my look for now, or try again tomorrow.'});
    const string={type:'string'}, array={type:'array',items:string};
    const schema={type:'object',additionalProperties:false,properties:{occasion:{type:'string',enum:occasions},colors:array,prefer:{type:'array',items:{type:'string',enum:wardrobeTypes}},exclude:{type:'array',items:{type:'string',enum:wardrobeTypes}},tip:string},required:['occasion','colors','prefer','exclude','tip']};
    let result;
@@ -60,7 +60,7 @@ export async function account(req,env){
      const body=await upstream.json();
      result=JSON.parse(body.output.flatMap(o=>o.content||[]).find(c=>c.type==='output_text').text);
      if(!occasions.includes(result.occasion)||!Array.isArray(result.colors)||!Array.isArray(result.prefer)||!Array.isArray(result.exclude)||typeof result.tip!=='string')throw Error();
-   }catch{return reply(502,{error:'GPT could not finish this look. Try on-device styling or retry later.'})}
+   }catch{return reply(502,{error:'We couldn’t get a styling tip this time. Try again or choose Build my look.'})}
    return reply(200,{occasion:result.occasion,colors:result.colors.filter(x=>/^#[a-f0-9]{6}$/i.test(x)).slice(0,3),prefer:result.prefer.filter(x=>wardrobeTypes.includes(x)),exclude:result.exclude.filter(x=>wardrobeTypes.includes(x)),tip:result.tip.slice(0,350)});
  }
  const address=data?.address;

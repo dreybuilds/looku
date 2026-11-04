@@ -40,8 +40,8 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
 test('checkout detour, wallet recovery, savings and wrong signing passphrase',async({page,browser})=>{
  await page.goto('/#stylist');
  await page.getByRole('button',{name:'Review purchase'}).click();
- await page.getByLabel('Shopping agent limit').fill('0.75');
- await page.getByRole('link',{name:'Create a testnet wallet'}).click();
+ await page.getByLabel('Spending limit').fill('0.75');
+ await page.getByRole('link',{name:'Create a demo wallet'}).click();
  const form=page.locator('[data-device-wallet] form').first();
  const phrase=crypto.randomUUID();
  await form.getByLabel('Wallet passphrase').fill(phrase);
@@ -71,8 +71,8 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await expect(page.getByText(/Cropped jacket · 12 XLM/)).toBeVisible();
  await page.getByRole('button',{name:'Return to checkout'}).click();
  const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
- await expect(dialog.getByLabel('Shopping agent limit')).toHaveValue('0.75');
- await dialog.getByLabel('Shopping agent limit').fill('1');
+ await expect(dialog.getByLabel('Spending limit')).toHaveValue('0.75');
+ await dialog.getByLabel('Spending limit').fill('1');
  await dialog.getByLabel('Wallet passphrase').fill('incorrect phrase');
  await dialog.getByRole('button',{name:'Pay 1 test XLM with device wallet'}).click();
  await expect(dialog.getByRole('status')).toContainText('Could not unlock');
@@ -207,7 +207,7 @@ test('preset survives refresh and funding uses the displayed testnet destination
  await expect(sea).toHaveAttribute('aria-pressed','true');
  await expect(page.getByText(/Colour match: Sea Glass/)).toBeVisible();
  await page.goto('/#wallet');
- await toggleWallet(page,'Get testnet XLM');
+ await toggleWallet(page,'Get demo funds');
  const funding=page.getByLabel('Testnet funding address');
  const destination='G'+'A'.repeat(55);
  await funding.fill(destination);
@@ -227,10 +227,10 @@ test('shopping agent explains its decision before wallet access',async({page})=>
  await page.goto('/#stylist');
  await page.getByRole('button',{name:'Review purchase'}).click();
  const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
- await dialog.getByLabel('Shopping agent limit').fill('0.75');
+ await dialog.getByLabel('Spending limit').fill('0.75');
  await dialog.getByRole('button',{name:'Check my limit'}).click();
  await expect(dialog.getByRole('status')).toContainText('above your limit');
- await dialog.getByLabel('Shopping agent limit').fill('1');
+ await dialog.getByLabel('Spending limit').fill('1');
  await dialog.getByRole('button',{name:'Check my limit'}).click();
  await expect(dialog.getByRole('status')).toContainText('fits your limit');
  const response=await page.request.get('/api/account/receipts');

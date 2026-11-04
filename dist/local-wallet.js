@@ -21,12 +21,12 @@ export async function walletRecord(newWallet) {
 export async function accountCall(path, data) {
  const response=await fetch(path,data?{method:'POST',headers:{'Content-Type':'application/json','X-Looku-Action':'wallet-account'},body:JSON.stringify(data)}:{cache:'no-store'});
  let info;
- try {info=await response.json()} catch {throw Error('Go online and open the hosted studio to sign in.')}
+ try {info=await response.json()} catch {throw Error('Check your connection and try signing in again.')}
  if(!response.ok)throw Error(info.error||'Account service unavailable.');
  return info;
 }
 async function mountAccount(panel,wallet) {
- panel.innerHTML='<h3>looku account</h3><p>Your testnet wallet is your account. Your first signature creates your wallet account. Community also offers email sign-in. Sign in for 12 hours to publish looks, list pieces and manage your posts. No test funds are needed.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
+ panel.innerHTML='<h3>looku account</h3><p>Sign in with your demo wallet to get styling advice or manage your Community posts. Your first sign-in creates an account and lasts up to 12 hours. Community also offers email sign-in.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
  const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
  function signedIn(){
    form.hidden=true;
@@ -88,7 +88,7 @@ export async function mountDeviceWallet(panel, selectAddress) {
     };
   }
   if (wallet) { showWallet(); return wallet.address; }
-  panel.innerHTML = `<h3>Create a testnet wallet</h3><p>Make a wallet on this device for demo purchases. Your passphrase protects the signing key.</p>
+  panel.innerHTML = `<h3>Create a demo wallet</h3><p>Make a wallet on this device for demo purchases. Your passphrase unlocks the wallet when you sign in or approve a payment.</p>
     <form><label>Wallet passphrase<input type="password" name="phrase" required minlength="12" autocomplete="new-password" placeholder="At least 12 characters"></label>
     <label>Confirm passphrase<input type="password" name="repeat" required autocomplete="new-password"></label><button>Create wallet</button></form>
     <details><summary>Restore a wallet</summary><form><label>looku recovery file<input type="file" name="backup" required accept=".json"></label><label>Wallet passphrase<input type="password" name="phrase" required autocomplete="current-password"></label><button>Restore wallet</button></form></details><p role="status"></p>`;

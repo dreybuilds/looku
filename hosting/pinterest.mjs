@@ -13,7 +13,7 @@ export async function searchPins(request,env){
  if(request.method!=='POST')return answer(405,{error:'Use the Pinterest search form.'});
  if(request.headers.get('Origin')!==new URL(request.url).origin)return answer(403,{error:'Open Pinterest search in looku.'});
  // Bind a privately provisioned token to its owner before allowing any tool call.
- if(!env.PINTEREST_ACCESS_TOKEN||!env.PINTEREST_OWNER_ID||request.headers.get('oai-authenticated-user-id')!==env.PINTEREST_OWNER_ID)return answer(503,{error:'Pinterest MCP is waiting for an authorized Pinterest connection. You can still use a reference photo on this device.'});
+ if(!env.PINTEREST_ACCESS_TOKEN||!env.PINTEREST_OWNER_ID||request.headers.get('oai-authenticated-user-id')!==env.PINTEREST_OWNER_ID)return answer(503,{error:'Pinterest search is unavailable right now. You can use an inspiration photo from your device.'});
  const {query}=await request.json();
  if(typeof query!=='string'||!query.trim()||query.length>120)return answer(400,{error:'Enter a search of 1–120 characters.'});
  let session,version='2025-03-26',seq=0;
@@ -53,5 +53,5 @@ export async function searchPins(request,env){
   }
   collect(result.structuredContent);for(const part of result.content||[])if(part.type==='text'){try{collect(JSON.parse(part.text))}catch{/* Unstructured content is not a Pin record. */}}
   return answer(200,{pins:[...pins.values()]});
- }catch{return answer(502,{error:'Pinterest MCP could not complete the search. Check the connection and access scopes.'})}
+ }catch{return answer(502,{error:'Pinterest couldn’t finish this search. Try again later or choose an inspiration photo.'})}
 }
