@@ -71,6 +71,7 @@ export async function mountAccount(panel,wallet,onSignIn, owner=false) {
      await accountCall('/api/account/verify',{address:wallet.address,nonce:challenge.nonce,signature});
      signedIn();
      if(panel.isConnected&&location.hash==='#wallet/admin')location.hash='admin';
+     if(panel.isConnected&&location.hash==='#wallet/bookings')location.hash='bookings';
      if(panel.isConnected&&location.hash==='#wallet/support')location.hash='support';
    }catch(e){note.textContent=e.message}finally{form.reset();button.disabled=false}
  };

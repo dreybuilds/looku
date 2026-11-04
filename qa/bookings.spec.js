@@ -1,0 +1,49 @@
+import {test,expect} from '@playwright/test';
+import {Keypair} from '../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js';
+
+test('owner switches control listings and booking requests while customers retain private booking history',async({page,browser,baseURL})=>{
+  const token=await (await page.request.get('/qa-privy-token')).text();
+  await page.route('**/privy.js',route=>route.fulfill({contentType:'text/javascript',body:'export async function accessToken(){return '+JSON.stringify(token)+'}'}));
+  await page.goto('/app#studio');
+  await page.evaluate(()=>localStorage.setItem('looku.privy-session','1'));
+  await page.getByRole('navigation').getByRole('link',{name:'Book a stylist'}).click();
+  await page.getByLabel('Service',{exact:true}).selectOption('Makeup artist');
+  const date=new Date(Date.now()+7*86400000).toISOString().slice(0,16);
+  await page.getByLabel('Preferred date and time').fill(date);
+  await page.getByLabel('Contact email').fill('booking@example.org');
+  await page.getByRole('button',{name:'Request booking'}).click();
+  await expect(page.getByRole('heading',{name:'Makeup artist · Requested'})).toBeVisible();
+  const other=await (await page.request.get('/qa-privy-token')).text();
+  expect((await (await page.request.get('/api/bookings',{headers:{Authorization:'Bearer '+other}})).json()).items).toEqual([]);
+  expect((await page.request.get('/api/admin/bookings')).status()).toBe(403);
+  expect((await page.request.post('/api/admin/features',{data:{id:'donate',enabled:false}})).status()).toBe(403);
+  const owner=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
+  const key=Keypair.fromRawEd25519Seed(Buffer.alloc(32,7)),address=key.publicKey();
+  const headers={Origin:baseURL,'X-Looku-Action':'wallet-account'};
+  const challenge=await (await owner.request.post('/api/account/challenge',{headers,data:{address}})).json();
+  const signature=Buffer.from(key.sign(Buffer.from(challenge.message))).toString('base64');
+  expect((await owner.request.post('/api/account/verify',{headers,data:{address,signature,nonce:challenge.nonce}})).status()).toBe(200);
+  if((await (await owner.request.get('/api/admin/access')).json()).state==='enroll'){
+    await owner.request.post('/api/admin/enroll',{headers:{Origin:baseURL,'X-Looku-Action':'admin'},data:{address}});
+  }
+  try{
+    const admin=await owner.newPage();await admin.goto('/owner.html');
+    await admin.getByRole('button',{name:'Manage bookings'}).click();
+    await admin.getByRole('article').filter({has:admin.getByRole('heading',{name:'Makeup artist · Requested'})}).first().getByRole('button',{name:'Confirm booking'}).click();
+    await page.reload();await expect(page.getByRole('heading',{name:'Makeup artist · Confirmed'})).toBeVisible();
+    await admin.getByRole('button',{name:'App features',exact:true}).click();
+    for(const name of ['Closet donations','Stylist and beauty booking requests']){
+      const control=admin.getByRole('switch',{name});await control.click();await expect(control).not.toBeChecked();
+    }
+    await page.reload();await expect(page.getByText(/New booking requests are paused/)).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Makeup artist · Confirmed'})).toBeVisible();
+    expect((await page.request.post('/api/bookings',{data:{}})).status()).toBe(403);
+    expect((await page.request.get('/api/community/donate')).status()).toBe(403);
+    expect((await page.request.get('/api/community/sale')).status()).toBe(200);
+    await page.goto('/app#community/donate');await expect(page.getByRole('heading',{name:'Feature paused'})).toBeVisible();
+    for(const name of ['Closet donations','Stylist and beauty booking requests']){
+      const control=admin.getByRole('switch',{name});await control.click();await expect(control).toBeChecked();
+    }
+    await page.reload();await expect(page.getByRole('link',{name:'Donations',exact:true})).toBeVisible();
+  }finally{await owner.close()}
+});

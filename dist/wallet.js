@@ -1,3 +1,4 @@
+import {enabled} from './features.js';
 import {productUrl,guessName,fetchProductPreview,prices,currency,money} from './shopping.js';
 import {accountCall,mountDeviceWallet} from './local-wallet.js';
 export const baseUSDC='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -127,6 +128,7 @@ export async function mountWallet(element) {
     catch { productLink.setCustomValidity('Enter a full HTTPS product link.'); return; }
     const fallback = guessName(url);
     piece.value = fallback;
+    if(!enabled('preview'))return;
     const controller = new AbortController();
     previewController = controller;
     sourceNote('Loading product details…');
@@ -211,6 +213,7 @@ export async function mountWallet(element) {
       funding.innerHTML = heading('02','Add demo funds','Request demo funds from Stellar to try a demo purchase.') + '<div class="wallet-body"><label>Demo wallet address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Add demo funds</button><p data-faucet-status role="status"></p></div>';
       funding.querySelector('input').value = address.value;
     } else if (network.value === 'base') {
+      if(!enabled('mpesa')){funding.innerHTML=heading('02','Receive Base USDC','Use your Base wallet address to receive USDC.');return}
       funding.innerHTML = heading('02','Fund with MiniSend','Base mainnet · real funds') + '<div class="wallet-body"><p>Choose Buy in MiniSend, select USDC, and use your Base wallet address. Review the rate and fees there.</p><a href="https://app.minisend.xyz/" target="_blank" rel="noopener noreferrer">Open MiniSend ↗</a></div>';
     } else {
       funding.innerHTML = heading('02','Receive Stellar USDC','Stellar mainnet · real funds') + '<p>Use your Stellar wallet’s receive screen to fund it on mainnet.</p>';

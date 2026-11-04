@@ -1,3 +1,4 @@
+import {enabled,refreshFeatures} from './features.js';
 import {mountWishlist,receiveSharedLink} from './wishlist.js';
 import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
 import {mountCommunity,mountMemberAccount,composePost} from './community.js';
@@ -114,6 +115,7 @@ function studio() {
  <div class="studio-tools">
    <section class="studio-shortcuts"><div class="eyebrow">Your studio</div><h2>On the rail</h2>
    <div class="shortcut-list"><button data-add><span>Add a piece</span><span aria-hidden="true">＋</span></button>
+   <a href="#bookings"><span>${enabled('bookings')?'Book a stylist':'My bookings'}</span><span aria-hidden="true">↗</span></a>
    <a href="#wishlist"><span>Your wishlist</span><span aria-hidden="true">↗</span></a>
    <a href="#wardrobe"><span>Your wardrobe <small>${items.length} pieces</small></span><span aria-hidden="true">↗</span></a>
    <a href="#wallet"><span>Your wallet</span><span aria-hidden="true">↗</span></a></div></section>
@@ -143,6 +145,24 @@ function showAdminNavigation(){
    event.preventDefault();render();main.focus();
  });
 }
+await refreshFeatures();
+function applySwitches(){
+ const bookingNav=document.querySelector('nav a[href="#bookings"]');
+ if(bookingNav)bookingNav.textContent=enabled('bookings')?'Book a stylist':'My bookings';
+ const selectors={sale:'[data-sale]',donate:'[data-donate]',look:'[data-publish]',shops:'a[href="#shops"]',pinterest:'details:has(#pin-search)',advice:'details:has([value="gpt"])',backup:'[data-backup="save"]',boutique:'.panel.split:has([data-buy]),[data-buy],section.panel:has(a[href^="#boutique"])',support:'[data-new-ticket]'};
+ const rules=Object.entries(selectors).filter(([id])=>!enabled(id)).map(([,selector])=>selector);
+ if(!['look','sale','donate'].some(enabled))rules.push('a[href="#community"]');
+ let sheet=document.querySelector('#feature-styles');
+ if(!sheet){sheet=document.createElement('style');sheet.id='feature-styles';document.head.append(sheet)}
+ sheet.textContent=rules.length?rules.join(',')+'{display:none!important}':'';
+}
+applySwitches();
+async function syncSwitches(){
+ if(await refreshFeatures()){applySwitches();if(dialog.open)dialog.close();await render()}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSwitches()});
+window.addEventListener('online',syncSwitches);
+setInterval(()=>{if(!document.hidden&&navigator.onLine)syncSwitches()},60000);
 receiveSharedLink();
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'welcome');
@@ -151,6 +171,16 @@ async function render(){
  if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  document.body.classList.toggle('entry',section==='welcome');
+ const communityKinds=['look','sale','donate'];
+ const routeKind=section==='community'?communityKinds.find(enabled)||'look':section.split('/')[1];
+ const feature=section==='shops'?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
+ if(feature&&!enabled(feature)){
+   main.innerHTML='<h1>Feature paused</h1><p>This part of Looku is currently unavailable.</p><a href="#studio">Back to Studio</a>';return;
+ }
+ if(section==='bookings'){
+   main.innerHTML='<section id="booking-area"></section>';const panel=main.firstElementChild;
+   const {mountBookings}=await import('./bookings.js');if(panel.isConnected)await mountBookings(panel,enabled('bookings'));return;
+ }
  if(section==='wishlist'||section.startsWith('wishlist?')){await mountWishlist(main);return}
  if(section==='welcome'){
    main.innerHTML='<div id="welcome"></div>';
@@ -178,7 +208,7 @@ async function render(){
    const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
  }
  else if(section==='stylist')main.innerHTML=stylist();
- else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'){
+ else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'){
    main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist price targets →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
@@ -186,7 +216,7 @@ async function render(){
      const panel=main.querySelector('#wallet-panel');
      await mountWallet(panel);
      if(id!==renderId)return;
-     if(section==='wallet/admin'||section==='wallet/support')panel.querySelector('.wallet-panel').open=true;
+     if(section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings')panel.querySelector('.wallet-panel').open=true;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);

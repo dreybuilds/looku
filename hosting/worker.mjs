@@ -1,6 +1,8 @@
 import {wishlistMpesa} from './wishlist-mpesa.mjs';
 import {privySubject} from './privy.mjs';
 import {wishlistFunding} from './wishlist-funding.mjs';
+import {settings,requiredFeatures,paused,pausedReply} from './features.mjs';
+import {bookings} from './bookings.mjs';
 import {support} from './support.mjs';
 import {demoSelection} from '../payments/demo-order.mjs';
 import {admin,affiliates} from './admin.mjs';
@@ -44,6 +46,13 @@ function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Obj
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(p==='/api/features'&&request.method==='GET')return json(200,{enabled:(await settings(env.ORDERS)).enabled});
+ const required=requiredFeatures(p,request.method);
+ if(required.length){
+   const {enabled}=await settings(env.ORDERS);
+   if(required.some(key=>!enabled[key]))return pausedReply();
+ }
+ if(p==='/api/bookings')return bookings(request,env);
  if(p==='/api/wishlist-mpesa'||p.startsWith('/api/wishlist-mpesa/')){
    const owner=p==='/api/wishlist-mpesa'?null:await privySubject(request)||(await session(request,env.ORDERS))?.address;
    try{return await wishlistMpesa(request,env,owner)}catch{return json(503,{error:'Unable to confirm the M-Pesa order. Retry the same request.'})}
@@ -80,6 +89,7 @@ async function handle(request,env){
  if(!route[2]&&request.method==='GET'){await reconcile(chain,order);await indexPaidOrder(bucket,row);return json(200,receipt(row))}
  if(!route[2]||request.method!=='POST')throw new HttpError(405,'Unsupported method.');
  if(row.status==='awaiting_signature'){
+ if(await paused(bucket,'boutique'))return pausedReply();
  if((await (await bucket.get('wallet-accounts/'+row.address))?.json())?.suspended)throw new HttpError(403,'Wallet account suspended.');
  const resource={url:url.origin+p,description:'looku demo cropped jacket',mimeType:'application/json'};
  const header=request.headers.get('Payment-Signature');if(!header){const challenge={x402Version:2,resource,accepts:[offer]};return json(402,challenge,{'Payment-Required':encoded(challenge)})}

@@ -1,4 +1,5 @@
 import {productPreview} from './product-preview.mjs';
+import {paused,pausedReply} from './features.mjs';
 import {Readable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {get, put, del, list, BlobPreconditionFailedError, issueSignedToken, presignUrl} from '@vercel/blob';
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
     if (url.pathname === '/api/wardrobe-backup' && req.method === 'POST') {
       if (!user || headers.get('origin') !== url.origin || headers.get('x-looku-action') !== 'wardrobe-backup') {
         response = new Response(null, {status: user ? 403 : 401});
-      } else {
+      } else if(await paused(orders,'backup')){response=pausedReply()} else {
         const pathname = 'wardrobe-backups/' + user.address;
         const constraints = {maximumSizeInBytes: 12 * 1024 * 1024, allowedContentTypes: ['application/octet-stream']};
         const token = await issueSignedToken({pathname, operations: ['put'], validUntil: Date.now() + 60000, ...constraints});
@@ -72,7 +73,9 @@ export default async function handler(req, res) {
   if (!response) {
     const request = new Request(url, {method: req.method, headers,
       ...(['GET', 'HEAD'].includes(req.method) ? {} : {body: Readable.toWeb(req), duplex: 'half'})});
-    response = url.pathname==='/api/product-preview'?await productPreview(request):await worker.fetch(request, {...process.env, ORDERS: orders});
+    if(url.pathname==='/api/product-preview'){
+      response=await paused(orders,'preview')?pausedReply():await productPreview(request);
+    }else response=await worker.fetch(request, {...process.env, ORDERS: orders});
   }
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));

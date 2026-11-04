@@ -1,3 +1,4 @@
+import {paused,pausedReply} from './features.mjs';
 import {session} from './account.mjs';
 import {privySubject} from './privy.mjs';
 
@@ -7,16 +8,16 @@ const reply=(status,data)=>Response.json(data,{status,headers:{'Cache-Control':'
 const error=(status,message)=>reply(status,{error:message});
 const fits=(value,max)=>typeof value==='string'&&value.trim().length>0&&value.length<=max;
 const uuid=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
-async function userPrefix(owner){
+export async function userPrefix(owner,base=prefix){
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(owner));
- return prefix+Array.from(new Uint8Array(bytes),n=>n.toString(16).padStart(2,'0')).join('')+'/';
+ return base+Array.from(new Uint8Array(bytes),n=>n.toString(16).padStart(2,'0')).join('')+'/';
 }
-async function pageOf(store,path,cursor){
+export async function pageOf(store,path,cursor,base=prefix){
  const page=await store.list({prefix:path,limit:12,cursor:cursor||undefined});
  const items=await Promise.all(page.objects.map(async({key})=>{
    const record=await store.get(key);
    if(!record)return null;
-   return {...await record.json(),...(path===prefix?{key:key.slice(prefix.length)}:{}),revision:record.etag};
+   return {...await record.json(),...(path===base?{key:key.slice(base.length)}:{}),revision:record.etag};
  }));
  return reply(200,{items:items.filter(Boolean),next:page.truncated?page.cursor:null});
 }
@@ -47,6 +48,7 @@ export async function support(req,env){
  let data;try{data=await req.json()}catch{return error(400,'Invalid support request.')}
  if(!data||!uuid.test(data.id))return error(400,'Invalid request ID.');
  if(data.revision)return update(store,path+data.id,data,false);
+ if(await paused(store,'support'))return pausedReply();
  if(!fits(data.subject,100)||!fits(data.message,2000)||!categories.includes(data.category))return error(400,'Choose a topic and enter a subject and message.');
  const row={id:data.id,category:data.category,subject:data.subject.trim(),status:'Open',messages:[{by:'You',text:data.message.trim(),at:new Date().toISOString()}]};
  const saved=await store.put(path+data.id,JSON.stringify(row),{onlyIf:{etagDoesNotMatch:'*'}});

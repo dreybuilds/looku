@@ -7,7 +7,7 @@
 <link rel="icon" href="/icon-192.png"><link rel="manifest" href="/app.webmanifest"><link rel="stylesheet" href="/landing.css">
 <script>
 function openStudioLink(){
- const oldRoute=/^#(studio|wardrobe|stylist|community|wallet|shops|support|account|admin|boutique)(\/|$)/;
+ const oldRoute=/^#(studio|wardrobe|stylist|bookings|community|wallet|shops|support|account|admin|boutique)(\/|$)/;
  if(oldRoute.test(location.hash)||location.hostname==='admin.lookuwear.xyz'||matchMedia('(display-mode: standalone)').matches||navigator.standalone)location.replace('/app'+location.search+location.hash);
 }
 openStudioLink();addEventListener('hashchange',openStudioLink);

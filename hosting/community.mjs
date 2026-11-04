@@ -1,3 +1,4 @@
+import {paused,pausedReply} from './features.mjs';
 import {savedHandles,saveHandles,selectedHandles} from './social.mjs';
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
@@ -71,7 +72,8 @@ export async function community(req,{ORDERS:store}){
    pieces.push({name:piece.name.trim(),photo});
  }
  const post={kind,title:data.title.trim(),pieces};
- if(kind==='look'&&data.tags)post.tags=await selectedHandles(store,owner,data.tags);
+ if(data.tags&&await paused(store,'social'))return pausedReply();
+   if(kind==='look'&&data.tags)post.tags=await selectedHandles(store,owner,data.tags);
  if(kind!=='look'){
    if(!textFits(data.email,160)||!/^[^\s@?<>&#]+@[^\s@?<>&#]+\.[^\s@?<>&#]+$/.test(data.email))return reply(400,{error:'Enter a contact email.'});
    if(data.visibility!==undefined&&!['public','private'].includes(data.visibility))return reply(400,{error:'Choose a listing audience.'});

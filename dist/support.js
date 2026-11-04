@@ -75,7 +75,7 @@ export async function mountSupport(root){
    label.className='help-topic';summary.append(label,copy);item.append(summary,node('p',a));faq.append(item);
  }
  async function start(){
-   area.replaceChildren();const kicker=node('div','Private correspondence');kicker.className='eyebrow';area.append(kicker);const form=document.createElement('form');form.className='stack';
+   area.replaceChildren();const kicker=node('div','Private correspondence');kicker.className='eyebrow';area.append(kicker);const form=document.createElement('form');form.className='stack';form.dataset.newTicket='';
    form.innerHTML='<h2>New support request</h2><label>Topic<select name="category"><option>Account</option><option>Wardrobe</option><option>Listings</option><option>Payments</option><option>Other</option></select></label><label>Subject<input name="subject" maxlength="100" required></label><label>How can we help?<textarea name="message" maxlength="2000" required></textarea></label><p class="fine">Only you and Looku support can see this conversation. Keep passwords, recovery files and payment details private.</p><button>Submit request</button><p role="status"></p>';
    const inbox=node('div');area.append(form,node('h2','My requests'),inbox);
    const submit=form.querySelector('button');submit.disabled=true;let refresh;

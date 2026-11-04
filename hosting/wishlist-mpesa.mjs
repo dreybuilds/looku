@@ -1,9 +1,10 @@
 // Expose only a member's own funding attempts, never the provider's phone or receipt data.
 const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const reply=(status,data)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
+import {paused,pausedReply} from './features.mjs';
 export async function wishlistMpesa(req,env,owner){
   const url=new URL(req.url);
-  if(url.pathname==='/api/wishlist-mpesa'&&req.method==='GET')return reply(200,{enabled:Boolean(env.MINISEND_API_KEY)});
+  if(url.pathname==='/api/wishlist-mpesa'&&req.method==='GET')return reply(200,{enabled:Boolean(env.MINISEND_API_KEY)&&!await paused(env.ORDERS,'mpesa')});
   if(!env.MINISEND_API_KEY)return reply(503,{error:'Tracked M-Pesa funding is unavailable.'});
   if(!owner)return reply(401,{error:'Sign in through Account to fund an item with M-Pesa.'});
   const id=url.pathname.slice('/api/wishlist-mpesa/'.length);
@@ -18,6 +19,7 @@ export async function wishlistMpesa(req,env,owner){
     const {phone,kes,address}=await req.json();
     if(!/^(?:0|\+?254)[17]\d{8}$/.test(phone)||!Number.isSafeInteger(kes)||kes<=0||kes>250000||
       !/^0x[0-9a-f]{40}$/.test(address)||/^0x0{40}$/.test(address))return reply(400,{error:'Enter a Kenyan mobile number and a valid KES amount.'});
+    if(!row&&await paused(env.ORDERS,'mpesa'))return pausedReply();
     if(!row){
       row={owner,address,kes,reference:'wish-'+crypto.randomUUID()};
       record=await env.ORDERS.put(key,JSON.stringify(row),{onlyIf:{etagDoesNotMatch:'*'}});

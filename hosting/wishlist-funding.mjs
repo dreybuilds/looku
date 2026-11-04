@@ -1,5 +1,6 @@
 // Each unguessable link requests one contribution to the receiving wallet.
 // Only verified authorizations create records. Link data omits the retailer and item name.
+import {paused} from './features.mjs';
 const facilitator='https://facilitator.payai.network';
 const network='eip155:8453';
 const asset='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -66,6 +67,7 @@ export async function wishlistFunding(request,store){
   try{
     const record=await store.get(key);
     if(record)return await reconcile(store,key,record,offer);
+    if(await paused(store,'funding'))return reply(403,{error:'New contributions are paused.'});
     const header=request.headers.get('payment-signature');
     if(!header)return reply(402,challenge,{'PAYMENT-REQUIRED':encode(challenge)});
     let proof;

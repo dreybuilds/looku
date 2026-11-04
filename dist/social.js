@@ -1,3 +1,4 @@
+import {enabled} from './features.js';
 import {emailHeaders} from './email-auth.js';
 const networks={Instagram:'https://www.instagram.com/',TikTok:'https://www.tiktok.com/@',Pinterest:'https://www.pinterest.com/',X:'https://x.com/'};
 const el=(tag,text)=>Object.assign(document.createElement(tag),{textContent:text||''});
@@ -23,7 +24,7 @@ export function accountDetails(){
  return panel;
 }
 export async function tagChoices(container){
- container.replaceChildren();let saved;
+ container.replaceChildren();if(!enabled('social'))return;let saved;
  try{saved=await profile()}catch(error){if(error.status!==401)container.textContent='Social accounts could not load.';return}
  const entries=Object.entries(saved);
  if(!entries.length){container.textContent='Add usernames in Account → Social accounts to tag them on looks.';return}

@@ -1,6 +1,7 @@
 import {emailHeaders} from './email-auth.js';
 import {productUrl,guessName,fetchProductPreview} from './shopping.js';
 import {merchantOffer,signOffer,submitOffer,newNonce,authorizationStatus} from './merchant-payment.js';
+import {enabled} from './features.js';
 import {baseUSDC,readWalletBalance} from './wallet.js';
 import {processPhoto} from './model.js';
 
@@ -77,6 +78,9 @@ export async function mountWishlist(main){
   const editor=main.querySelector('[data-editor]'),form=editor.querySelector('form'),f=form.elements;
   const note=main.querySelector('[data-wish-note]'),list=main.querySelector('[data-items]');
   const bookmark=main.querySelector('[data-bookmark]');
+  if(!enabled('wishlist')){
+    editor.hidden=true;bookmark.closest('details').hidden=true;note.textContent='Saving new wishlist items is paused.';
+  }
   bookmark.href=makeBookmark();
   bookmark.onclick=e=>{e.preventDefault();note.textContent='Drag Save to looku to your bookmarks bar, then click it on a product page.'};
   let editing=null,previewUrl='',previewTask=null,controller,timer;
@@ -96,7 +100,7 @@ export async function mountWishlist(main){
     }
   }
   function loadPreview(){
-    if(editing)return;
+    if(editing||!enabled('preview')||!enabled('wishlist'))return;
     let url;try{url=productUrl(f.url.value.trim()).href}catch{return}
     if(url===previewUrl)return previewTask;
     clearPreview();previewUrl=url;controller=new AbortController();
@@ -168,7 +172,7 @@ export async function mountWishlist(main){
       if(item.saved>0)card.append(el('small','Previous manual entry: '+fmt(item.saved,item.savedCurrency||item.currency)+'. No deposit was recorded.'));
       const row=el('div','');row.className='actions';
       const shop=el('a','View at store ↗');shop.href=item.url;shop.target='_blank';shop.rel='noopener noreferrer';shop.className='button';
-      const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>populate(item);
+      const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>{editor.hidden=false;populate(item)};
       const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await update(item.url,current=>{if(current?.mpesa&&!current.mpesa.closed)throw Error('Wait for the M-Pesa request to finish before removing this item.');if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
       row.append(shop,edit,remove);card.append(row);
       if(item.goalWallet){const total=el('p','Item budget · '+formatUSDC(BigInt(item.allocation||0))+' USDC');total.dataset.itemBudget='';total.setAttribute('aria-live','polite');card.append(total)}
@@ -177,7 +181,7 @@ export async function mountWishlist(main){
     return all;
   }
   form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('button');btn.disabled=true;
-    try{const submittedUrl=f.url.value;await loadPreview();if(!editor.open||submittedUrl!==f.url.value||!form.isConnected)return;const url=productUrl(f.url.value.trim()),title=f.title.value.trim()||guessName(url),variant=f.variant.value.trim(),currency=f.currency.value,target=f.price.value?cents(f.price.value):0;
+    try{if(!editing&&!enabled('wishlist'))throw Error('Saving new items is paused.');const submittedUrl=f.url.value;await loadPreview();if(!editor.open||submittedUrl!==f.url.value||!form.isConnected)return;const url=productUrl(f.url.value.trim()),title=f.title.value.trim()||guessName(url),variant=f.variant.value.trim(),currency=f.currency.value,target=f.price.value?cents(f.price.value):0;
       const photo=f.photo.files[0]?(await processPhoto(f.photo.files[0],320)).photo:preview.getAttribute('src');
       await update(url.href,old=>{
         if(old && !editing)throw Error('This exact product link is already on your wishlist. Choose Edit item to change it.');
@@ -248,7 +252,7 @@ function fundingPanel(item,refresh,all,checks,mpesaEnabled){
     const destination=el('code',address);
     body.append(el('strong','Receiving wallet · Base mainnet'),destination,el('p','Send native USDC here from another wallet, or choose Buy in MiniSend and use this address for your M-Pesa purchase.'));
     action('Copy receiving address',async()=>{await navigator.clipboard.writeText(address);status.textContent='Receiving address copied.'});
-    const mini=el('a','Fund with M-Pesa via MiniSend ↗');mini.className='button secondary';mini.href='https://app.minisend.xyz/';mini.target='_blank';mini.rel='noopener noreferrer';body.append(mini,el('small','Hosted MiniSend top-ups go to your shared wallet. Assign those funds to an item after they arrive.'));
+    const mini=el('a','Fund with M-Pesa via MiniSend ↗');mini.className='button secondary';mini.href='https://app.minisend.xyz/';mini.target='_blank';mini.rel='noopener noreferrer';if(enabled('mpesa'))body.append(mini,el('small','Hosted MiniSend top-ups go to your shared wallet. Assign those funds to an item after they arrive.'));
     const label=el('label','Transfer amount (USDC)'),input=el('input','');input.inputMode='decimal';input.placeholder='0.00';label.append(input);body.append(label);
     action('Review transfer in wallet',async()=>{
       const value=input.value.trim();
@@ -349,7 +353,8 @@ function fundingPanel(item,refresh,all,checks,mpesaEnabled){
       if(contribution?.credited)body.append(el('p','Received '+show(BigInt(contribution.amount))+' from the last funding link.'));
       const amountLabel=el('label','Request from an agent (USDC)'),amount=el('input','');
       amount.inputMode='decimal';amount.placeholder='0.00';amountLabel.append(amount);body.append(amountLabel);
-      action('Create x402 funding link',async()=>{
+      if(!enabled('funding'))amountLabel.hidden=true;
+      if(enabled('funding'))action('Create x402 funding link',async()=>{
         const units=parseUSDC(amount.value);
         if(!units)throw Error('Enter a positive contribution amount.');
         const next={id:crypto.randomUUID(),amount:String(units)};
@@ -406,7 +411,7 @@ function fundingPanel(item,refresh,all,checks,mpesaEnabled){
         await redraw();
       };watchers.push(checkMerchant);action('Verify payment on Base',checkMerchant)}
     }
-    if(!lastPayment)action('Review x402 merchant payment',async()=>{
+    if(!lastPayment&&enabled('merchant'))action('Review x402 merchant payment',async()=>{
       const {limit}=await funded();
       if(!limit)throw Error('Assign confirmed funds to this item before checking out.');
       const quote=await merchantOffer(item.url,limit),cost=BigInt(quote.offer.amount);

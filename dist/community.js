@@ -1,3 +1,4 @@
+import {enabled} from './features.js';
 import {fillProfile} from './shopping.js';
 import {accountDetails,tagChoices,chosenTags,tagLinks} from './social.js';
 import {pinterestPanel,postToPinterest} from './pinterest.js';
@@ -70,16 +71,17 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
 }
 export function mountMemberAccount(panel,[kind,id]=[]){
  const login=element('section');
- panel.replaceChildren(login,accountDetails(),pinterestPanel());
+ panel.replaceChildren(login);if(enabled('social'))panel.append(accountDetails());if(enabled('pinterest'))panel.append(pinterestPanel());
  emailAccount(login,()=>{
    if(['sale','donate'].includes(kind)&&/^[a-f0-9]{64}$/.test(id))location.hash=route(kind,id);
    else mountMemberAccount(panel);
  });
 }
 export async function mountCommunity(panel,[requested,id,shareKey]){
- const kind=Object.hasOwn(labels,requested)?requested:'look';
+ const kind=Object.hasOwn(labels,requested)?requested:Object.keys(labels).find(enabled)||'look';
  const tabs=element('div');tabs.className='community-tabs actions';
  for(const [key,label] of Object.entries(labels)){
+   if(!enabled(key))continue;
    const tab=link(label,route(key));if(key===kind)tab.setAttribute('aria-current','page');tabs.append(tab);
  }
  const help=element('p','Publish a saved outfit or list one of your own pieces from Wardrobe. ');
@@ -114,7 +116,7 @@ export async function mountCommunity(panel,[requested,id,shareKey]){
      tools.append(copy,link('Private link',url.href));
    }
    if(post.pinterestId)tools.append(link('View original Pin ↗','https://www.pinterest.com/pin/'+post.pinterestId+'/'));
-   if(post.mine&&kind==='look'&&!post.pinterestId&&post.pieces.some(p=>p.photo))postToPinterest(tools,post);
+   if(enabled('pinterest')&&post.mine&&kind==='look'&&!post.pinterestId&&post.pieces.some(p=>p.photo))postToPinterest(tools,post);
    if(post.mine){
      const remove=element('button','Withdraw post');remove.className='secondary small';tools.append(remove);
      remove.onclick=async()=>{

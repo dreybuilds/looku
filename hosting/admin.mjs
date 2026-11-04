@@ -4,6 +4,9 @@ import {session} from './account.mjs';
 import {walletReceipts} from './wallet-receipts.mjs';
 import {StrKey} from '@stellar/stellar-sdk';
 
+import {featureControls} from './features.mjs';
+import {adminBookings} from './bookings.mjs';
+
 const ownerEmail='nzauaudrey@gmail.com';
 const ownerKey='admin/owner';
 const affiliateKey='admin/affiliates';
@@ -36,6 +39,8 @@ export async function admin(req,env,recheckPayout){
    return await write(store,ownerKey,{id,address:user.address})?reply(201,{ok:true}):conflict();
  }
  if(!authorized)return error(403,'Sign in with the owner account and its linked wallet.');
+ if(path==='features')return featureControls(req,store,data);
+ if(path==='bookings')return adminBookings(req,store,data);
  if(path==='reports'&&req.method==='GET')return reportPage(store,url.searchParams);
  if(path==='recheck-payout'&&req.method==='POST'&&typeof data.id==='string'&&/^[a-f0-9-]{36}$/.test(data.id))return recheckPayout(data.id);
  if(path==='support')return adminSupport(req,store,data);

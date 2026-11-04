@@ -1,3 +1,4 @@
+import {paused,pausedReply} from './features.mjs';
 import {selectedHandles} from './social.mjs';
 import {EncryptJWT,jwtDecrypt} from 'jose';
 import {session} from './account.mjs';
@@ -93,6 +94,7 @@ async function pinterest(req,env){
    const id=Array.from(new Uint8Array(await hash(JSON.stringify([owner,'pinterest',pin.id]))),b=>b.toString(16).padStart(2,'0')).join('');
    const title=(pin.title||pin.description||'Pinterest look').slice(0,180);
    const post={owner,id,kind:'look',title,pinterestId:pin.id,pieces:[{name:title,photo}]};
+   if(data.tags&&await paused(store,'social'))return pausedReply();
    if(data.tags)post.tags=await selectedHandles(store,owner,data.tags);
    const saved=await store.put('community/look/'+id,JSON.stringify(post),{onlyIf:{etagDoesNotMatch:'*'}});
    return reply(saved?201:200,{id});

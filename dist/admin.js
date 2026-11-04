@@ -37,6 +37,26 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      const heading=node('h2',name);view.append(heading);
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
+     if(path==='bookings'){
+       const {bookingList}=await import('./bookings.js');
+       await bookingList(view,(data,cursor)=>api(path+(cursor?'?cursor='+encodeURIComponent(cursor):''),data),true);return;
+     }
+     if(path==='features'){
+       const settings=await api(path);
+       view.append(node('p','Turn features on or off for the shopper app. Changes take effect online without a deployment.'));
+       const controls=node('div');controls.className='grid';view.append(controls);
+       for(const [id,label] of Object.entries(settings.labels)){
+         const card=node('article');card.className='panel';
+         const on=settings.enabled[id];
+         const toggle=button(label,async()=>{
+           await api(path,{id,enabled:!on,revision:settings.revision});await refresh();
+           status.textContent=label+' turned '+(on?'off.':'on.');
+           Array.from(content.querySelectorAll('[role=switch]')).find(el=>el.textContent===label)?.focus();
+         });
+         toggle.setAttribute('role','switch');toggle.setAttribute('aria-checked',String(on));
+         card.append(toggle,node('p',on?'On':'Off'));controls.append(card);
+       }return;
+     }
      if(path==='reports'){
        view.append(node('p','Current records across the workspace. Percentages use the total in each group.'));
        for(const [group,title,metric,positive] of [['support','Support requests','Resolution rate','Resolved'],['sales','Closet sales','Approval rate','approved'],['donations','Donations','Approval rate','approved']]){
@@ -64,7 +84,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          const card=node('article');card.className='panel';
          card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
        }
-       view.append(cards);return;
+       view.append(cards,button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')));return;
      }
      const rows=node('div');rows.className='stack';view.append(rows);
      const more=button('Load more',()=>load(next));view.append(more);let next;
@@ -101,7 +121,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}
