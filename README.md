@@ -41,7 +41,11 @@ The recommendation engine is deterministic. It uses manually assigned garment ca
 
 The demo boutique is the only integrated seller. In this single-referrer demo, orders from the outfit recommendation attribute the fixed commission to looku. Other retailers control their own checkout, attribution windows, refunds and commissions. Approved deep links and authenticated conversion or settlement reports are needed before recording a real affiliate sale. See [Affiliate research](AFFILIATES.md) and [MiniSend integration notes](MINISEND.md).
 
-## Deployment
+## Vercel deployment
+
+The `looku` Vercel project builds the static studio and Node API with `npm run build`. Production uses a private Vercel Blob store for orders, wallet sessions and encrypted backups. Set `LOOKU_MERCHANT_TEST_SECRET`, `LOOKU_FACILITATOR_TEST_SECRET`, `LOOKU_PLATFORM_ADDRESS` and `OPENROUTER_API_KEY` in the project. Online styling sends the signed-in shopper’s written brief through OpenRouter to `openai/gpt-4.1-mini`. On Vercel, backups are scoped to the signed-in wallet.
+
+## Sites deployment
 The private Sites Worker serves the studio and Freighter bundle from one origin. Build the browser signer in payments, then run `node hosting/build.mjs`. The Worker uses the same testnet chain code as the local service. Configure LOOKU_MERCHANT_TEST_SECRET, LOOKU_FACILITATOR_TEST_SECRET and LOOKU_PLATFORM_ADDRESS as runtime secrets. The test shopper key is used only for the local live check. Site registration and DNS are separate. Connect lookuwear.xyz after purchasing it and applying the host-provided verification records.
 
 ## Demo evidence
