@@ -51,7 +51,11 @@ function modal(html) {
 }
 document.querySelector('.skip-link').onclick = event => { event.preventDefault(); main.focus(); };
 dialog.querySelector('.close').onclick=()=>dialog.close();
-dialog.onclick=e=>{if(e.target===dialog)dialog.close()};
+dialog.onclick=e=>{
+ if(e.target!==dialog)return;
+ const bounds=dialog.getBoundingClientRect();
+ if(e.clientX<bounds.left||e.clientX>bounds.right||e.clientY<bounds.top||e.clientY>bounds.bottom)dialog.close();
+};
 const currencyPicker=document.querySelector('#shop-currency');
 currencyPicker.value=currency();
 currencyPicker.onchange=()=>{localStorage.setItem('looku.currency',currencyPicker.value);render()};

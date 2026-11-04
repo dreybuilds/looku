@@ -77,3 +77,53 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 .entry-copy h1{font:normal clamp(2.8rem,5vw,4.5rem)/1 Georgia,serif;letter-spacing:-.05em;margin:.2em 0}
 .entry-copy p,.entry-copy details{margin:0}.entry-copy details[open]>p{margin:1rem 0}.entry-copy summary{cursor:pointer}.entry-copy form{margin-top:1rem}.entry-copy [hidden]{display:none}
 @media(max-width:700px){.entry-card{grid-template-columns:1fr;margin:1rem 0}.entry-photo{min-height:7rem}}
+
+/* Shared proportions for input surfaces, from a quick sign-in to a long order. */
+:root {
+  --surface-radius: clamp(22px, 4vw, 32px);
+  --surface-pad: clamp(20px, 4vw, 34px);
+}
+dialog, #dialog[open] {
+  width: min(28rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: var(--surface-pad);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--surface-radius);
+  background: #fffbff;
+  box-shadow: 0 16px 64px #30173638;
+}
+dialog::backdrop { background: rgb(29 17 32 / 55%); }
+dialog h2 {
+  margin: 0 0 1.25rem;
+  padding-inline: 2.35rem;
+  text-align: center;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+dialog .eyebrow { margin: 0 2.5rem .65rem; text-align: center; }
+dialog .close {
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+}
+dialog .stack { gap: 1rem; }
+dialog [hidden] { display: none; }
+.account-trigger { min-height: 44px; text-align: start; }
+.entry-copy .account-trigger { width: 100%; }
+:is(.panel, .toolbar):has(input, select, textarea) {
+  border-radius: var(--surface-radius);
+  padding: var(--surface-pad);
+}
+:where(form, dialog, .panel, .toolbar) :is(input, select, textarea):not([type=checkbox], [type=radio], [type=range], [type=color], [type=hidden]) {
+  border: 1px solid #c7b5cb;
+  border-radius: 12px;
+  padding: .7rem .85rem;
+  max-width: 100%;
+  font: inherit;
+}
