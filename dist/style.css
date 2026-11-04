@@ -206,7 +206,7 @@ details.panel:not(.wallet-panel)[open] > :not(summary) {
   background-position: 50% 50%;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .email-signin:has(form[aria-busy=true])::backdrop {
+  .email-signin[open]::backdrop {
     animation: signin-light 3s ease-in-out infinite alternate;
   }
   @keyframes signin-light {
