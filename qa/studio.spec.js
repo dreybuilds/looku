@@ -362,3 +362,24 @@ test('shopping profile fills an affiliate order locally and supports both price 
  await expect(dialog.getByRole('status')).toContainText('above your limit');
  expect(page.url()).not.toContain('Demo%20Lane');
 });
+
+test('admin home stays within reach and wallet sign-in returns to the workspace',async({page})=>{
+ await page.setExtraHTTPHeaders({'oai-authenticated-user-email':'nzauaudrey@gmail.com'});
+ await page.goto('/#admin');
+ const home=page.getByRole('navigation').getByRole('link',{name:'Admin home',exact:true});
+ await expect(home).toBeVisible();
+ await page.getByRole('link',{name:'Open Wallet',exact:true}).click();
+ const form=page.locator('[data-device-wallet] form').first(),phrase=crypto.randomUUID();
+ await form.getByLabel('Wallet passphrase').fill(phrase);
+ await form.getByLabel('Confirm passphrase').fill(phrase);
+ await form.getByRole('button').click();
+ const account=page.locator('[data-wallet-account]');
+ await account.getByLabel('Sign-in passphrase').fill(phrase);
+ await account.getByRole('button',{name:'Sign in with this wallet'}).click();
+ await expect(page).toHaveURL(/#admin$/);
+ await expect(page.getByRole('heading',{name:'Admin workspace'})).toBeVisible();
+ await nav(page,'Wardrobe');
+ await page.reload();
+ await home.click();
+ await expect(page.getByRole('heading',{name:'Admin workspace'})).toBeVisible();
+});

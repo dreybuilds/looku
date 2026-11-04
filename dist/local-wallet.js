@@ -68,6 +68,7 @@ async function mountAccount(panel,wallet) {
      const signature=await signLookuLogin(wallet,form.elements.pass.value,challenge);
      await accountCall('/api/account/verify',{address:wallet.address,nonce:challenge.nonce,signature});
      signedIn();
+     if(panel.isConnected&&location.hash==='#wallet/admin')location.hash='admin';
    }catch(e){note.textContent=e.message}finally{form.reset();button.disabled=false}
  };
  try{const state=await accountCall('/api/account');if(state.address===wallet.address&&!form.hidden)signedIn()}catch{/* Local wallet remains usable offline. */}

@@ -125,8 +125,22 @@ function stylist(){
  ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>${money()}</strong><p class="fine">The boutique pays looku ${money(.1)} for the referral. Demo order.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
 }
 function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="secondary small" data-publish="${esc(l.id)}">Publish look</button> <button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
+function showAdminNavigation(){
+ const nav=document.querySelector('header nav');
+ if(nav.querySelector('a[href="#admin"]'))return;
+ const home=document.createElement('a');
+ home.href='#admin';home.className='nav-link';home.textContent='Admin home';
+ nav.prepend(home);
+ const logo=document.querySelector('header .logo');logo.href='#admin';logo.setAttribute('aria-label','Looku admin home');
+ for(const link of [home,logo])link.addEventListener('click',event=>{
+   if(location.hash!=='#admin'||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+   event.preventDefault();render();main.focus();
+ });
+}
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'studio');
+ if(section==='admin')sessionStorage.setItem('looku.admin-navigation','1');
+ if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div><details class="panel" id="shopping-profile"></details>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
  else if(section==='community'||section.startsWith('community/')){
@@ -139,7 +153,7 @@ async function render(){
    const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
  }
  else if(section==='stylist')main.innerHTML=stylist();
- else if(section==='wallet'){
+ else if(section==='wallet'||section==='wallet/admin'){
    main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
@@ -147,6 +161,7 @@ async function render(){
      const panel=main.querySelector('#wallet-panel');
      await mountWallet(panel);
      if(id!==renderId)return;
+     if(section==='wallet/admin')panel.querySelector('.wallet-panel').open=true;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);

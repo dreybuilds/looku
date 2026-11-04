@@ -18,7 +18,7 @@ export async function mountAdmin(root){
    if(state.state==='sign-in'){
      const a=link('Sign in with ChatGPT','/signin-with-chatgpt?return_to='+encodeURIComponent('/#admin'));a.target='_top';body.append(a);return;
    }
-   if(state.state==='wallet'){body.append(node('p','Sign in with your owner wallet, then return here.'),link('Open Wallet','#wallet'));return}
+   if(state.state==='wallet'){body.append(node('p','Sign in with your owner wallet to continue to Admin home.'),link('Open Wallet','#wallet/admin'));return}
    if(state.state==='unavailable'){body.append(node('p','This account and wallet do not have admin access.'));return}
    if(state.state==='enroll'){
      body.append(node('h2','Link your admin wallet'),node('p','Confirm this public address. Future admin visits require this wallet and the same signed-in email.'),node('code',state.address),button('Link this wallet',async()=>{
