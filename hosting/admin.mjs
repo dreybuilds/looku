@@ -1,3 +1,4 @@
+import {reportPage} from './reports.mjs';
 import {adminSupport,dashboard} from './support.mjs';
 import {session} from './account.mjs';
 import {walletReceipts} from './wallet-receipts.mjs';
@@ -16,7 +17,7 @@ export async function affiliates(store){
  const record=await store.get(affiliateKey);
  return {items:record?await record.json():[],revision:record?.etag||''};
 }
-export async function admin(req,env){
+export async function admin(req,env,recheckPayout){
  const store=env.ORDERS,url=new URL(req.url),path=url.pathname.slice('/api/admin/'.length);
  const id=req.headers.get('oai-authenticated-user-id'),email=req.headers.get('oai-authenticated-user-email');
  const identity=id&&email?.trim().toLowerCase()===ownerEmail;
@@ -35,6 +36,8 @@ export async function admin(req,env){
    return await write(store,ownerKey,{id,address:user.address})?reply(201,{ok:true}):conflict();
  }
  if(!authorized)return error(403,'Sign in with the owner account and its linked wallet.');
+ if(path==='reports'&&req.method==='GET')return reportPage(store,url.searchParams);
+ if(path==='recheck-payout'&&req.method==='POST'&&typeof data.id==='string'&&/^[a-f0-9-]{36}$/.test(data.id))return recheckPayout(data.id);
  if(path==='support')return adminSupport(req,store,data);
  if(path==='dashboard'&&req.method==='GET')return dashboard(store);
  const cursor=url.searchParams.get('cursor')||undefined;

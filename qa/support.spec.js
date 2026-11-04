@@ -26,7 +26,14 @@ test('private support conversation goes through the owner dashboard',async({page
    const signature=Buffer.from(key.sign(Buffer.from(challenge.message))).toString('base64');
    expect((await owner.request.post('/api/account/verify',{headers,data:{address,signature,nonce:challenge.nonce}})).status()).toBe(200);
    if((await (await owner.request.get('/api/admin/access')).json()).state==='enroll')await owner.request.post('/api/admin/enroll',{headers:{Origin:baseURL,'X-Looku-Action':'admin'},data:{address}});
-   const admin=await owner.newPage();await admin.goto('/#admin');
+   const admin=await owner.newPage();await admin.goto('/owner.html#wardrobe');
+   await expect(admin.getByRole('link',{name:'Wardrobe',exact:true})).toHaveCount(0);
+   await expect(admin.getByRole('link',{name:'Admin home'})).toBeVisible();
+   await admin.getByRole('button',{name:'Reports',exact:true}).click();
+   const report=admin.locator('article').filter({has:admin.getByRole('heading',{name:'Support requests'})});
+   await expect(report).toContainText(/Open · [1-9]/);
+   await expect(report).toContainText('Resolution rate');
+   await admin.getByRole('button',{name:'Dashboard',exact:true}).click();
    await admin.getByRole('button',{name:'View support requests'}).click();
    const card=admin.locator('details').filter({hasText:subject});await card.locator('summary').click();
    await card.getByLabel('Reply').fill('Open Wallet and choose Purchase receipts.');

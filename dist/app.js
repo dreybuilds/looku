@@ -139,6 +139,7 @@ function showAdminNavigation(){
 }
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'studio');
+ if(['lookuwear.xyz','www.lookuwear.xyz'].includes(location.hostname)&&section==='admin'){location.replace('https://admin.lookuwear.xyz/');return}
  if(section==='admin')sessionStorage.setItem('looku.admin-navigation','1');
  if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});

@@ -6,7 +6,7 @@ async function api(path,data){
  const res=await fetch('/api/admin/'+path,{cache:'no-store',headers:{...await emailHeaders(),...(data?{'Content-Type':'application/json','X-Looku-Action':'admin'}:{})},...(data?{method:'POST',body:JSON.stringify(data)}:{})});
  const result=await res.json();if(!res.ok)throw Error(result.error);return result;
 }
-export async function mountAdmin(root){
+export async function mountAdmin(root,{ownerOnly=false}={}){
  const status=node('p');status.setAttribute('role','status');
  const body=node('section');root.append(body,status);
  function button(label,action){
@@ -15,9 +15,13 @@ export async function mountAdmin(root){
  }
  async function start(){
    const state=await api('access');body.replaceChildren();
-   if(state.state==='email-sign-in'){emailAccount(body,start);body.querySelector('details').open=true;return}
+   if(state.state==='email-sign-in'){emailAccount(body,start);const details=body.querySelector('details');if(details)details.open=true;return}
    if(state.state==='sign-in'){
      const a=link('Sign in with ChatGPT','/signin-with-chatgpt?return_to='+encodeURIComponent('/#admin'));a.target='_top';body.append(a);return;
+   }
+   if(state.state==='wallet'&&ownerOnly){
+     const {mountDeviceWallet}=await import('./local-wallet.js');
+     await mountDeviceWallet(body,null,()=>start().catch(err=>status.textContent=err.message));return;
    }
    if(state.state==='wallet'){body.append(node('p','Sign in with your owner wallet to continue to Admin home.'),link('Open Wallet','#wallet/admin'));return}
    if(state.state==='unavailable'){body.append(node('p','This account and wallet do not have admin access.'));return}
@@ -33,6 +37,23 @@ export async function mountAdmin(root){
      const heading=node('h2',name);view.append(heading);
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
+     if(path==='reports'){
+       view.append(node('p','Current records across the workspace. Percentages use the total in each group.'));
+       for(const [group,title,metric,positive] of [['support','Support requests','Resolution rate','Resolved'],['sales','Closet sales','Approval rate','approved'],['donations','Donations','Approval rate','approved']]){
+         const counts={};let cursor;
+         do{
+           const page=await api('reports?group='+group+(cursor?'&cursor='+encodeURIComponent(cursor):''));
+           if(!view.isConnected)return;
+           for(const [state,n] of Object.entries(page.counts))counts[state]=(counts[state]||0)+n;
+           cursor=page.next;
+         }while(cursor);
+         const card=node('article');card.className='panel';
+         const total=Object.values(counts).reduce((a,b)=>a+b,0);
+         card.append(node('h3',title),node('p',total+' total · '+metric+' '+(total?Math.round(100*counts[positive]/total)+'%':'—')));
+         for(const [state,n] of Object.entries(counts))card.append(node('p',state+' · '+n));
+         view.append(card);
+       }return;
+     }
      if(path==='support'){
        await ticketList(view,(data,cursor)=>api(path+(cursor?'?cursor='+encodeURIComponent(cursor):''),data),true);return;
      }
@@ -69,7 +90,7 @@ export async function mountAdmin(root){
          }else if(address){
            card.append(node('h3','Cropped jacket · 1 test XLM'),node('p',x.status.replaceAll('_',' ')));
            for(const [label,hash] of [['Purchase',x.purchaseTx],['Affiliate payout',x.payoutTx]])if(hash)card.append(link(label+' ↗','https://stellar.expert/explorer/testnet/tx/'+encodeURIComponent(hash)),' ');
-           if(x.status==='payout_pending')card.append(button('Recheck payout',async()=>{const r=await fetch('/api/payments/orders/'+encodeURIComponent(x.id),{cache:'no-store'});if(!r.ok)throw Error('Could not refresh this payment.');await refresh()}));
+           if(x.status==='payout_pending')card.append(button('Recheck payout',async()=>{await api('recheck-payout',{id:x.id});await refresh()}));
          }else{
            card.append(node('h3',x.title),node('p',x.status+(x.price?' · KSh '+x.price.toLocaleString():'')));
            for(const piece of x.pieces){if(piece.photo){const image=node('img');image.src=piece.photo;image.alt=piece.name;image.width=90;card.append(image)}card.append(node('p',piece.name))}
@@ -80,7 +101,7 @@ export async function mountAdmin(root){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}

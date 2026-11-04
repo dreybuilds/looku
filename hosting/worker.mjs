@@ -41,7 +41,12 @@ async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
  if(p==='/api/support')return support(request,env);
- if(p.startsWith('/api/admin/'))return admin(request,env);
+ if(p.startsWith('/api/admin/'))return admin(request,env,async id=>{
+   const order=await load(env.ORDERS,id);
+   if(order.row.status==='payout_pending')await reconcile(makeChain(env),order);
+   await indexPaidOrder(env.ORDERS,order.row);
+   return json(200,{status:order.row.status});
+ });
  if(p==='/api/affiliates'&&request.method==='GET')return json(200,{items:(await affiliates(env.ORDERS)).items});
  if(p==='/api/community'||p.startsWith('/api/community/'))return community(request,env);
  if(p==='/api/account'||p.startsWith('/api/account/')||p==='/api/stylist/gpt')return account(request,env);
