@@ -68,3 +68,5 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 #shop-currency{max-width:6em} [data-order-fields]{margin-top:1rem} #dialog[open]{max-height:90dvh;overflow:auto}
 
 .support-message{border-inline-start:3px solid var(--line);padding-inline-start:1rem;margin-block:1rem}.support-message p{white-space:pre-wrap;overflow-wrap:anywhere}#support-area textarea,#admin-workspace textarea{min-height:6rem;width:100%;font:inherit}#support-area summary,#admin-workspace summary{overflow-wrap:anywhere}
+
+.wish-card{margin:0}.wish-card h2{font-size:1.65rem;margin:.35em 0}.wish-card img{border-radius:.6rem;object-fit:cover}.wish-card form{margin-top:1rem}.wish-card progress{accent-color:var(--olive)}

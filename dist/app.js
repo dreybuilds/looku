@@ -1,3 +1,4 @@
+import {mountWishlist,receiveSharedLink} from './wishlist.js';
 import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
 import {mountCommunity,composePost} from './community.js';
 import {interpretLook} from './look-prompt.js';
@@ -108,6 +109,7 @@ function studio() {
  <div class="studio-tools">
    <section class="studio-shortcuts"><div class="eyebrow">Your studio</div><h2>On the rail</h2>
    <div class="shortcut-list"><button data-add><span>Add a piece</span><span aria-hidden="true">＋</span></button>
+   <a href="#wishlist"><span>Your wishlist</span><span aria-hidden="true">↗</span></a>
    <a href="#wardrobe"><span>Your wardrobe <small>${items.length} pieces</small></span><span aria-hidden="true">↗</span></a>
    <a href="#wallet"><span>Your wallet</span><span aria-hidden="true">↗</span></a></div></section>
    <section class="object-study"><div class="object-head"><div><div class="eyebrow">Object study &nbsp;/&nbsp; 001</div><h2>Orchid frames</h2></div><span class="chip">3D</span></div>
@@ -137,12 +139,14 @@ function showAdminNavigation(){
    event.preventDefault();render();main.focus();
  });
 }
+receiveSharedLink();
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'studio');
  if(section==='admin')sessionStorage.setItem('looku.admin-navigation','1');
  if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div><details class="panel" id="shopping-profile"></details>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
+ if(section==='wishlist'||section.startsWith('wishlist?')){await mountWishlist(main);return}
+ if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div><details class="panel" id="shopping-profile"></details>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
@@ -159,7 +163,7 @@ async function render(){
  }
  else if(section==='stylist')main.innerHTML=stylist();
  else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'){
-   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
+   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist savings goals →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
      if(id!==renderId)return;
@@ -184,7 +188,7 @@ async function render(){
  else if(section==='boutique/looku/cropped-jacket'){
    main.innerHTML=title('looku referral / Demo boutique','Cropped jacket','An optional layer to finish your look.')+`<section class="panel stack"><h2>${money()}</h2><p>Delivery included. The boutique pays looku ${money(.1)} for the referral. Practice order only.</p><button data-buy>Review purchase →</button></section>`;
  }
- else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+`<section class="panel"><div class="eyebrow">Featured partner · Practice order</div><h2>Demo boutique</h2><p>Cropped jacket · ${money()} · Delivery included</p><a class="button" href="#boutique/looku/cropped-jacket">Shop the jacket</a></section>`+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
+ else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+`<p><a class="button secondary" href="#wishlist">Wishlist · save a product link</a></p><section class="panel"><div class="eyebrow">Featured partner · Practice order</div><h2>Demo boutique</h2><p>Cropped jacket · ${money()} · Delivery included</p><a class="button" href="#boutique/looku/cropped-jacket">Shop the jacket</a></section>`+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
  const partners=await fetch('/api/affiliates',{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));if(id===renderId){
  stores=[...(partners.items||[]).map(p=>({name:p.name,region:'Affiliate partner',note:'Looku may earn a commission through this link.',url:p.url,referral:true})),...catalog];
  drawStores('');

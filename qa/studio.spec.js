@@ -185,7 +185,7 @@ test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',a
  await nav(page,'Stylist');await page.getByText('Find inspiration on Pinterest').click();
  await page.getByLabel('Search Pins').fill('lilac streetwear');
  await page.getByRole('button',{name:'Search Pinterest'}).click();
- await expect(page.locator('#pin-status')).toContainText('waiting for an authorized');
+ await expect(page.locator('#pin-status')).toContainText('You can use an inspiration photo from your device.');
 });
 test('invalid wallet proofs never grant a session and a valid challenge is single use',async({request,baseURL})=>{
  const {Keypair}=await import('../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js');
