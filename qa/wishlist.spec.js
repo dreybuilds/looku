@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 const item='https://www.ikojn.com/products/ayla-knit-top-in-plum-lilac?variant=49069166723307';
 test('save a shared product, track its own target offline and reopen the exact retailer variant',async({page,context})=>{
- await page.goto('/?'+new URLSearchParams({share_text:'See this top '+item,share_title:'Ayla Knit Top'}));
+ await page.goto('/app?'+new URLSearchParams({share_text:'See this top '+item,share_title:'Ayla Knit Top'}));
  await expect(page.getByLabel('Product link')).toHaveValue(item);
  await expect(page.getByLabel('Item name')).toHaveValue('Ayla Knit Top');
  await page.getByLabel('Target price').fill('2500');await page.getByLabel('Size or colour note').fill('Plum');
@@ -15,11 +15,11 @@ test('save a shared product, track its own target offline and reopen the exact r
  await card.getByRole('button',{name:'Edit item'}).click();await expect(page.getByLabel('Wishlist currency',{exact:true})).toBeDisabled();
  await page.getByLabel('Target price').fill('2600');await page.getByRole('button',{name:'Save changes'}).click();
  await expect(card).toContainText(/2,100 to go/);
- await page.goto('/?'+new URLSearchParams({share_url:item}));await expect(page.getByText(/Already saved/)).toBeVisible();
+ await page.goto('/app?'+new URLSearchParams({share_url:item}));await expect(page.getByText(/Already saved/)).toBeVisible();
  await expect(page.getByRole('article')).toHaveCount(1);
 });
 test('review from a desktop bookmark uses product metadata and cannot auto-save',async({page,context,baseURL})=>{
- await page.goto('/#wishlist');await page.getByText('Save while browsing',{exact:true}).click();
+ await page.goto('/app#wishlist');await page.getByText('Save while browsing',{exact:true}).click();
  const bookmark=await page.getByRole('link',{name:'Save to looku'}).getAttribute('href');
  await context.route('https://shop.example/**',r=>r.fulfill({contentType:'text/html',body:'<title>Top</title><meta property="og:title" content="Purple top"><meta property="product:price:amount" content="35.50"><meta property="product:price:currency" content="USD">'}));
  await page.goto('https://shop.example/product?variant=123');
@@ -31,7 +31,7 @@ test('review from a desktop bookmark uses product metadata and cannot auto-save'
  await expect(draft.getByRole('article')).toHaveCount(0);
 });
 test('paste-only save works without a price and unsafe schemes cannot be opened',async({page})=>{
- await page.goto('/#wardrobe');await page.getByRole('link',{name:'Wishlist',exact:true}).click();
+ await page.goto('/app#wardrobe');await page.getByRole('link',{name:'Wishlist',exact:true}).click();
  await page.getByLabel('Product link').fill('javascript:alert(1)');await page.getByRole('button',{name:'Save item',exact:true}).click();await expect(page.getByRole('article')).toHaveCount(0);
  await page.getByLabel('Product link').fill(item);await page.getByRole('button',{name:'Save item',exact:true}).click();
  await expect(page.getByRole('article')).toContainText('Add a target');await expect(page.getByRole('link',{name:'View at store'})).toHaveAttribute('href',item);

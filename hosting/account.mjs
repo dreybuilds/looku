@@ -68,8 +68,9 @@ export async function account(req,env){
  const challengeKey='wallet-challenges/'+address;
  if(route==='/api/account/challenge'){
    const nonce=crypto.randomUUID(),expires=Date.now()+180000;
-   const message=['looku wallet sign-in',url.origin,'Stellar testnet',address,nonce,String(expires)].join('\n');
-   await store.put(challengeKey,JSON.stringify({message,expires,nonce}));
+   const external=data.method==='freighter';
+   const message=['looku wallet sign-in',url.origin,external?'Stellar account':'Stellar testnet',address,nonce,String(expires)].join('\n');
+   await store.put(challengeKey,JSON.stringify({message,expires,nonce,external}));
    return reply(200,{message,nonce});
  }
  if(route!=='/api/account/verify')return reply(404,{error:'Unknown account action.'});
@@ -77,7 +78,12 @@ export async function account(req,env){
  const record=await challenge?.json();
  if(!record||record.expires<=Date.now()||!uuid.test(data.nonce)||data.nonce!==record.nonce)return reply(401,{error:'Sign-in expired. Try again.'});
  let valid=false;
- try{valid=Keypair.fromPublicKey(address).verify(encode(record.message),Uint8Array.from(atob(data.signature),c=>c.charCodeAt(0)))}catch{}
+ try{
+   const payload=record.external
+     ? new Uint8Array(await crypto.subtle.digest('SHA-256',encode('Stellar Signed Message:\n'+record.message)))
+     : encode(record.message);
+   valid=Keypair.fromPublicKey(address).verify(payload,Uint8Array.from(atob(data.signature),c=>c.charCodeAt(0)));
+ }catch{}
  if(!valid)return reply(401,{error:'Wallet signature did not match.'});
  if(!await store.put(challengeKey,'null',{onlyIf:{etagMatches:challenge.etag}}))return reply(409,{error:'This sign-in was already used.'});
  await store.put('wallet-accounts/'+address,JSON.stringify({address,createdAt:new Date().toISOString()}),{onlyIf:{etagDoesNotMatch:'*'}});
