@@ -129,7 +129,14 @@ export async function mountWallet(element) {
     note.textContent = 'Requesting free test XLM…';
     try {
       const response = await fetch('https://friendbot.stellar.org/?addr=' + destination, { signal: AbortSignal.timeout(30000) });
-      if (response.ok) note.textContent = 'Friendbot funded ' + destination.slice(0, 6) + '…' + destination.slice(-4) + '. Choose Check balance to refresh.';
+      if (response.ok) {
+        note.textContent = 'Test XLM sent to ' + destination.slice(0,6) + '…' + destination.slice(-4) + '. ';
+        if(sessionStorage.getItem('looku.return-to-order')){
+          const checkout=document.createElement('button');
+          checkout.type='button';checkout.dataset.buy='';checkout.textContent='Continue to jacket checkout';
+          note.append(checkout);
+        } else note.append('Choose Check balance to see your funds.');
+      }
       else note.textContent = 'Friendbot could not fund this address. Check your balance first. Accounts that already hold test funds may be ineligible.';
     } catch { note.textContent = 'Could not reach Friendbot. Check your balance before trying again.'; }
     finally { button.disabled = false; }
