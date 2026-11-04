@@ -1,0 +1,11 @@
+**/.env*
+**/.data/**
+**/node_modules/**
+**/*.sqlite*
+qa/
+art/
+brand/
+.openai/
+dist/.openai/
+dist/server/
+payments/build/
