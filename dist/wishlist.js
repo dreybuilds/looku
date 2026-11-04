@@ -72,7 +72,7 @@ export async function mountWishlist(main){
   <label>Target price (optional)<input type="number" name="price" min="0.01" step="0.01" max="99999999"></label></div>
   <label>Product photo (optional)<input type="file" name="photo" accept="image/*"></label>
   <p class="fine">Check the price and size on the retailer’s page. Add delivery costs to your target if you want to save for them too.</p>
-  <button>Save item</button></form></details>
+  <div class="row" data-editor-actions><button>Save item</button></div></form></details>
   <p role="status" data-wish-note></p><div class="stack" data-items></div>
   <details class="panel"><summary>Save while browsing</summary><p>On a supported phone with looku installed, share the product page to looku. You can always copy the link and paste it above.</p><p>On desktop, drag <a data-bookmark>Save to looku</a> to your bookmarks bar. Click that bookmark on a product page to review it here.</p></details>
   <p class="fine">Your wishlist, photos and savings notes stay in this browser. Logging an amount records money you set aside elsewhere. Clearing site data removes this list.</p>`;
@@ -134,7 +134,7 @@ export async function mountWishlist(main){
     f.title.focus();
   }
   function reset(){clearPreview();changed.clear();editing=null;form.reset();f.url.readOnly=false;f.currency.disabled=false;form.querySelector('button').textContent='Save item';}
-  const cancel=el('button','Cancel');cancel.type='button';cancel.className='secondary';form.append(cancel);
+  const cancel=el('button','Cancel');cancel.type='button';cancel.className='secondary';form.querySelector('[data-editor-actions]').append(cancel);
   cancel.onclick=()=>{reset();editor.open=false};
   async function refresh(){
     const all=await items();list.replaceChildren();

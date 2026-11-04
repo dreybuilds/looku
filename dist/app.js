@@ -110,6 +110,7 @@ function studio() {
    <div class="actions"><button data-edit-palette>Style this palette ↗</button><button class="secondary" data-add>Add a piece</button></div></div>
    <div class="campaign-images"><img class="portrait" src="/orchid-portrait.webp" alt="Model in plum sunglasses and a lilac windbreaker with pink piping" fetchpriority="high"><img class="textile" src="/orchid-detail.webp" alt="Silver zipper, lilac nylon and indigo denim in detail"><span class="plate-caption">01 &nbsp;/&nbsp; ORCHID</span></div>
  </section>
+ <div class="sectionhead"><div><div class="eyebrow">Your collection</div><h2>Wardrobe rail</h2></div><a class="link" href="#wardrobe">View all ${items.length} →</a></div><div class="grid cards4">${items.slice(0,4).map(card).join('')||'<p>Add your first piece to get started.</p>'}</div><p class="fine" style="margin-top:16px">The starter collection features four studio portraits. Add a photo to style your own clothes.</p>
  <div class="studio-tools">
    <section class="studio-shortcuts"><div class="eyebrow">Your studio</div><h2>On the rail</h2>
    <div class="shortcut-list"><button data-add><span>Add a piece</span><span aria-hidden="true">＋</span></button>
@@ -119,8 +120,7 @@ function studio() {
    <section class="object-study"><div class="object-head"><div><div class="eyebrow">Object study &nbsp;/&nbsp; 001</div><h2>Orchid frames</h2></div><span class="chip">3D</span></div>
    <div class="turntable" role="img" aria-label="Rotatable 3D study of glossy orchid sunglasses with smoked lenses"></div>
    <div class="object-controls"><label>Rotate the frames<input aria-label="Rotate the frames" id="turn-frame" type="range" min="0" max="23" value="0" aria-valuetext="0 degrees"></label><a href="/orchid-frames.glb" download="looku-orchid-frames.glb">3D file ↓</a></div></section>
- </div>
- <div class="sectionhead"><div><div class="eyebrow">Your collection</div><h2>Wardrobe rail</h2></div><a class="link" href="#wardrobe">View all ${items.length} →</a></div><div class="grid cards4">${items.slice(0,4).map(card).join('')||'<p>Add your first piece to get started.</p>'}</div><p class="fine" style="margin-top:16px">The starter collection features four studio portraits. Add a photo to style your own clothes.</p>`;
+ </div>`;
 }
 function stylist(){
  const look=currentLook();

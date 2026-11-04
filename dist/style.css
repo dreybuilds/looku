@@ -128,3 +128,67 @@ dialog [hidden] { display: none; }
   font: inherit;
 }
 .account-trigger:has(+ dialog[open]) { visibility: hidden; }
+
+/* Keep task forms readable and reserve the broad canvas for collections. */
+main:has(#member-account, [data-editor], #support-area, #wallet-panel, #admin-workspace) {
+  max-width: 66rem;
+}
+#member-account, #support-area, #admin-workspace { margin-block-start: 1.25rem; }
+main > .intro { margin-block-end: 1.25rem; }
+details.panel:not(.wallet-panel) {
+  padding: 0;
+  border-radius: 18px;
+}
+details.panel:not(.wallet-panel) > summary {
+  padding: 1rem clamp(1rem, 2.4vw, 1.65rem);
+  cursor: pointer;
+  line-height: 1.45;
+}
+details.panel:not(.wallet-panel)[open] > :not(summary) {
+  margin-inline: clamp(1rem, 2.4vw, 1.65rem);
+  margin-block-end: 1rem;
+}
+.wallet-grid > .wallet-panel { padding: 0; }
+.stack, .grid > *, .hero-copy, .campaign-images { min-width: 0; }
+.stack { grid-template-columns: minmax(0, 1fr); }
+.stack > button { justify-self: start; }
+.entry-copy dialog p { line-height: 1.5; }
+:where(.panel, .toolbar, dialog) :is(label, p, a, button, summary, h2, h3, code) {
+  overflow-wrap: anywhere;
+}
+.panel :is(input, select, textarea), dialog :is(input, select, textarea) { max-width: 100%; }
+:where(.stack, .row, .actions) > :is(input, select, textarea, button, a) { max-width: 100%; }
+#community-feed > p { margin-block: .85rem; }
+.community-tabs { gap: .4rem; }
+.community-tabs a { padding: .6rem .85rem; font-size: .9rem; }
+.community-grid { align-items: start; }
+.community-post { margin: 0; }
+.community-post h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); line-height: 1.08; margin-block-start: .45rem; }
+.public-pieces figure:only-child { max-width: 100%; }
+.public-pieces figure:only-child img { width: min(100%, 20rem); display: block; margin-bottom: .5rem; }
+.public-pieces figcaption { color: var(--muted); line-height: 1.4; }
+[data-preview-status]:empty, .prompt-panel .row:empty { display: none; }
+[data-preview] { max-width: 100%; border-radius: .75rem; }
+.sectionhead, .object-controls { flex-wrap: wrap; }
+.sectionhead .link { white-space: nowrap; }
+@media (min-width: 640px) {
+  #shopping-profile .stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #shopping-profile :is(p, .row) { grid-column: 1 / -1; }
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  header:has(.header-tools) { flex-wrap: wrap; gap: .65rem; }
+  header nav.nav { order: 3; width: 100%; justify-content: center; }
+}
+@media (max-width: 760px) {
+  .hero.campaign { grid-template-columns: minmax(0, 1fr); }
+  .campaign-images { min-height: 0; width: 100%; }
+  .campaign .hero-copy { padding: clamp(1rem, 5vw, 1.5rem); }
+  header:has(.header-tools) { gap: .5rem; padding-block: .55rem; min-height: 0; }
+  header nav.nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; border-radius: 14px; }
+  nav.nav .nav-link { padding: .55rem .12rem; line-height: 1.3; text-align: center; border-radius: 10px; }
+  .entry header nav.nav { display: none; }
+  .community-tabs a { padding: .55rem .7rem; }
+}
+@media (min-width: 600px) and (max-width: 760px) {
+  header nav.nav { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
