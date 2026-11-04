@@ -41,7 +41,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await page.goto('/#stylist');
  await page.getByRole('button',{name:'Review purchase'}).click();
  await page.getByLabel('Spending limit').fill('0.75');
- await page.getByRole('link',{name:'Create a demo wallet'}).click();
+ await page.getByRole('link',{name:'Set up checkout'}).click();
  const form=page.locator('[data-device-wallet] form').first();
  const phrase=crypto.randomUUID();
  await form.getByLabel('Wallet passphrase').fill(phrase);
@@ -68,13 +68,14 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await page.getByRole('button',{name:'Save goal'}).click();
  await page.reload();
  await toggleWallet(page,'Save for a piece');
- await expect(page.getByText(/Cropped jacket · 12 XLM/)).toBeVisible();
+ await expect(page.getByText(/Cropped jacket · KES\s*12/)).toBeVisible();
  await page.getByRole('button',{name:'Return to checkout'}).click();
  const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
  await expect(dialog.getByLabel('Spending limit')).toHaveValue('0.75');
- await dialog.getByLabel('Spending limit').fill('1');
+ await dialog.getByLabel('Spending limit').fill('2600');
+ await dialog.getByRole('button',{name:'Use example details'}).click();
  await dialog.getByLabel('Wallet passphrase').fill('incorrect phrase');
- await dialog.getByRole('button',{name:'Pay 1 test XLM with device wallet'}).click();
+ await dialog.getByRole('button',{name:/Place demo order/}).click();
  await expect(dialog.getByRole('status')).toContainText('Could not unlock');
  await dialog.getByRole('button',{name:'Close dialog'}).click();
  const fresh=await browser.newContext();
@@ -207,16 +208,16 @@ test('preset survives refresh and funding uses the displayed testnet destination
  await expect(sea).toHaveAttribute('aria-pressed','true');
  await expect(page.getByText(/Colour match: Sea Glass/)).toBeVisible();
  await page.goto('/#wallet');
- await toggleWallet(page,'Get demo funds');
- const funding=page.getByLabel('Testnet funding address');
+ await toggleWallet(page,'Add demo funds');
+ const funding=page.getByLabel('Demo wallet address');
  const destination='G'+'A'.repeat(55);
  await funding.fill(destination);
  await expect(page.getByLabel('Public wallet address')).toHaveValue(destination);
  await page.route('https://friendbot.stellar.org/**',route=>route.fulfill({status:200,body:'{}'}));
  const request=page.waitForRequest(req=>req.url().startsWith('https://friendbot.stellar.org/'));
- await page.getByRole('button',{name:'Get test XLM'}).click();
+ await page.getByRole('button',{name:'Add demo funds'}).click();
  expect(new URL((await request).url()).searchParams.get('addr')).toBe(destination);
- await expect(page.locator('[data-faucet-status]')).toContainText('Test XLM sent');
+ await expect(page.locator('[data-faucet-status]')).toContainText('Demo funds added');
  await toggleWallet(page,'Check balance');
  await page.getByRole('combobox',{name:'Network',exact:true}).selectOption('base');
  await expect(funding).toHaveCount(0);
@@ -230,7 +231,7 @@ test('shopping agent explains its decision before wallet access',async({page})=>
  await dialog.getByLabel('Spending limit').fill('0.75');
  await dialog.getByRole('button',{name:'Check my limit'}).click();
  await expect(dialog.getByRole('status')).toContainText('above your limit');
- await dialog.getByLabel('Spending limit').fill('1');
+ await dialog.getByLabel('Spending limit').fill('2600');
  await dialog.getByRole('button',{name:'Check my limit'}).click();
  await expect(dialog.getByRole('status')).toContainText('fits your limit');
  const response=await page.request.get('/api/account/receipts');
@@ -340,4 +341,24 @@ test('community publishes selective snapshots for visitors and enforces ownershi
    expect((await page.request.get('/api/admin/receipts?address='+seller)).status()).toBe(403);
    expect((await admin.request.get('/api/admin/receipts?address='+seller)).status()).toBe(200);
  }finally{await guest.close();await admin.close()}
+});
+
+test('shopping profile fills an affiliate order locally and supports both price lists',async({page})=>{
+ await page.goto('/#wardrobe');
+ await page.getByText('My sizes and delivery details').click();
+ const form=page.locator('#shopping-profile form');
+ await form.getByLabel('Top size').fill('M');await form.getByLabel('Jacket size').selectOption('L');
+ for(const [label,value] of [['Recipient name','Example Shopper'],['Street and building','42 Demo Lane'],['Town or city','Nairobi'],['Country','Kenya']])await form.getByLabel(label).fill(value);
+ await form.getByRole('button',{name:'Save shopping profile'}).click();
+ await page.reload();await nav(page,'Stores');
+ await page.getByRole('link',{name:'Shop the jacket'}).click();
+ await page.getByLabel('Shopping currency').selectOption('USD');
+ await page.getByRole('button',{name:'Review purchase'}).click();
+ const dialog=page.getByRole('dialog');
+ await expect(dialog.getByLabel('Jacket size')).toHaveValue('L');
+ await expect(dialog.getByLabel('Street and building')).toHaveValue('42 Demo Lane');
+ await expect(dialog.getByLabel('Spending limit')).toHaveValue('20');
+ await dialog.getByLabel('Spending limit').fill('19.99');await dialog.getByRole('button',{name:'Check my limit'}).click();
+ await expect(dialog.getByRole('status')).toContainText('above your limit');
+ expect(page.url()).not.toContain('Demo%20Lane');
 });

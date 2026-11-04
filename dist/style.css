@@ -64,3 +64,5 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 @media(max-width:480px){nav.nav{flex-wrap:wrap}nav.nav .nav-link{flex:1 0 29%}}
 
 #admin-workspace code,#admin-workspace .panel p{overflow-wrap:anywhere}#admin-workspace .panel button{margin:.25rem .4rem .25rem 0}#admin-workspace section>code{display:block;margin-bottom:1rem}
+
+#shop-currency{max-width:6em} [data-order-fields]{margin-top:1rem} #dialog[open]{max-height:90dvh;overflow:auto}

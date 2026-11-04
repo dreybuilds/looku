@@ -39,7 +39,7 @@ export function service(shop,{origin:configuredOrigin, allowedOrigin}={}) {
         }
         let order
         try {order = JSON.parse(body)} catch {throw new HttpError(400,'Invalid order JSON.')}
-        return json(201,shop.create(order?.sku,order?.address))
+        return json(201,shop.create(order?.sku,order?.address,order?.details))
       }
       const route = path.match(/^\/api\/payments\/orders\/([a-f0-9-]{36})(\/checkout)?$/)
       if (!route) throw new HttpError(404,'Route not found.')

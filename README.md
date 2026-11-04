@@ -5,6 +5,8 @@ See the [architecture and Demo Day walkthrough](ARCHITECTURE.md) for the shoppin
 
 [Design inspiration sites and workflow checklist](INSPIRATION.md)
 
+Save a fit and delivery profile in Wardrobe, choose KES or USD and open the demo boutique referral in Stores. The fixed catalogue prices are practice amounts. No real charge or shipment occurs. External retailers use their own checkout.
+
 ## Try it
 Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four sample garment portraits are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
 

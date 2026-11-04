@@ -33,12 +33,13 @@ export function buyPiece(options) {
       return executeOrder(options)
     })
 }
-async function executeOrder({sku = SKU, address, signer, limit = ITEM.amount, onStatus = () => {}, onOrder = () => {}}) {
+async function executeOrder({sku = SKU, address, signer, details, limit = ITEM.amount, onStatus = () => {}, onOrder = () => {}}) {
   if (sku !== SKU) throw Error('Unknown demo product.')
   const active = signer?.address || await connectWallet()
   if (address && active !== address) throw Error('The connected wallet has changed. Review this order again.')
   const plan = planPurchase({limit,address:active,sku,catalog:await getCatalog()})
   const storageKey = key(active, sku)
+  const fingerprint = details ? Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(details)))),n=>n.toString(16).padStart(2,'0')).join('') : '';
   let id = localStorage.getItem(storageKey)
   if (id) {
     const previous = await getReceipt(id)
@@ -47,10 +48,14 @@ async function executeOrder({sku = SKU, address, signer, limit = ITEM.amount, on
       await onOrder(id)
       return previous
     }
-  } else {
-    const order = await read('orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku,address:active})})
+    if(details && localStorage.getItem(storageKey+':choice')!==fingerprint)id=null;
+  }
+  if(!id){
+    const order = await read('orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sku,address:active,details})})
+    if(details && (order.selection?.size!==details.jacket || order.selection?.variant!=='cropped-jacket-'+details.jacket.toLowerCase() || order.selection?.referral!==details.referral))throw Error('The boutique could not confirm your selected size and referral. No payment was approved.')
     id = order.id
     localStorage.setItem(storageKey,id)
+    localStorage.setItem(storageKey+':choice',fingerprint)
   }
   await onOrder(id)
   const url = new URL('orders/' + id + '/checkout',endpoint)
@@ -61,11 +66,11 @@ async function executeOrder({sku = SKU, address, signer, limit = ITEM.amount, on
     return challenge
   }
   const offer = chooseOffer(plan,challenge,{address:active,sku,resource:url.href})
-  onStatus(signer ? 'Signing the testnet purchase on this device…' : 'Approve ' + ITEM.amount + ' test XLM in Freighter.')
+  onStatus(signer ? 'Approving your order on this device…' : 'Approve this order in your external wallet.')
   const scheme = new ExactStellarScheme(signer || {address:active, signAuthEntry:freighter.signAuthEntry})
   const authorization = await scheme.createPaymentPayload(2, offer)
   const payment = {...authorization, accepted:offer, resource:challenge.resource}
-  onStatus('Confirming the purchase and affiliate payout on Stellar Testnet…')
+  onStatus('Confirming your purchase and the store’s referral payment…')
   const receipt = await read('orders/' + id + '/checkout',{method:'POST',headers:{'Payment-Signature':btoa(JSON.stringify(payment))}})
   if (receipt.status === 'complete') localStorage.removeItem(storageKey)
   return receipt

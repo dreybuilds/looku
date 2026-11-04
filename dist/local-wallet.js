@@ -75,7 +75,7 @@ async function mountAccount(panel,wallet) {
 export async function mountDeviceWallet(panel, selectAddress) {
   let wallet = await walletRecord();
   function showWallet() {
-    panel.innerHTML = '<h3>Your device wallet</h3><p>Stellar testnet · demo funds</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p><section data-wallet-account class="stack"></section>';
+    panel.innerHTML = '<h3>Your device wallet</h3><p>Demo shopping balance</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p><section data-wallet-account class="stack"></section>';
     panel.querySelector('[data-public]').textContent = wallet.address;
     mountAccount(panel.querySelector('[data-wallet-account]'),wallet);
     panel.querySelector('[data-use]').onclick = () => selectAddress(wallet.address);
