@@ -51,6 +51,11 @@ The private Sites Worker serves the studio and Freighter bundle from one origin.
 ## Demo evidence
 The complete Node API flow settled a testnet purchase and its referral payout with a disposable software signer. [Purchase](https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99) · [Commission](https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7)
 
+## Community sign-up and publishing
+Open Community or a Wardrobe publishing form and choose **Sign up or log in with email**. Privy sends a one-time code and creates the account on first verification. Looku verifies the access token against the app’s public signing keys and stores post ownership by Privy user ID. Wallet-authored posts remain associated with the original wallet.
+
+Anyone can read public looks and approved closet listings. Signed-in members can publish looks, submit pieces for sale or donation, see approved listing contacts and withdraw their own posts. The Vercel owner workspace verifies the owner’s Privy email using the server-only `PRIVY_APP_SECRET` and requires the linked wallet for moderation.
+
 ## Offline use and optional storage
 Install looku from the browser menu or Safari’s Share → Add to Home Screen. The service worker caches only the app shell, styling code, icons and directory. The wardrobe, reference image and saved outfits live in IndexedDB. After the first successful online load, adding pieces, generating outfits and saving looks work without a connection. Wallet lookups, testnet payments, retailer links, online backups and Pinterest search need connectivity. Payments still produce public testnet transactions and server-side order records.
 

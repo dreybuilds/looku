@@ -13,7 +13,9 @@ export async function session(req,store){
  if(!raw)return null;
  const key='wallet-sessions/'+await digest(raw);
  const row=await (await store.get(key))?.json();
- return row?.expires>Date.now()?{...row,key}:null;
+ if(!row||row.expires<=Date.now())return null;
+ const account=await (await store.get('wallet-accounts/'+row.address))?.json();
+ return account&&!account.suspended?{...row,key}:null;
 }
 async function takeQuota(store){
  const key='gpt-budget/'+new Date().toISOString().slice(0,10);
@@ -79,6 +81,7 @@ export async function account(req,env){
  if(!valid)return reply(401,{error:'Wallet signature did not match.'});
  if(!await store.put(challengeKey,'null',{onlyIf:{etagMatches:challenge.etag}}))return reply(409,{error:'This sign-in was already used.'});
  await store.put('wallet-accounts/'+address,JSON.stringify({address,createdAt:new Date().toISOString()}),{onlyIf:{etagDoesNotMatch:'*'}});
+ if((await (await store.get('wallet-accounts/'+address)).json()).suspended)return reply(403,{error:'This wallet account is suspended.'});
  const token=crypto.randomUUID(),hours=12;
  await store.put('wallet-sessions/'+await digest(token),JSON.stringify({address,expires:Date.now()+hours*3600000}));
  return reply(200,{address},sessionCookie(token,hours*3600));

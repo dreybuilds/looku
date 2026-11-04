@@ -1,5 +1,5 @@
-const CACHE='looku-shell-privacy-v1';
-const SHELL=['/','/privacy-policy','/index.html','/style.css','/vendor/bootstrap-components.css','/app.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
+const CACHE='looku-shell-20261104-privy-email-v1-admin-host';
+const SHELL=['/','/index.html','/style.css','/vendor/bootstrap-components.css','/app.js','/community.js','/email-auth.js','/admin.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  await Promise.all(SHELL.map(async path=>{

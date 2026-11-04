@@ -12,5 +12,7 @@ assert.ok(policyRoute?.dest, 'The public privacy URL must resolve to a built pag
 const policy = await readFile(new URL('static' + policyRoute.dest, output), 'utf8');
 assert.match(policy, /<h1>Privacy policy<\/h1>/);
 assert.ok((await readFile(new URL('static/api/payments/client.js', output))).length);
+assert.ok((await readFile(new URL('static/privy.js', output))).length);
+assert.match(home, /href="#community"/);
 assert.equal(typeof handler.default, 'function');
 console.log('Verified studio homepage, browser signer and server entry point.');

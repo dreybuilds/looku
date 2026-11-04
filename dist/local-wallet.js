@@ -26,7 +26,7 @@ export async function accountCall(path, data) {
  return info;
 }
 async function mountAccount(panel,wallet) {
- panel.innerHTML='<h3>looku account</h3><p>Your testnet wallet is your account. Sign a message to sign in for 12 hours.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
+ panel.innerHTML='<h3>looku account</h3><p>Your testnet wallet is your account. Your first signature creates your wallet account. Community also offers email sign-in. Sign in for 12 hours to publish looks, list pieces and manage your posts. No test funds are needed.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
  const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
  function signedIn(){
    form.hidden=true;

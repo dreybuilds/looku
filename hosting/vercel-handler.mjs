@@ -2,6 +2,8 @@ import {Readable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {get, put, del, list, BlobPreconditionFailedError, issueSignedToken, presignUrl} from '@vercel/blob';
 import worker from './worker.mjs';
+import {privyAppId} from '../payments/privy-config.mjs';
+import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 
 const orders = {
@@ -33,7 +35,25 @@ export default async function handler(req, res) {
   const url = new URL(req.url, 'https://' + req.headers.host);
   const headers = new Headers(req.headers);
   headers.delete('oai-authenticated-user-id');
+  headers.delete('oai-authenticated-user-email');
   let response;
+  if(url.pathname.startsWith('/api/admin/')){
+    // Vercel has no Sites identity headers. Verify the owner through Privy before wallet enrollment.
+    if(headers.has('authorization')){
+      try{
+        const did=await privySubject(new Request(url,{headers}));
+        const profile=await fetch('https://api.privy.io/v1/users/'+encodeURIComponent(did),{
+          headers:{'privy-app-id':privyAppId,Authorization:'Basic '+Buffer.from(privyAppId+':'+process.env.PRIVY_APP_SECRET).toString('base64')},
+          signal:AbortSignal.timeout(8000)
+        });
+        if(!profile.ok)throw Error();
+        const user=await profile.json(),email=user.linked_accounts?.find(a=>a.type==='email'&&a.verified_at);
+        if(user.id===did&&email){headers.set('oai-authenticated-user-id',did);headers.set('oai-authenticated-user-email',email.address)}
+      }catch{response=Response.json({error:'Could not verify the owner email session.'},{status:401})}
+    }else if(url.pathname==='/api/admin/access'&&req.method==='GET'){
+      response=Response.json({state:'email-sign-in'});
+    }
+  }
   if (url.pathname === '/api/wardrobe-backup' || url.pathname === '/api/pinterest/search') {
     const user = await session(new Request(url, {headers}), orders);
     if (user) headers.set('oai-authenticated-user-id', user.address);

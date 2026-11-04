@@ -8,6 +8,7 @@ const site = path.join(out, 'static');
 await mkdir(fn, {recursive: true});
 await cp('dist', site, {recursive: true, filter: file => !['server', '.openai'].includes(path.basename(file))});
 await mkdir(path.join(site, 'api/payments'), {recursive: true});
+await cp('payments/build/privy.js',path.join(site,'privy.js'));
 await cp('payments/build/client.js', path.join(site, 'api/payments/client.js'));
 await build({
   entryPoints: ['hosting/vercel-handler.mjs'], outfile: path.join(fn, 'index.cjs'),

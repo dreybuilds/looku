@@ -1,4 +1,6 @@
+import {admin,affiliates} from './admin.mjs';
 import {indexPaidOrder} from './wallet-receipts.mjs';
+import {community} from './community.mjs';
 import {account} from './account.mjs';
 // R2's conditional writes choose one signed envelope per order before any broadcast.
 import { makeChain, nativeAsset, HttpError } from '../payments/chain.mjs';
@@ -36,6 +38,9 @@ function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Obj
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(p.startsWith('/api/admin/'))return admin(request,env);
+ if(p==='/api/affiliates'&&request.method==='GET')return json(200,{items:(await affiliates(env.ORDERS)).items});
+ if(p==='/api/community'||p.startsWith('/api/community/'))return community(request,env);
  if(p==='/api/account'||p.startsWith('/api/account/')||p==='/api/stylist/gpt')return account(request,env);
  if(p==='/api/wardrobe-backup')return backup(request,env);
  if(p==='/api/pinterest/search')return searchPins(request,env);
@@ -45,6 +50,7 @@ async function handle(request,env){
  if(p===BASE+'/catalog'&&request.method==='GET')return json(200,{items:[ITEM],network:NETWORK,asset:nativeAsset,merchant:chain.merchant,platform:chain.platform});
  if(p===BASE+'/orders'&&request.method==='POST'){
  const {sku,address}=await request.json();if(sku!==SKU||!StrKey.isValidEd25519PublicKey(address||''))throw new HttpError(400,'Choose the demo jacket and a valid Stellar address.');
+ if((await (await bucket.get('wallet-accounts/'+address))?.json())?.suspended)throw new HttpError(403,'Wallet account suspended.');
  const row={id:crypto.randomUUID(),status:'awaiting_signature',address,merchant:chain.merchant,platform:chain.platform,purchaseTx:null,payoutTx:null};
  await bucket.put('orders/'+row.id,JSON.stringify(row));return json(201,receipt(row));
  }
@@ -54,6 +60,7 @@ async function handle(request,env){
  if(!route[2]&&request.method==='GET'){await reconcile(chain,order);await indexPaidOrder(bucket,row);return json(200,receipt(row))}
  if(!route[2]||request.method!=='POST')throw new HttpError(405,'Unsupported method.');
  if(row.status==='awaiting_signature'){
+ if((await (await bucket.get('wallet-accounts/'+row.address))?.json())?.suspended)throw new HttpError(403,'Wallet account suspended.');
  const resource={url:url.origin+p,description:'looku demo cropped jacket',mimeType:'application/json'};
  const header=request.headers.get('Payment-Signature');if(!header){const challenge={x402Version:2,resource,accepts:[offer]};return json(402,challenge,{'Payment-Required':encoded(challenge)})}
  let payload;try{payload=JSON.parse(atob(header))}catch{throw new HttpError(400,'Invalid payment header.')}
