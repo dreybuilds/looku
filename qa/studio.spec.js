@@ -250,3 +250,11 @@ test('add and style opens a look with the new piece and receipts are directly vi
  await nav(page,'Wallet');
  await expect(page.getByRole('heading',{name:'Purchase receipts'})).toBeVisible();
 });
+
+test('returning from checkout focuses the receipt without hiding wallet tools',async({page})=>{
+ await page.goto('/');
+ await page.evaluate(()=>sessionStorage.setItem('looku.show-receipt','1'));
+ await nav(page,'Wallet');
+ await expect(page.locator('#receipts')).toBeFocused();
+ await expect(page.getByText('See or create wallet',{exact:true})).toBeVisible();
+});
