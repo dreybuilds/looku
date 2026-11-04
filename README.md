@@ -1,5 +1,5 @@
 # looku
-A personal wardrobe studio for the EmpowerHer agentic payments hackathon. Intended domain: **lookuwear.xyz**, pending registration and DNS setup.
+A personal wardrobe studio for the EmpowerHer agentic payments hackathon. [Studio](https://lookuwear.xyz/) · [Privacy policy](https://lookuwear.xyz/privacy-policy) ([source](dist/privacy-policy.html)).
 
 See the [architecture and Demo Day walkthrough](ARCHITECTURE.md) for the shopping agent, wallet identity, settlement boundaries and pilot roadmap.
 
@@ -46,7 +46,7 @@ The demo boutique is the only integrated seller. In this single-referrer demo, o
 The `looku` Vercel project builds the static studio and Node API with `npm run build`. Production uses a private Vercel Blob store for orders, wallet sessions and encrypted backups. Set `LOOKU_MERCHANT_TEST_SECRET`, `LOOKU_FACILITATOR_TEST_SECRET`, `LOOKU_PLATFORM_ADDRESS` and `OPENROUTER_API_KEY` in the project. Online styling sends the signed-in shopper’s written brief through OpenRouter to `openai/gpt-4.1-mini`. On Vercel, backups are scoped to the signed-in wallet.
 
 ## Sites deployment
-The private Sites Worker serves the studio and Freighter bundle from one origin. Build the browser signer in payments, then run `node hosting/build.mjs`. The Worker uses the same testnet chain code as the local service. Configure LOOKU_MERCHANT_TEST_SECRET, LOOKU_FACILITATOR_TEST_SECRET and LOOKU_PLATFORM_ADDRESS as runtime secrets. The test shopper key is used only for the local live check. Site registration and DNS are separate. Connect lookuwear.xyz after purchasing it and applying the host-provided verification records.
+The private Sites Worker serves the studio and Freighter bundle from one origin. Build the browser signer in payments, then run `node hosting/build.mjs`. The Worker uses the same testnet chain code as the local service. Configure LOOKU_MERCHANT_TEST_SECRET, LOOKU_FACILITATOR_TEST_SECRET and LOOKU_PLATFORM_ADDRESS as runtime secrets. The test shopper key is used only for the local live check.
 
 ## Demo evidence
 The complete Node API flow settled a testnet purchase and its referral payout with a disposable software signer. [Purchase](https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99) · [Commission](https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7)

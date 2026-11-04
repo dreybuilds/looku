@@ -17,7 +17,7 @@ const server=http.createServer(async(req,res)=>{
  }
  if(pathname==='/api/pinterest/search'||pathname==='/api/wardrobe-backup'){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Use the signed-in hosted studio for online features.'}));return}
  if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);res.end();return}
- const file=resolve(root,'.'+decodeURIComponent(pathname==='/'?'/index.html':pathname));
+ const file=resolve(root,'.'+decodeURIComponent(pathname==='/'?'/index.html':/^\/privacy-policy\/?$/.test(pathname)?'/privacy-policy.html':pathname));
  if(!file.startsWith(resolve(root)+sep)){res.writeHead(403);res.end();return}
  const bytes=await readFile(file);res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff'});res.end(req.method==='HEAD'?undefined:bytes);
  }catch{res.writeHead(404);res.end('Not found')}

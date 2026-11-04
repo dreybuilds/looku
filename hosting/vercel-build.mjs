@@ -23,5 +23,5 @@ await writeFile(path.join(fn, '.vc-config.json'), JSON.stringify({
   supportsResponseStreaming: true, maxDuration: 60
 }));
 await writeFile(path.join(out, 'config.json'), JSON.stringify({
-  version: 3, routes: [{handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
+  version: 3, routes: [{src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
 }));
