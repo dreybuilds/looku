@@ -1,3 +1,4 @@
+import {emailHeaders} from './email-auth.js';
 import {productUrl,guessName,fetchProductPreview} from './shopping.js';
 import {merchantOffer,signOffer,submitOffer,newNonce,authorizationStatus} from './merchant-payment.js';
 import {baseUSDC,readWalletBalance} from './wallet.js';
@@ -131,10 +132,34 @@ export async function mountWishlist(main){
   function reset(){clearPreview();changed.clear();editing=null;form.reset();f.url.readOnly=false;f.currency.disabled=false;form.querySelector('button').textContent='Save item';}
   const cancel=el('button','Cancel');cancel.type='button';cancel.className='secondary';form.querySelector('[data-editor-actions]').append(cancel);
   cancel.onclick=()=>{reset();editor.open=false};
-  async function refresh(openFundingUrl){
-    const all=await items();list.replaceChildren();
+  const checks=new Map();
+  let running=false,timerId;
+  const events=new AbortController();
+  async function sync(){
+    clearTimeout(timerId);
+    if(!list.isConnected){events.abort();return}
+    if(running)return;
+    running=true;
+    try{
+      if(!document.hidden&&navigator.onLine){
+        for(const [panel,check] of [...checks]){
+          if(!panel.isConnected)checks.delete(panel);
+          else await check()
+        }
+      }
+    }finally{running=false;timerId=setTimeout(sync,15000)}
+  }
+  for(const event of ['focus','online','pageshow'])window.addEventListener(event,sync,{signal:events.signal});
+  document.addEventListener('visibilitychange',sync,{signal:events.signal});
+  let mpesaEnabled=false;
+  async function refresh(openFundingUrl,oldPanel){
+    const all=await items();
+    if(oldPanel&&!oldPanel.isConnected)return all;
+    if(oldPanel)checks.delete(oldPanel);
+    else{list.replaceChildren();checks.clear()}
     if(!all.length)list.append(el('p','Your saved pieces will appear here.'));
     for(const item of all){
+      if(oldPanel&&oldPanel.dataset.item!==item.url)continue;
       const url=productUrl(item.url),card=el('article','');card.className='panel wish-card';
       if(item.photo){const image=document.createElement('img');image.src=item.photo;image.alt=item.title;image.width=100;card.append(image)}
       card.append(el('small',url.hostname.replace(/^www\./,'')),el('h2',item.title));
@@ -144,9 +169,10 @@ export async function mountWishlist(main){
       const row=el('div','');row.className='actions';
       const shop=el('a','View at store ↗');shop.href=item.url;shop.target='_blank';shop.rel='noopener noreferrer';shop.className='button';
       const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>populate(item);
-      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await update(item.url,current=>{if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
+      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await update(item.url,current=>{if(current?.mpesa&&!current.mpesa.closed)throw Error('Wait for the M-Pesa request to finish before removing this item.');if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
       row.append(shop,edit,remove);card.append(row);
-      const funding=fundingPanel(item,refresh,all);funding.open=item.url===openFundingUrl;card.append(funding);list.append(card);
+      if(item.goalWallet){const total=el('p','Item budget · '+formatUSDC(BigInt(item.allocation||0))+' USDC');total.dataset.itemBudget='';total.setAttribute('aria-live','polite');card.append(total)}
+      const funding=fundingPanel(item,refresh,all,checks,mpesaEnabled);funding.open=item.url===openFundingUrl;card.append(funding);if(oldPanel)oldPanel.closest('article').replaceWith(card);else list.append(card);
     }
     return all;
   }
@@ -161,7 +187,8 @@ export async function mountWishlist(main){
       });reset();editor.open=false;history.replaceState(null,'',location.pathname+'#wishlist');await refresh();note.textContent='Saved '+title+'.';
     }catch(err){note.textContent=err.message}finally{btn.disabled=false}};
 
-  try{const all=await refresh();editor.open=!all.length;
+  try{mpesaEnabled=(await (await fetch('/api/wishlist-mpesa',{signal:AbortSignal.timeout(3500)})).json()).enabled===true}catch{}
+  try{const all=await refresh();editor.open=!all.length;void sync();
     if(seed.has('url')){
       editor.open=true;const url=productUrl(seed.get('url'));const prior=all.find(item=>item.url===url.href);
       if(prior){populate(prior);note.textContent='Already saved. You can edit this item here.';return}
@@ -172,9 +199,15 @@ export async function mountWishlist(main){
   }catch(e){note.textContent=e.message}
 }
 
-function fundingPanel(item,refresh,all){
+function fundingPanel(item,refresh,all,checks,mpesaEnabled){
   const panel=el('details','');panel.className='wish-funding';
   const summary=el('summary','Fund this item'),body=el('div',''),status=el('p','');body.className='stack';status.setAttribute('role','status');panel.append(summary,body);
+  const watchers=[];
+  checks.set(panel,async()=>{for(const watcher of watchers){if(!panel.isConnected)return;try{await watcher()}catch{/* Retry this payment independently on the next sync. */}}});
+  async function redraw(){
+    await refresh(panel.open?item.url:null,panel);
+  }
+  panel.dataset.item=item.url;
   function action(label,fn){
     const button=el('button',label);button.type='button';body.append(button);
     button.onclick=async()=>{
@@ -215,7 +248,7 @@ function fundingPanel(item,refresh,all){
     const destination=el('code',address);
     body.append(el('strong','Receiving wallet · Base mainnet'),destination,el('p','Send native USDC here from another wallet, or choose Buy in MiniSend and use this address for your M-Pesa purchase.'));
     action('Copy receiving address',async()=>{await navigator.clipboard.writeText(address);status.textContent='Receiving address copied.'});
-    const mini=el('a','Fund with M-Pesa via MiniSend ↗');mini.className='button secondary';mini.href='https://app.minisend.xyz/';mini.target='_blank';mini.rel='noopener noreferrer';body.append(mini);
+    const mini=el('a','Fund with M-Pesa via MiniSend ↗');mini.className='button secondary';mini.href='https://app.minisend.xyz/';mini.target='_blank';mini.rel='noopener noreferrer';body.append(mini,el('small','Hosted MiniSend top-ups go to your shared wallet. Assign those funds to an item after they arrive.'));
     const label=el('label','Transfer amount (USDC)'),input=el('input','');input.inputMode='decimal';input.placeholder='0.00';label.append(input);body.append(label);
     action('Review transfer in wallet',async()=>{
       const value=input.value.trim();
@@ -241,6 +274,7 @@ function fundingPanel(item,refresh,all){
         if(requested>availableForItem(rows,units))throw Error('This exceeds the confirmed balance available after your other wishlist budgets.');
         return {...current,allocation:String(requested)};
       },true);
+      panel.closest('article').querySelector('[data-item-budget]').textContent='Item budget · '+show(requested);
       status.textContent='Assigned '+show(requested)+' to '+item.title+'.';
     });
     async function funded(){
@@ -254,6 +288,61 @@ function fundingPanel(item,refresh,all){
       status.textContent='Confirmed wallet balance: '+show(units)+' · Available for this item: '+show(limit)+' · checked '+new Date().toLocaleTimeString()+'.';
     });
 
+    async function applyCredit(field,payment,amount,transaction){
+      const {units}=await read(address,'finalized');
+      await update(item.url,(current,rows)=>{
+        if(current?.goalWallet!==address||current[field]?.id!==payment.id||current[field].closed)return current;
+        const target=BigInt(current.allocation||0)+amount,available=availableForItem(rows,units);
+        return {...current,allocation:String(target<available?target:available),[field]:{...current[field],closed:true,credited:true,amount:String(amount),tx:transaction}};
+      },true);
+      if(panel.isConnected)await redraw();
+    }
+    if(mpesaEnabled||item.mpesa){
+      const attempt=item.mpesa,active=attempt&&!attempt.closed;
+      const mpesaUrl=id=>'/api/wishlist-mpesa/'+id;
+      if(attempt?.closed)body.append(el('p',attempt.credited?'M-Pesa received · '+show(BigInt(attempt.amount)):'M-Pesa payment '+attempt.outcome+'.'));
+      if(active){
+        body.append(el('p','Waiting for M-Pesa confirmation. This item updates automatically.'));
+        watchers.push(async()=>{
+          const result=await fetch(mpesaUrl(attempt.id),{headers:await emailHeaders(),cache:'no-store',signal:AbortSignal.timeout(12000)});
+          if(result.status===401){status.textContent='Sign in again through Account to resume M-Pesa updates.';return}
+          if(!result.ok)return;
+          const order=await result.json();
+          if(order.status==='released'&&order.address===address){
+            const amount=parseUSDC(order.usdc);
+            if(await confirmedRelease(order.transaction,address,amount))await applyCredit('mpesa',attempt,amount,order.transaction);
+          }else if(['cancelled','expired','failed'].includes(order.status)){
+            await update(item.url,current=>current?.mpesa?.id===attempt.id?{...current,mpesa:{...current.mpesa,closed:true,outcome:order.status}}:current);
+            await redraw();
+          }
+        });
+      }
+      if(!active||!attempt.submitted){
+        const kes=el('input',''),phone=el('input',''),kesLabel=el('label','Pay with M-Pesa (KES)'),phoneLabel=el('label','M-Pesa phone number');
+        kes.type='number';kes.min='1';kes.step='1';phone.type='tel';phone.autocomplete='tel';
+        if(active){kes.value=attempt.kes;kes.readOnly=true}
+        kesLabel.append(kes);phoneLabel.append(phone);body.append(kesLabel,phoneLabel);
+        action(active?'Retry the same M-Pesa prompt':'Request M-Pesa prompt for this item',async()=>{
+          const value=Number(kes.value),number=phone.value.replace(/[ ()-]/g,'');
+          if(!Number.isSafeInteger(value)||value<1||value>250000||!/^(?:0|\+?254)[17]\d{8}$/.test(number))throw Error('Enter a whole KES amount and a Kenyan mobile number.');
+          const headers={...await emailHeaders(),'Content-Type':'application/json','X-Looku-Action':'wishlist-mpesa'};
+          const next=active?attempt:{id:crypto.randomUUID(),kes:value};
+          await update(item.url,current=>{
+            if(current?.goalWallet!==address||(current.mpesa&&!current.mpesa.closed&&current.mpesa.id!==next.id))throw Error('Another M-Pesa request is pending. Reopen this item.');
+            return {...current,mpesa:next};
+          });
+          let result;
+          try{result=await fetch(mpesaUrl(next.id),{method:'POST',headers,body:JSON.stringify({kes:value,phone:number,address}),signal:AbortSignal.timeout(18000)})}catch{}
+          if(result?.ok){
+            await update(item.url,current=>current?.mpesa?.id===next.id?{...current,mpesa:{...current.mpesa,submitted:true}}:current);
+          }else if(result?.status===400||([401,403].includes(result?.status)&&!active)){
+            await update(item.url,current=>current?.mpesa?.id===next.id?{...current,mpesa:null}:current);
+            throw Error((await result.json()).error);
+          }
+          await refresh(item.url);
+        });
+      }
+    }
     const contribution=item.contribution;
     const fundingPath=link=>'/api/wishlist-funding/'+link.id+'/'+address+'/'+link.amount;
     if(!contribution||contribution.closed){
@@ -275,28 +364,25 @@ function fundingPanel(item,refresh,all){
       share.readOnly=true;share.value=new URL(path,location.origin).href;linkLabel.append(share);
       body.append(el('p','Share this link with an x402 agent to request '+show(BigInt(contribution.amount))+'. It contains your receiving address and the requested amount.'),linkLabel);
       action('Copy funding link',async()=>{await navigator.clipboard.writeText(share.value);status.textContent='Funding link copied.'});
-      action('Check incoming contribution',async()=>{
-        const response=await fetch(path,{cache:'no-store'});
-        if(response.status===402){status.textContent='Waiting for an agent to fund this item.';return}
+      body.append(el('p','This budget updates automatically when the payment is confirmed.'));
+      const checkContribution=async(manual=false)=>{
+        const response=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(12000)});
+        if(response.status===402){if(manual)status.textContent='Waiting for an agent to fund this item.';return}
         if(response.status===410){
           await update(item.url,current=>{
             if(current?.contribution?.id!==contribution.id)throw Error('Reopen this item.');
             return {...current,contribution:{...current.contribution,closed:true}};
           });
-          await refresh(item.url);return;
+          await redraw();return;
         }
         if(!response.ok)throw Error('Could not check the contribution. Try again.');
         const receipt=await response.json();
         if(receipt.status==='pending'||receipt.finalized===false){status.textContent='Payment submitted. Check again after Base finalizes it.';return}
         if(receipt.status!=='paid'||receipt.finalized!==true||!/^0x[0-9a-f]{64}$/i.test(receipt.transaction))throw Error('No confirmed receipt for this link.');
-        const {units}=await read(address,'finalized');
-        await update(item.url,(current,rows)=>{
-          if(current?.goalWallet!==address||current.contribution?.id!==contribution.id||current.contribution.closed)throw Error('This link changed. Reopen this item.');
-          const target=BigInt(current.allocation||0)+BigInt(contribution.amount),available=availableForItem(rows,units);
-          return {...current,allocation:String(target<available?target:available),contribution:{...contribution,closed:true,credited:true,tx:receipt.transaction}};
-        },true);
-        await refresh(item.url);
-      });
+        await applyCredit('contribution',contribution,BigInt(contribution.amount),receipt.transaction);
+      };
+      watchers.push(checkContribution);
+      action('Check incoming contribution',()=>checkContribution(true));
     }
 
     const lastPayment=item.agentPayment;
@@ -309,7 +395,7 @@ function fundingPanel(item,refresh,all){
       if(lastPayment.confirmation){
         const result=el('details','');result.append(el('summary','Merchant confirmation'),el('p',lastPayment.confirmation));body.append(result);
       }
-      if(!lastPayment.closed)action('Verify payment on Base',async()=>{
+      if(!lastPayment.closed){const checkMerchant=async()=>{
         const state=await authorizationStatus(address,lastPayment);
         if(state==='pending'){status.textContent='Awaiting finalized confirmation. Check again after the authorization expires.';return}
         await update(item.url,current=>{
@@ -317,8 +403,8 @@ function fundingPanel(item,refresh,all){
           if(state==='used')return {...current,agentPayment:{...current.agentPayment,closed:true}};
           return {...current,agentPayment:null,allocation:String(BigInt(current.allocation||0)+BigInt(lastPayment.amount))};
         });
-        await refresh(item.url);
-      });
+        await redraw();
+      };watchers.push(checkMerchant);action('Verify payment on Base',checkMerchant)}
     }
     if(!lastPayment)action('Review x402 merchant payment',async()=>{
       const {limit}=await funded();
@@ -351,6 +437,20 @@ function fundingPanel(item,refresh,all){
   body.append(status);return panel;
 }
 
+async function confirmedRelease(transaction,address,amount){
+  if(!/^0x[0-9a-f]{64}$/i.test(transaction))return false;
+  async function rpc(method,params){
+    const res=await fetch('https://mainnet.base.org',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(10000),
+      body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+    if(!res.ok)throw Error('Base unavailable');
+    return (await res.json()).result;
+  }
+  const [receipt,block]=await Promise.all([rpc('eth_getTransactionReceipt',[transaction]),rpc('eth_getBlockByNumber',['finalized',false])]);
+  if(receipt?.status!=='0x1'||receipt.transactionHash?.toLowerCase()!==transaction.toLowerCase()||!block||BigInt(receipt.blockNumber)>BigInt(block.number))return false;
+  const recipient='0x'+address.slice(2).toLowerCase().padStart(64,'0');
+  return receipt.logs.some(log=>log.address.toLowerCase()===baseUSDC.toLowerCase()&&
+    log.topics[0]==='0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'&&log.topics[2]===recipient&&BigInt(log.data)===amount);
+}
 function parseUSDC(value){
   if(!/^\d{1,8}(\.\d{1,6})?$/.test(value.trim()))throw Error('Enter a USDC amount with up to six decimal places.');
   const [whole,fraction='']=value.trim().split('.');

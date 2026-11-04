@@ -177,3 +177,40 @@ test('wallet goals accept a wishlist piece or a product link and keep the exact 
  await expect(page.getByRole('link',{name:'View product'})).toHaveAttribute('href',second);
  await expect(target).toHaveValue('6000');
 });
+
+test('returning to the wishlist automatically credits finalized M-Pesa and x402 receipts once',async({page,context})=>{
+ const address='0x'+'1'.repeat(40),transaction='0x'+'2'.repeat(64);
+ let finalized=false,agentPaid=false,order;
+ await page.addInitScript(address=>{window.ethereum={request:async()=>[address]}},address);
+ await context.route('**/api/product-preview',r=>r.fulfill({json:{}}));
+ await context.route('**/api/wishlist-mpesa',r=>r.fulfill({json:{enabled:true}}));
+ await context.route('**/api/wishlist-mpesa/*',r=>{
+   if(r.request().method()==='POST'){order=r.request().postDataJSON();return r.fulfill({json:{status:'pending'}})}
+   return r.fulfill({json:{status:'released',usdc:'1.5',transaction,address}});
+ });
+ await context.route('**/api/wishlist-funding/**',r=>r.fulfill(agentPaid?{json:{status:'paid',finalized:true,transaction:'0x'+'3'.repeat(64)}}:{status:402,json:{}}));
+ await context.route('https://mainnet.base.org/**',r=>{
+   const method=r.request().postDataJSON().method;
+   const result=method==='eth_getBlockByNumber'?{number:finalized?'0xb':'0x9'}:method==='eth_getTransactionReceipt'?{
+     transactionHash:transaction,status:'0x1',blockNumber:'0xa',logs:[{address:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',topics:[
+       '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef','0x0','0x'+address.slice(2).padStart(64,'0')],data:'0x16e360'}]
+   }:'0x'+(10000000).toString(16).padStart(64,'0');
+   return r.fulfill({json:{result}});
+ });
+ await page.goto('/app?'+new URLSearchParams({share_url:item,share_title:'Auto funded'}));
+ await page.getByRole('button',{name:'Save item',exact:true}).click();
+ await page.getByText('Fund this item',{exact:true}).click();page.once('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Choose receiving wallet'}).click();
+ await page.getByLabel('Pay with M-Pesa (KES)').fill('200');await page.getByLabel('M-Pesa phone number').fill('0700000000');
+ await page.getByRole('button',{name:'Request M-Pesa prompt for this item'}).click();
+ await expect(page.getByText(/Waiting for M-Pesa confirmation/)).toBeVisible();
+ expect(order).toMatchObject({kes:200,address});
+ await page.getByLabel('Request from an agent').fill('2');
+ await page.getByRole('button',{name:'Create x402 funding link'}).click();
+ await expect(page.getByLabel('Agent funding link')).toBeVisible();
+ await page.reload();await expect(page.getByText('Item budget · 0 USDC')).toBeVisible();
+ finalized=true;agentPaid=true;
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(page.getByText('Item budget · 3.5 USDC')).toBeVisible({timeout:40000});
+ await page.reload();await expect(page.getByText('Item budget · 3.5 USDC')).toBeVisible();
+});

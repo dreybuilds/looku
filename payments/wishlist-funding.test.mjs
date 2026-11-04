@@ -39,3 +39,33 @@ test('incoming contributions settle once, reject replay and await finalized tran
   assert.equal((await (await send(url,proof)).json()).finalized,true);
   assert.equal(settlements,1);
 });
+
+import {wishlistMpesa} from '../hosting/wishlist-mpesa.mjs';
+test('MiniSend prompt retries reuse the provider order and only a matching release is exposed',async t=>{
+ const bucket=new Map(),store={
+   async get(key){return bucket.get(key)},
+   async put(key,value){const row={etag:crypto.randomUUID(),json:async()=>JSON.parse(value)};bucket.set(key,row);return row}
+ };
+ const env={MINISEND_API_KEY:'test',ORDERS:store};
+ const base='https://example.test',url=base+'/api/wishlist-mpesa/'+crypto.randomUUID(),orderId=crypto.randomUUID();
+ const address='0x'+'1'.repeat(40),hash='0x'+'2'.repeat(64);
+ const body={phone:'0700000000',kes:1000,address};
+ const send=()=>new Request(url,{method:'POST',headers:{origin:base,'X-Looku-Action':'wishlist-mpesa'},body:JSON.stringify(body)});
+ let created=0,lookup;
+ t.mock.method(globalThis,'fetch',async(url,opts)=>{
+   if(opts.method==='POST'){
+     created++;const submitted=JSON.parse(opts.body);
+     assert.equal(opts.headers['Idempotency-Key'],submitted.reference);
+     lookup={order_id:orderId,external_reference:submitted.reference,release_chain:'base',release_asset:'USDC',release_address:address,amount_local:1000,amount_usdc:7.62,currency:'KES',payment_method:'mpesa',status:'pending',customer_phone:body.phone};
+     return Response.json(lookup);
+   }
+   return Response.json(lookup);
+ });
+ assert.equal((await wishlistMpesa(send(),env,null)).status,401);
+ await wishlistMpesa(send(),env,'member');await wishlistMpesa(send(),env,'member');assert.equal(created,1);
+ const read=async owner=>(await wishlistMpesa(new Request(url),env,owner)).json();
+ assert.equal((await wishlistMpesa(new Request(url),env,'another member')).status,403);
+ lookup.status='completed';assert.deepEqual(await read('member'),{status:'pending'});
+ lookup.release_tx_hash=hash;assert.deepEqual(await read('member'),{status:'released',transaction:hash,address,usdc:'7.62'});
+ lookup.release_address='0x'+'3'.repeat(40);await assert.rejects(()=>read('member'),/Mismatched/);
+});
