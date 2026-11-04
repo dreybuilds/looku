@@ -27,12 +27,12 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
  <form class="stack"><label>Public title<input name="title" maxlength="180" required value="${esc(source.name)}"></label>
  <div class="public-pieces">${pieces.map(p=>`<figure>${photoOf(p)?`<img src="${esc(photoOf(p))}" alt="">`:''}<figcaption>${esc(p.name)}</figcaption></figure>`).join('')}</div>
  ${kind==='sale'?'<label>Asking price (KSh)<input type="number" name="price" min="1" max="99999999" step="1" required></label>':''}
- ${kind!=='look'?'<label>Public contact email<input type="email" name="email" maxlength="160" required></label>':''}
- <p class="fine">Anyone can see this title, the piece names and their thumbnails.${kind==='look'?'':' Your contact email is public so interested people can arrange a handoff with you.'} You can withdraw the post in Community.</p>
+ ${kind!=='look'?'<label>Contact email<input type="email" name="email" maxlength="160" required></label>':''}
+ <p class="fine">Once published, anyone can see this title, the piece names and their thumbnails.${kind==='look'?'':' An admin reviews this listing first. After approval, signed-in wallet users can see your contact email to arrange a handoff.'} You can withdraw the post in Community.</p>
  <button>${actions[kind]}</button><p role="status"></p></form>`);
  const form=body.querySelector('form'),button=form.querySelector('button'),status=form.querySelector('[role=status]');
  function walletLink(){const wallet=link('Open Wallet to create an account or sign in','#wallet');wallet.onclick=()=>dialog.close();status.append(' ',wallet)}
- function postLink(id){const a=link('View public post',route(kind,id));a.onclick=()=>dialog.close();status.append(' ',a)}
+ function postLink(id){const a=link('View submission',route(kind,id));a.onclick=()=>dialog.close();status.append(' ',a)}
  form.onsubmit=async e=>{
    e.preventDefault();if(button.disabled)return;button.disabled=true;status.textContent='Publishing…';
    try{
@@ -71,10 +71,12 @@ export async function mountCommunity(panel,[requested,id]){
      figure.append(element('figcaption',p.name));pieces.append(figure);
    }
    card.append(badge,element('h2',post.title),pieces);
+   if(post.mine&&kind!=='look')card.append(element('p',post.status==='pending'?'Awaiting admin review':post.status==='rejected'?'Rejected · Withdraw to revise and resubmit.':'Approved'));
+   if(kind!=='look'&&!post.email)card.append(element('strong',kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),link('Sign in to see contact details','#wallet'));
    if(post.email){
      card.append(element('strong',post.kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),element('p',post.email),link(post.kind==='sale'?'Contact seller':'Contact donor','mailto:'+encodeURIComponent(post.email).replace('%40','@')));
    }
-   const tools=element('div');tools.className='actions';tools.append(link('Public link',route(kind,post.id)));
+   const tools=element('div');tools.className='actions';if(['approved','published'].includes(post.status))tools.append(link('Public link',route(kind,post.id)));
    if(post.mine){
      const remove=element('button','Withdraw post');remove.className='secondary small';tools.append(remove);
      remove.onclick=async()=>{

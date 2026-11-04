@@ -3,10 +3,12 @@ import {session} from './account.mjs';
 const kinds=['look','sale','donate'];
 const reply=(status,data)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const textFits=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.length<=n;
-const publicPost=(row,address)=>{
- const {owner,...post}=row;
- return {...post,mine:owner===address};
-};
+const visible=(row,address)=>row.owner===address||row.kind==='look'||row.status==='approved';
+function publicPost(row,address){
+ const {id,kind,title,pieces,price}=row,mine=row.owner===address;
+ return {id,kind,title,pieces,price,mine,status:kind==='look'?'published':row.status||'pending',
+   ...(address&&(mine||row.status==='approved')?{email:row.email}:{})};
+}
 
 export async function community(req,{ORDERS:store}){
  const url=new URL(req.url);
@@ -18,11 +20,11 @@ export async function community(req,{ORDERS:store}){
    const cursor=url.searchParams.get('cursor')||undefined;
    const page=await store.list({prefix,limit:8,cursor});
    const rows=await Promise.all(page.objects.map(async obj=>(await store.get(obj.key))?.json()));
-   return reply(200,{posts:rows.filter(Boolean).map(row=>publicPost(row,account?.address)),cursor:page.truncated?page.cursor:null});
+   return reply(200,{posts:rows.filter(row=>row&&visible(row,account?.address)).map(row=>publicPost(row,account?.address)),cursor:page.truncated?page.cursor:null});
  }
  if(req.method==='GET'){
    const row=await (await store.get(prefix+id))?.json();
-   return row?reply(200,publicPost(row,account?.address)):reply(404,{error:'This post is no longer available.'});
+   return row&&visible(row,account?.address)?reply(200,publicPost(row,account?.address)):reply(404,{error:'This post is no longer available.'});
  }
  if(req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='community')return reply(403,{error:'Open Community in Looku Wear.'});
  if(!account)return reply(401,{error:'Sign in with your Looku wallet to publish or withdraw a post.'});
@@ -54,7 +56,7 @@ export async function community(req,{ORDERS:store}){
  const post={kind,title:data.title.trim(),pieces};
  if(kind!=='look'){
    if(!textFits(data.email,160)||!/^[^\s@?<>&#]+@[^\s@?<>&#]+\.[^\s@?<>&#]+$/.test(data.email))return reply(400,{error:'Enter a contact email.'});
-   post.email=data.email;
+   post.email=data.email;post.status='pending';
    if(kind==='sale'){
      if(!Number.isSafeInteger(data.price)||data.price<=0||data.price>99999999)return reply(400,{error:'Enter a positive price in whole KSh.'});
      post.price=data.price;
@@ -63,5 +65,5 @@ export async function community(req,{ORDERS:store}){
  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([account.address,kind,data.sourceId])));
  post.id=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
  const stored=await store.put(prefix+post.id,JSON.stringify({...post,owner:account.address}),{onlyIf:{etagDoesNotMatch:'*'}});
- return reply(stored?201:409,{id:post.id,...(!stored?{error:'Already published. Withdraw the existing post to change it.'}:{})});
+ return reply(stored?201:409,{id:post.id,...(!stored?{error:'Already submitted. Withdraw the existing post to change it.'}:{})});
 }

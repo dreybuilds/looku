@@ -128,9 +128,14 @@ async function render(){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
  }
+ else if(section==='admin'){
+   main.innerHTML=title('Looku Wear / Administration','Admin workspace','Review community listings, manage affiliate links and inspect wallet accounts.')+'<section id="admin-workspace"></section>';
+   const panel=main.querySelector('#admin-workspace');
+   const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
+ }
  else if(section==='stylist')main.innerHTML=stylist();
  else if(section==='wallet'){
-   main.innerHTML=title('Account / Stellar','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div>';
+   main.innerHTML=title('Account / Stellar','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
      if(id!==renderId)return;
@@ -151,7 +156,9 @@ async function render(){
      }
    }catch{if(id===renderId)main.querySelector('#wallet-panel').textContent='Wallet tools could not load. Refresh to retry.'}
  }
- else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{stores??=await fetch('stores.json').then(r=>r.json());if(id===renderId){
+ else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
+ const partners=await fetch('/api/affiliates',{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));if(id===renderId){
+ stores=[...(partners.items||[]).map(p=>({name:p.name,region:'Affiliate partner',note:'Looku may earn a commission through this link.',url:p.url,referral:true})),...catalog];
  drawStores('');
  main.querySelector('#kenya-applications').innerHTML=stores.filter(s=>s.application).map(s=>`<li><b>${esc(s.name)}</b> · ${esc(s.application)}<p>${esc(s.nextStep)} <a href="${esc(s.url)}" target="_blank" rel="noopener">Official program ↗</a></p></li>`).join('');
  }}catch{if(id===renderId)main.querySelector('#store-list').textContent='Store directory is unavailable. Refresh to retry.'}}
@@ -161,7 +168,7 @@ async function render(){
    document.querySelector('#saved-heading')?.focus();
  }
 }
-function drawStores(q){const list=stores.filter(s=>[s.name,s.region,s.note].some(v=>v.toLowerCase().includes(q.toLowerCase())));document.querySelector('#store-list').innerHTML=list.map(s=>`<article class="store"><span class="eyebrow">${esc(s.region)}</span><h3>${esc(s.name)}</h3><p class="fine">${esc(s.note)}</p>${s.shop?`<a href="${esc(s.shop)}" target="_blank" rel="noopener noreferrer">Shop ${esc(s.name)} ↗</a>`:''}<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">Visit program ↗</a></article>`).join('')||'<p>No programs match your search.</p>'}
+function drawStores(q){const list=stores.filter(s=>[s.name,s.region,s.note].some(v=>v.toLowerCase().includes(q.toLowerCase())));document.querySelector('#store-list').innerHTML=list.map(s=>`<article class="store"><span class="eyebrow">${esc(s.region)}</span><h3>${esc(s.name)}</h3><p class="fine">${esc(s.note)}</p>${s.shop?`<a href="${esc(s.shop)}" target="_blank" rel="noopener noreferrer">Shop ${esc(s.name)} ↗</a>`:''}<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer sponsored">${s.referral?'Shop via referral':'Visit program'} ↗</a></article>`).join('')||'<p>No programs match your search.</p>'}
 const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';
 const purchaseStates={
