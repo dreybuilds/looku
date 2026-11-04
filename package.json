@@ -1,0 +1,17 @@
+{
+  "name": "looku-vercel",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "build": "npm --prefix payments run build && node hosting/vercel-build.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "2.8.2"
+  },
+  "overrides": {
+    "zod": "4.6.6"
+  }
+}

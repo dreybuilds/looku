@@ -53,8 +53,15 @@ export async function deviceAction(button,snapshot){
   status.textContent='Working…';
   const blob=op==='save'?await encryptBackup({version:1,...snapshot()},secret):undefined;
   if(blob&&blob.size>12*1024*1024)throw Error('The online backup limit is 12 MB.');
-  const r=await fetch('/api/wardrobe-backup',{method:{save:'PUT',restore:'GET',delete:'DELETE'}[op],headers:{'X-Looku-Action':'wardrobe-backup'},body:blob,cache:'no-store',redirect:'error'});
-  if(!r.ok)throw Error(r.status===401?'Sign in to your looku site account to use online backup.':r.status===404?'No online backup was found.':'Online backup unavailable. Your local wardrobe is still on this device.');
+  let r=await fetch('/api/wardrobe-backup',{method:{save:'PUT',restore:'GET',delete:'DELETE'}[op],headers:{'X-Looku-Action':'wardrobe-backup'},body:blob,cache:'no-store',redirect:'error'});
+  if(op==='save' && r.status===413){
+   const ticket=await fetch('/api/wardrobe-backup',{method:'POST',headers:{'X-Looku-Action':'wardrobe-backup'},cache:'no-store'});
+   if(ticket.ok){
+    const {presignedUrl}=await ticket.json();
+    r=await fetch(presignedUrl,{method:'PUT',body:blob,credentials:'omit',referrerPolicy:'no-referrer'});
+   }else r=ticket;
+  }
+  if(!r.ok)throw Error(r.status===401?'Sign in to your account in Wallet to use online backup.':r.status===404?'No online backup was found.':'Online backup unavailable. Your local wardrobe is still on this device.');
   if(op==='restore'){const data=await decryptBackup(await r.arrayBuffer(),secret);await restoreWardrobe(data);location.reload();return}
   status.textContent=op==='save'?'Encrypted wardrobe backed up. Later changes stay on this device until you back up again.':'Online backup deleted.';
   field.value='';

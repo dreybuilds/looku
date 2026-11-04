@@ -8,7 +8,7 @@ async function digest(text){
  const bytes=await crypto.subtle.digest('SHA-256',encode(text));
  return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 }
-async function session(req,store){
+export async function session(req,store){
  const raw=(req.headers.get('Cookie')||'').match(/(?:^|;\s*)__Host-looku-session=([0-9a-f-]{36})\b/)?.[1];
  if(!raw)return null;
  const key='wallet-sessions/'+await digest(raw);
@@ -36,7 +36,7 @@ export async function account(req,env){
  }
  if(route==='/api/account'&&req.method==='GET'){
    const user=await session(req,store);
-   return reply(200,{address:user?.address||null,gptAvailable:Boolean(env.OPENAI_API_KEY)});
+   return reply(200,{address:user?.address||null,gptAvailable:Boolean(env.OPENROUTER_API_KEY)});
  }
  if(req.method!=='POST'||req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='wallet-account')return reply(403,{error:'Open your account in looku.'});
  if(route==='/api/account/logout'){
@@ -45,7 +45,7 @@ export async function account(req,env){
  }
  let data;try{data=await req.json()}catch{return reply(400,{error:'Invalid request.'})}
  if(route==='/api/stylist/gpt'){
-   if(!env.OPENAI_API_KEY)return reply(503,{error:'GPT styling is awaiting an API connection. Use on-device styling.'});
+   if(!env.OPENROUTER_API_KEY)return reply(503,{error:'GPT styling is awaiting an API connection. Use on-device styling.'});
    if(!await session(req,store))return reply(401,{error:'Sign in with your device wallet in Wallet, then try GPT.'});
    if(typeof data.prompt!=='string'||!data.prompt.trim()||data.prompt.length>180)return reply(400,{error:'Describe a look in 1–180 characters.'});
    if(!await takeQuota(store))return reply(429,{error:'The demo has used its daily GPT allowance. On-device styling is available.'});
@@ -53,7 +53,7 @@ export async function account(req,env){
    const schema={type:'object',additionalProperties:false,properties:{occasion:{type:'string',enum:occasions},colors:array,prefer:{type:'array',items:{type:'string',enum:wardrobeTypes}},exclude:{type:'array',items:{type:'string',enum:wardrobeTypes}},tip:string},required:['occasion','colors','prefer','exclude','tip']};
    let result;
    try {
-     const upstream=await fetch('https://api.openai.com/v1/responses',{method:'POST',signal:AbortSignal.timeout(18000),headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4.1-mini',store:false,max_output_tokens:300,instructions:'Interpret a fashion brief as styling preferences for a local wardrobe matcher. Provide up to three hex colours (#rrggbb), desired and excluded categories, and one practical short styling tip. Do not claim the user owns any particular item.',input:data.prompt,text:{format:{type:'json_schema',name:'look_preferences',strict:true,schema}}})});
+     const upstream=await fetch('https://openrouter.ai/api/v1/responses',{method:'POST',signal:AbortSignal.timeout(18000),headers:{Authorization:'Bearer '+env.OPENROUTER_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:'openai/gpt-4.1-mini',store:false,max_output_tokens:300,instructions:'Interpret a fashion brief as styling preferences for a local wardrobe matcher. Provide up to three hex colours (#rrggbb), desired and excluded categories, and one practical short styling tip. Do not claim the user owns any particular item.',input:data.prompt,text:{format:{type:'json_schema',name:'look_preferences',strict:true,schema}}})});
      if(!upstream.ok)throw Error();
      const body=await upstream.json();
      result=JSON.parse(body.output.flatMap(o=>o.content||[]).find(c=>c.type==='output_text').text);
