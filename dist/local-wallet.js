@@ -25,10 +25,12 @@ export async function accountCall(path, data) {
  if(!response.ok)throw Error(info.error||'Account service unavailable.');
  return info;
 }
-async function mountAccount(panel,wallet) {
+async function mountAccount(panel,wallet,onOwnerSignIn) {
  panel.innerHTML='<h3>looku account</h3><p>Sign in with your demo wallet to get styling advice or manage your Community posts. Your first sign-in creates an account and lasts up to 12 hours. Community also offers email sign-in.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
  const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
+ if(onOwnerSignIn)panel.querySelector('p').textContent='Unlock your linked wallet to verify owner access.';
  function signedIn(){
+   if(onOwnerSignIn){onOwnerSignIn();return}
    form.hidden=true;
    note.textContent='Signed in with this device wallet.';
    const button=document.createElement('button');
@@ -74,13 +76,17 @@ async function mountAccount(panel,wallet) {
  };
  try{const state=await accountCall('/api/account');if(state.address===wallet.address&&!form.hidden)signedIn()}catch{/* Local wallet remains usable offline. */}
 }
-export async function mountDeviceWallet(panel, selectAddress) {
+export async function mountDeviceWallet(panel, selectAddress, onOwnerSignIn) {
   let wallet = await walletRecord();
   function showWallet() {
     panel.innerHTML = '<h3>Your device wallet</h3><p>Demo shopping balance</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p><section data-wallet-account class="stack"></section>';
     panel.querySelector('[data-public]').textContent = wallet.address;
-    mountAccount(panel.querySelector('[data-wallet-account]'),wallet);
+    mountAccount(panel.querySelector('[data-wallet-account]'),wallet,onOwnerSignIn);
     panel.querySelector('[data-use]').onclick = () => selectAddress(wallet.address);
+    if(onOwnerSignIn){
+      panel.querySelector('h3').textContent='Owner wallet';
+      panel.querySelector('p').remove();panel.querySelector('[data-use]').remove();
+    }
     panel.querySelector('[data-export]').onclick = () => {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob([JSON.stringify(wallet)], {type:'application/json'}));
@@ -94,6 +100,10 @@ export async function mountDeviceWallet(panel, selectAddress) {
     <form><label>Wallet passphrase<input type="password" name="phrase" required minlength="12" autocomplete="new-password" placeholder="At least 12 characters"></label>
     <label>Confirm passphrase<input type="password" name="repeat" required autocomplete="new-password"></label><button>Create wallet</button></form>
     <details><summary>Restore a wallet</summary><form><label>looku recovery file<input type="file" name="backup" required accept=".json"></label><label>Wallet passphrase<input type="password" name="phrase" required autocomplete="current-password"></label><button>Restore wallet</button></form></details><p role="status"></p>`;
+  if(onOwnerSignIn){
+    panel.querySelector('h3').textContent='Set up your owner wallet';
+    panel.querySelector('p').textContent='Restore your linked wallet using its recovery file, or create a wallet for first-time enrollment.';
+  }
   for (const form of panel.querySelectorAll('form')) form.onsubmit = async event => {
     event.preventDefault();
     const status = panel.querySelector('[role=status]');
@@ -115,7 +125,7 @@ export async function mountDeviceWallet(panel, selectAddress) {
       }
       wallet = await walletRecord(record);
       showWallet();
-      selectAddress(wallet.address);
+      selectAddress?.(wallet.address);
     } catch (e) { status.textContent = e.message; }
     finally { controls.forEach(button => button.disabled = false); }
   };

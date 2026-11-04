@@ -7,7 +7,7 @@ const home = await readFile(new URL('static/index.html', output), 'utf8');
 assert.match(home, /<title>looku \/ Wardrobe studio<\/title>/);
 assert.match(home, /href="\/privacy-policy"/);
 const config = JSON.parse(await readFile(new URL('config.json', output), 'utf8'));
-const policyRoute = config.routes.find(route => route.src && new RegExp(route.src).test('/privacy-policy'));
+const policyRoute = config.routes.find(route => !route.has && route.src && new RegExp(route.src).test('/privacy-policy'));
 assert.ok(policyRoute?.dest, 'The public privacy URL must resolve to a built page.');
 const policy = await readFile(new URL('static' + policyRoute.dest, output), 'utf8');
 assert.match(policy, /<h1>Privacy policy<\/h1>/);

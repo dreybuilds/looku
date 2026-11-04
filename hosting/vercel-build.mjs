@@ -23,6 +23,15 @@ await writeFile(path.join(fn, '.vc-config.json'), JSON.stringify({
   runtime: 'nodejs24.x', handler: 'index.cjs', launcherType: 'Nodejs', shouldAddHelpers: false,
   supportsResponseStreaming: true, maxDuration: 60
 }));
+const adminHost=[{type:'host',value:'admin.lookuwear.xyz'}];
+// Match the host before Vercel serves any shopper files or API routes.
+const adminAssets='admin\\.js|support\\.js|email-auth\\.js|local-wallet\\.js|privy\\.js|style\\.css|api/payments/client\\.js';
+const adminApi='api/admin/[^?]*|api/account(?:/(?:verify|challenge|logout))?|api/community/session';
+const ownerRoutes=[
+  {src:'^/(?:index\\.html|owner\\.html)?$',has:adminHost,dest:'/owner.html'},
+  {src:'^/sw\\.js$',has:adminHost,dest:'/owner-sw.js',headers:{'Cache-Control':'no-store'}},
+  {src:'^/(?!(?:'+adminAssets+'|'+adminApi+')$).*$',has:adminHost,status:404}
+];
 await writeFile(path.join(out, 'config.json'), JSON.stringify({
-  version: 3, routes: [{src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
+  version: 3, routes: [...ownerRoutes,{src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
 }));
