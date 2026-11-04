@@ -23,7 +23,7 @@ export async function readWalletBalance(network, address, signal, block='latest'
     if (!res.ok) throw Error('The Base balance service is unavailable. Try again.');
     const { result } = await res.json();
     if (!/^0x[0-9a-f]{64}$/i.test(result)) throw Error('Base returned an incomplete balance. Try again.');
-    return { usdc: Number(BigInt(result)) / 1e6 };
+    return { usdc: Number(BigInt(result)) / 1e6, units: BigInt(result) };
   }
   if (!/^G[A-Z2-7]{55}$/.test(address)) throw Error('Enter a 56-character public Stellar address beginning with G.');
   const res = await fetch(plan.host + '/accounts/' + address, { signal, cache: 'no-store' });

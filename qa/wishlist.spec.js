@@ -85,4 +85,57 @@ test('wallet and MiniSend funding count only finalized Base holdings',async({pag
  const check=page.getByRole('button',{name:'Check confirmed funds'});
  await check.click();await expect(page.getByText(/Confirmed wallet balance: 0 USDC/)).toBeVisible();
  balance=2500000n;await check.click();await expect(page.getByText(/Confirmed wallet balance: 2.5 USDC/)).toBeVisible();
+ await page.getByLabel('Budget for this item').fill('1.5');await page.getByRole('button',{name:'Assign wallet funds'}).click();
+ await expect(page.getByText(/Assigned 1.5 USDC/)).toBeVisible();
+ await page.goto('/app?'+new URLSearchParams({share_url:'https://example.com/second',share_title:'Second goal'}));
+ await page.getByRole('button',{name:'Save item',exact:true}).click();
+ const second=page.getByRole('article').filter({hasText:'Second goal'});await second.getByText('Fund this item').click();
+ page.once('dialog',d=>d.accept());await second.getByRole('button',{name:/Use wallet/}).click();
+ await second.getByLabel('Budget for this item').fill('2');await second.getByRole('button',{name:'Assign wallet funds'}).click();
+ await expect(second).toContainText('exceeds the confirmed balance');
+ await second.getByLabel('Budget for this item').fill('1');await second.getByRole('button',{name:'Assign wallet funds'}).click();
+ await expect(second).toContainText('Assigned 1 USDC');
+ balance=1400000n;await second.getByRole('button',{name:'Check confirmed funds'}).click();
+ await expect(second).toContainText('Available for this item: 0 USDC');
+
+});
+
+test('merchant x402 authorization is capped, bound to Base USDC and sent only after approval',async({page,context})=>{
+ const url='https://merchant.example/look',address='0x'+'3'.repeat(40),payTo='0x'+'4'.repeat(40);
+ const token='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',tx='0x'+'5'.repeat(64);
+ let amount='2000001',paid=0,signedPayload;
+ await page.route('**/api/product-preview',r=>r.fulfill({json:{}}));
+ await page.addInitScript(address=>{
+   window.ethereum={request:async({method,params})=>{
+     if(method==='eth_requestAccounts')return [address];
+     if(method==='wallet_switchEthereumChain')return null;
+     if(method==='eth_chainId')return '0x2105';
+     if(method==='eth_signTypedData_v4'){window.signed=JSON.parse(params[1]);return '0x'+'ab'.repeat(65)}
+     throw Error(method);
+   }};
+ },address);
+ await context.route('https://mainnet.base.org/**',r=>{
+   const {method,params}=r.request().postDataJSON();
+   const result=method==='eth_getBlockByNumber'?{number:'0xff',timestamp:'0xff'}:
+   '0x'+(params[0].data.startsWith('0xe94a0102')?'1':(3000000).toString(16)).padStart(64,'0');
+   return r.fulfill({json:{jsonrpc:'2.0',id:1,result}});
+ });
+ const encoded=data=>Buffer.from(JSON.stringify(data)).toString('base64');
+ await context.route(url,r=>{
+   const signature=r.request().headers()['payment-signature'];
+   if(signature){paid++;signedPayload=JSON.parse(Buffer.from(signature,'base64'));return r.fulfill({headers:{'access-control-expose-headers':'payment-response','payment-response':encoded({success:true,network:'eip155:8453',transaction:tx})},body:'received'})}
+   return r.fulfill({status:402,headers:{'access-control-expose-headers':'payment-required','payment-required':encoded({x402Version:2,resource:{url},accepts:[{scheme:'exact',network:'eip155:8453',asset:token,amount,payTo,maxTimeoutSeconds:60,extra:{name:'USD Coin',version:'2'}}]})},body:''});
+ });
+ await page.goto('/app?'+new URLSearchParams({share_url:url,share_title:'Agent look'}));
+ await page.getByRole('button',{name:'Save item',exact:true}).click();await page.getByText('Fund this item',{exact:true}).click();
+ page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Choose receiving wallet'}).click();
+ await page.getByLabel('Budget for this item').fill('2');await page.getByRole('button',{name:'Assign wallet funds'}).click();
+ const checkout=page.getByRole('button',{name:'Review x402 merchant payment'});
+ await checkout.click();await expect(page.getByText(/No exact Base USDC offer fits/)).toBeVisible();expect(paid).toBe(0);
+ amount='1500000';await checkout.click();await expect(page.getByRole('link',{name:/View payment transaction/})).toHaveAttribute('href','https://basescan.org/tx/'+tx);
+ expect(paid).toBe(1);expect(signedPayload.resource.url).toBe(url);expect(signedPayload.payload.authorization).toMatchObject({from:address,to:payTo,value:amount});
+ expect(await page.evaluate(()=>window.signed.domain)).toEqual({name:'USD Coin',version:'2',chainId:8453,verifyingContract:token});
+ await page.getByRole('button',{name:'Verify payment on Base'}).click();
+ await expect(page.getByText('Payment authorization used on Base.')).toBeVisible();
+ await expect(checkout).toHaveCount(0);expect(paid).toBe(1);
 });
