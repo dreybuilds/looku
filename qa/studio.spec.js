@@ -34,7 +34,7 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await expect(page.getByText('No pieces in this category yet.')).toBeVisible();
  await page.getByLabel('Category').selectOption('shirt');
  page.once('dialog',d=>d.accept());
- await page.getByRole('article').filter({hasText:'Lilac linen shirt'}).locator('..').getByRole('button').click();
+ await page.getByRole('article').filter({hasText:'Lilac linen shirt'}).locator('..').getByRole('button',{name:'Remove',exact:true}).click();
  await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toHaveCount(0);
 });
 test('checkout detour, wallet recovery, savings and wrong signing passphrase',async({page,browser})=>{
@@ -127,7 +127,7 @@ test('native PWA metadata and install affordance',async({},testInfo)=>{
 test('accessible pages, dialog names and viewport fit',async({page})=>{
  const failures=[];
  page.on('pageerror',e=>failures.push(e.message));
- for(const route of ['studio','wardrobe','stylist','wallet','shops']){
+ for(const route of ['studio','wardrobe','stylist','community','wallet','shops']){
    await page.goto('/#'+route);
    const heading=page.getByRole('heading',{level:1});await expect(heading).toBeVisible();
    if(route==='wallet'){
@@ -257,4 +257,48 @@ test('returning from checkout focuses the receipt without hiding wallet tools',a
  await nav(page,'Wallet');
  await expect(page.locator('#receipts')).toBeFocused();
  await expect(page.getByText('See or create wallet',{exact:true})).toBeVisible();
+});
+
+test('community publishes selective snapshots for visitors and enforces ownership',async({page,browser,baseURL})=>{
+ const {Keypair}=await import('../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js');
+ async function signIn(request){
+   const key=Keypair.random(),address=key.publicKey(),headers={Origin:baseURL,'X-Looku-Action':'wallet-account'};
+   const challenge=await (await request.post('/api/account/challenge',{headers,data:{address}})).json();
+   const signature=Buffer.from(key.sign(Buffer.from(challenge.message))).toString('base64');
+   expect((await request.post('/api/account/verify',{headers,data:{address,signature,nonce:challenge.nonce}})).status()).toBe(200);
+ }
+ await signIn(page.request);
+ const guest=await browser.newContext({baseURL});
+ try{
+   const viewer=await guest.newPage(),headers={Origin:baseURL,'X-Looku-Action':'community'};
+   expect((await guest.request.post('/api/community/look',{headers,data:{}})).status()).toBe(401);
+   await page.goto('/#wardrobe');
+   await page.getByRole('button',{name:/Add a piece/}).click();
+   let dialog=page.getByRole('dialog');
+   await dialog.getByLabel('Clothing photo').setInputFiles(photo);
+   await dialog.getByLabel('Piece name').fill('Community linen shirt');
+   await dialog.getByRole('button',{name:'Add to wardrobe'}).click();
+   await expect(dialog).toBeHidden();
+   await nav(page,'Stylist');await page.getByRole('button',{name:'Save outfit'}).click();
+   for(const [kind,action,submit] of [['look','Publish look','Publish look'],['sale','Sell','List for sale'],['donate','Donate','Offer for donation']]){
+     await nav(page,'Wardrobe');await page.getByRole('button',{name:action,exact:true}).click();
+     const title='Shared '+kind+' '+crypto.randomUUID().slice(0,8);
+     await dialog.getByLabel('Public title').fill(title);
+     if(kind!=='look')await dialog.getByLabel('Public contact email').fill('closet@example.com');
+     if(kind==='sale')await dialog.getByLabel('Asking price').fill('500');
+     await dialog.getByRole('button',{name:submit,exact:true}).click();
+     await expect(page.locator('.community-post h2')).toHaveText(title);
+     const url=page.url(),path='/api/'+url.split('#')[1];
+     await viewer.goto(url);await expect(viewer.locator('.community-post h2')).toHaveText(title);
+     await expect(viewer.getByRole('button',{name:'Withdraw post'})).toHaveCount(0);
+     if(kind==='sale')await expect(viewer.getByRole('link',{name:'Contact seller'})).toHaveAttribute('href','mailto:closet@example.com');
+     if(kind==='donate')await expect(viewer.getByText('Free donation',{exact:true})).toBeVisible();
+     await viewer.goto('/#community/'+kind);await expect(viewer.getByRole('heading',{name:title})).toBeVisible();
+     await signIn(guest.request);
+     expect((await guest.request.delete(path,{headers})).status()).toBe(404);
+     page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Withdraw post'}).click();
+     await expect(page.getByText('Post withdrawn.')).toBeVisible();
+     expect((await guest.request.get(path)).status()).toBe(404);
+   }
+ }finally{await guest.close()}
 });

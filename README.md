@@ -47,6 +47,11 @@ The private Sites Worker serves the studio and Freighter bundle from one origin.
 ## Demo evidence
 The complete Node API flow settled a testnet purchase and its referral payout with a disposable software signer. [Purchase](https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99) · [Commission](https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7)
 
+## Community closet
+Anyone can browse Community or follow a public post link. Wallet → See or create wallet lets a visitor create or restore an encrypted device wallet. The first verified wallet signature creates the Looku account. Publishing requires a signed-in wallet and no funds. ChatGPT sign-in for encrypted backups is separate.
+
+In Wardrobe, publish a saved outfit or select Sell or Donate on an uploaded piece. Review the title, thumbnails and piece names before publishing. Listings include a public contact email and sales include an asking price in KSh. Interested visitors contact the owner directly to arrange payment or collection. Each post is an independent snapshot in hosted object storage. Removing a private piece or backup leaves the post available until its owner withdraws it from Community.
+
 ## Offline use and optional storage
 Install looku from the browser menu or Safari’s Share → Add to Home Screen. The service worker caches only the app shell, styling code, icons and directory. The wardrobe, reference image and saved outfits live in IndexedDB. After the first successful online load, adding pieces, generating outfits and saving looks work without a connection. Wallet lookups, testnet payments, retailer links, online backups and Pinterest search need connectivity. Payments still produce public testnet transactions and server-side order records.
 

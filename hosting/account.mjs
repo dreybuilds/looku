@@ -8,7 +8,7 @@ async function digest(text){
  const bytes=await crypto.subtle.digest('SHA-256',encode(text));
  return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 }
-async function session(req,store){
+export async function session(req,store){
  const raw=(req.headers.get('Cookie')||'').match(/(?:^|;\s*)__Host-looku-session=([0-9a-f-]{36})\b/)?.[1];
  if(!raw)return null;
  const key='wallet-sessions/'+await digest(raw);

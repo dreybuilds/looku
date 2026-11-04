@@ -1,3 +1,4 @@
+import {mountCommunity,composePost} from './community.js';
 import {interpretLook} from './look-prompt.js';
 import { walletRecord, accountCall } from './local-wallet.js';
 import {devicePanel,deviceAction,requestInstall} from './device.js';
@@ -56,7 +57,7 @@ document.querySelector('#install-looku').onclick = async () => {
  const message = await requestInstall();
  if (message) modal('<h2>Install looku</h2><p>'+esc(message)+'</p>');
 };
-function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device unless you choose online backup. We sample a colour from each image for styling.</small><div class="actions"><button>Add to wardrobe</button><button type="submit" value="style" class="secondary">Add and style</button></div><p role="status"></p></form>`);
+function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device until you publish them or choose encrypted backup. We sample a colour from each image for styling.</small><div class="actions"><button>Add to wardrobe</button><button type="submit" value="style" class="secondary">Add and style</button></div><p role="status"></p></form>`);
  const form=body.querySelector('form');
  form.onsubmit=async event=>{
    event.preventDefault();
@@ -90,7 +91,7 @@ function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Ad
 }
 function gallery(){
  const subset=items.filter(x=>!filter||x.type===filter);
- return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
+ return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}${samplePhoto(p)?'':`<div class="actions"><button class="secondary small" data-sale="${esc(p.id)}">Sell</button><button class="secondary small" data-donate="${esc(p.id)}">Donate</button></div>`}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
 }
 function studio() {
  return `<section class="hero campaign">
@@ -118,11 +119,15 @@ function stylist(){
  <div class="row"><button>Build my look</button></div><details><summary>Online GPT styling</summary><p class="fine">Sends only your written prompt to OpenAI. Photos and your wardrobe stay here. Sign in with your device wallet in <a href="#wallet">Wallet</a>.</p><button type="submit" name="engine" value="gpt" class="secondary">Style with GPT</button></details><p role="status" data-prompt-status></p><div class="row">${lookRequest?'<button type="button" class="secondary" data-reset-prompt>Clear prompt</button>':''}</div></form>
  ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>1 test XLM</strong><p class="fine">Includes a 0.10 test XLM referral commission to looku. Test purchase only.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
 }
-function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
+function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="secondary small" data-publish="${esc(l.id)}">Publish look</button> <button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||'studio';
- document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section);if(a.hash==='#'+section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+ document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
+ else if(section==='community'||section.startsWith('community/')){
+   main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
+   await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
+ }
  else if(section==='stylist')main.innerHTML=stylist();
  else if(section==='wallet'){
    main.innerHTML=title('Account / Stellar','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div>';
@@ -246,6 +251,13 @@ main.addEventListener('input',e=>{if(e.target.id==='store-search'&&stores)drawSt
 main.addEventListener('change',async e=>{try{if(e.target.id==='saved-palette'){await setPaletteBook({...paletteBook,active:e.target.value});const form=main.querySelector('#custom-palette');form.closest('details').open=true;form.elements.paletteName.focus();return}if(e.target.id==='filter'){filter=e.target.value;render()}if(e.target.id==='occasion'){lookRequest=null;occasion=e.target.value;variation=0;render()}if(e.target.id==='inspo'&&e.target.files[0]){lookRequest=null;const next=await processPhoto(e.target.files[0]);await write('inspo',next);inspo=next;render()}}catch(err){notice(err.message)}});
 main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
  if(b.hasAttribute('data-install')||b.hasAttribute('data-backup')){await deviceAction(b,()=>({items,looks:saved,inspo}));return}
+ if(b.dataset.publish||b.dataset.sale||b.dataset.donate){
+   const look=saved.find(entry=>entry.id===b.dataset.publish);
+   const piece=items.find(entry=>entry.id===(b.dataset.sale||b.dataset.donate));
+   const pieces=look?look.pieces.map(ref=>items.find(item=>item.id===ref.id)||ref):[piece];
+   composePost({kind:look?'look':b.dataset.sale?'sale':'donate',source:look||piece,pieces,modal,body,dialog,esc});
+   return;
+ }
  if(b.dataset.preset){
    await setPaletteBook({...paletteBook,active:b.dataset.preset});
    main.querySelector('[data-preset="'+b.dataset.preset+'"]').focus({preventScroll:true});
