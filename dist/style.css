@@ -192,3 +192,25 @@ details.panel:not(.wallet-panel)[open] > :not(summary) {
 @media (min-width: 600px) and (max-width: 760px) {
   header nav.nav { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 }
+
+.email-signin h2 { line-height: 1.2; margin-bottom: 1.5rem; }
+.email-signin .stack { gap: 1.125rem; }
+.email-signin label { gap: .55rem; line-height: 1.5; }
+.email-signin .fine, .email-signin [role=status] { font-size: .875rem; line-height: 1.65; }
+.email-signin .actions { margin-top: .125rem; }
+.email-signin p[role=status]:not(:empty) { margin-top: 1rem; }
+#admin-workspace .email-signin button { margin: 0; }
+.email-signin::backdrop {
+  background: linear-gradient(115deg, #231328a8 20%, #58385b91 50%, #231328a8 80%);
+  background-size: 220% 100%;
+  background-position: 50% 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .email-signin:has(form[aria-busy=true])::backdrop {
+    animation: signin-light 3s ease-in-out infinite alternate;
+  }
+  @keyframes signin-light {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+  }
+}

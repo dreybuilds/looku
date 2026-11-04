@@ -19,7 +19,7 @@ export function bindAccountDialog(root){
 export function emailAccount(root,onChange,triggerLabel='Sign up or log in with email'){
  const signedIn=!!localStorage.getItem(flag);
  root.innerHTML=signedIn?'<p>Signed in with email. <button type="button" class="secondary small">Sign out</button></p><p role="status"></p>':
- '<button type="button" class="secondary account-trigger" data-open-account aria-haspopup="dialog"></button><dialog aria-label="Sign up or log in with email"><button type="button" class="close" aria-label="Close email sign-in">×</button><h2>Email sign-in</h2><form class="stack"><label>Email address<input type="email" name="email" autofocus autocomplete="email" required></label><label hidden>Six-digit code<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" disabled></label><p class="fine">Check your email for a one-time sign-in code after you choose Send code. Your first sign-in creates your account.</p><div class="actions"><button>Send code</button><button type="button" class="secondary" hidden>Change email or resend</button></div></form><p role="status"></p></dialog>';
+ '<button type="button" class="secondary account-trigger" data-open-account aria-haspopup="dialog"></button><dialog class="email-signin" aria-label="Sign up or log in with email"><button type="button" class="close" aria-label="Close email sign-in">×</button><h2>Email sign-in</h2><form class="stack"><label>Email address<input type="email" name="email" autofocus autocomplete="email" required></label><label hidden>Six-digit code<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" disabled></label><p class="fine">We’ll email you a six-digit code. Your first sign-in creates your account.</p><div class="actions"><button>Send code</button><button type="button" class="secondary" hidden>Change email or resend</button></div></form><p role="status"></p></dialog>';
  const status=root.querySelector('[role=status]');
  if(signedIn){
    root.querySelector('button').onclick=async event=>{
@@ -41,6 +41,7 @@ export function emailAccount(root,onChange,triggerLabel='Sign up or log in with 
  form.onsubmit=async event=>{
    event.preventDefault();if(submit.disabled)return;
    submit.disabled=reset.disabled=true;
+   form.setAttribute('aria-busy','true');
    const verifying=!code.disabled;
    status.textContent=verifying?'Verifying…':'Sending code…';
    try{
@@ -53,7 +54,7 @@ export function emailAccount(root,onChange,triggerLabel='Sign up or log in with 
      if(!verified.ok)throw Error('Looku could not verify this session. Request a new code.');
      root.querySelector('dialog').close();localStorage.setItem(flag,'1');emailAccount(root,onChange,triggerLabel);await onChange();
    }catch(e){status.textContent=e.message||'Email sign-in is unavailable. Try again.'}
-   finally{submit.disabled=reset.disabled=false}
+   finally{form.removeAttribute('aria-busy');submit.disabled=reset.disabled=false}
  };
  return open;
 }
