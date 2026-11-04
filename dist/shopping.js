@@ -44,3 +44,19 @@ export function mountProfile(panel){
  form.onsubmit=e=>{e.preventDefault();try{saveProfile(readProfile(form));note.textContent='Shopping profile saved on this device.'}catch{note.textContent='Could not save on this device.'}};
  form.querySelector('[data-forget]').onclick=()=>{localStorage.removeItem(storeKey);form.reset();note.textContent='Shopping profile cleared.'};
 }
+
+export function productUrl(text){
+  const url=new URL(text);
+  if(url.protocol!=='https:'||url.username||url.password||url.href.length>4096)throw Error('Use the full HTTPS product link.');
+  return url;
+}
+export function guessName(url){
+  let slug=url.pathname.split('/').filter(Boolean).pop()||url.hostname;
+  try{slug=decodeURIComponent(slug)}catch{}
+  return slug.replace(/[-_]+/g,' ').replace(/^./,c=>c.toUpperCase()).slice(0,120);
+}
+export async function fetchProductPreview(url,signal){
+  const response=await fetch('/api/product-preview',{method:'POST',headers:{'X-Looku-Action':'product-preview'},body:url,signal});
+  if(!response.ok)throw Error('Preview unavailable.');
+  return response.json();
+}

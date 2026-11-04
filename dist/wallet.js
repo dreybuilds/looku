@@ -1,4 +1,4 @@
-import {prices,currency,money} from './shopping.js';
+import {productUrl,guessName,fetchProductPreview,prices,currency,money} from './shopping.js';
 import {accountCall,mountDeviceWallet} from './local-wallet.js';
 export const baseUSDC='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const networks = {
@@ -56,10 +56,13 @@ export async function mountWallet(element) {
     <details name="wallet-tool" class="panel wallet-panel">
       ${heading('04','Save for a piece','Track a wardrobe goal against your balance. Your funds stay available to you.')}<div class="wallet-body">
       <form data-goal>
-        <label>What are you saving for?<input name="piece" maxlength="70" placeholder="A cropped jacket" required></label>
-        <label>Target in <span data-unit>USDC</span><input name="amount" type="number" min="0.01" max="10000000" step="0.01" placeholder="35.00" required></label>
+        <label><span id="wallet-goal-source-label">Choose a piece</span><select name="source" aria-labelledby="wallet-goal-source-label"><option value="manual">Enter a piece by name</option><option value="link">Paste a product link</option><optgroup label="From your Wishlist" data-wishes></optgroup></select></label>
+        <label data-link-field hidden>Product link<input name="productLink" type="url" maxlength="4096" placeholder="https://…" disabled></label>
+        <p class="fine" data-source-note role="status" hidden></p>
+        <label>What are you saving for?<input name="piece" maxlength="120" placeholder="A cropped jacket" required></label>
+        <label><span>Target in <span data-unit>USDC</span></span><input name="amount" type="number" min="0.01" max="10000000" step="0.01" placeholder="35.00" required></label>
         <button class="btn" type="submit">Save goal</button>
-      </form><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
+      </form><a data-goal-link hidden target="_blank" rel="noopener noreferrer">View product ↗</a><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
     </details>
     </div>`;
   const account = element.querySelector('[data-account]');
@@ -72,6 +75,92 @@ export async function mountWallet(element) {
   let balance = null;
   let activeRequest;
   let networkState;
+  const {source,productLink,piece,amount} = goalForm.elements;
+  const wishes = goalForm.querySelector('[data-wishes]');
+  const note = goalForm.querySelector('[data-source-note]');
+  const goalLink = element.querySelector('[data-goal-link]');
+  let rows = [];
+  let previewController;
+  let previewTimer;
+  function sourceNote(message) {
+    note.textContent = message;
+    note.hidden = !message;
+  }
+  function stopPreview() {
+    clearTimeout(previewTimer);
+    previewController?.abort();
+  }
+  function showLinkField() {
+    productLink.disabled = source.value !== 'link';
+    productLink.required = !productLink.disabled;
+    goalForm.querySelector('[data-link-field]').hidden = productLink.disabled;
+  }
+  function fillPrice(price,unit) {
+    if (amount.value) return;
+    const targetUnit = element.querySelector('[data-unit]').textContent;
+    if (unit === targetUnit && Number(price) > 0 && Number(price) <= Number(amount.max)) {
+      amount.value = Number(price).toFixed(2);
+    }
+  }
+  source.addEventListener('change', () => {
+    stopPreview();
+    showLinkField();
+    productLink.value = piece.value = amount.value = '';
+    productLink.setCustomValidity('');
+    sourceNote('');
+    if (source.value === 'link') { productLink.focus(); return; }
+    const item = rows.find(row => row.url === source.value);
+    if (item) {
+      piece.value = item.title;
+      fillPrice(item.target / 100,item.currency);
+      if (!amount.value) sourceNote('Enter your target in the currency shown below.');
+    }
+  });
+  productLink.addEventListener('input', () => {
+    stopPreview();
+    productLink.setCustomValidity('');
+    piece.value = amount.value = '';
+    sourceNote('');
+    if (!productLink.value) return;
+    let url;
+    try { url = productUrl(productLink.value.trim()); }
+    catch { productLink.setCustomValidity('Enter a full HTTPS product link.'); return; }
+    const fallback = guessName(url);
+    piece.value = fallback;
+    const controller = new AbortController();
+    previewController = controller;
+    sourceNote('Loading product details…');
+    previewTimer = setTimeout(async () => {
+      try {
+        const data = await fetchProductPreview(url.href,controller.signal);
+        if (controller.signal.aborted) return;
+        if (piece.value === fallback && data.title) piece.value = data.title.slice(0,120);
+        fillPrice(data.price,data.currency);
+        sourceNote(amount.value ? 'Review the name and target before saving.' : 'Check the name and enter your target below.');
+      } catch {
+        if (!controller.signal.aborted) sourceNote('Enter the name and target to save this link.');
+      }
+    },450);
+  });
+  goalForm.closest('details').addEventListener('toggle',async event => {
+    if (!event.target.open) return;
+    try {
+      const {items} = await import('./wishlist.js');
+      const latest = await items();
+      const selected = source.value;
+      rows = latest;
+      wishes.replaceChildren(...rows.map(row => new Option(row.title,row.url)));
+      if (rows.some(row => row.url === selected)) source.value = selected;
+      else if (selected !== 'manual' && selected !== 'link') {
+        source.value = 'link';
+        productLink.value = selected;
+        showLinkField();
+      }
+      if (!rows.length) wishes.append(Object.assign(new Option('No saved pieces yet'),{disabled:true}));
+    } catch {
+      wishes.replaceChildren(Object.assign(new Option('Wishlist unavailable'),{disabled:true}));
+    }
+  });
   function persist() {
     saved[network.value] = networkState;
     try { localStorage.setItem(storageKey, JSON.stringify(saved)); }
@@ -103,6 +192,17 @@ export async function mountWallet(element) {
     address.value = networkState.address || '';
     address.placeholder = network.value === 'base' ? '0x…' : 'G…';
     address.maxLength = network.value === 'base' ? 42 : 56;
+    stopPreview();
+    sourceNote('');
+    let savedUrl = '';
+    try { savedUrl = productUrl(networkState.goal?.url).href; } catch {}
+    source.value = savedUrl ? 'link' : 'manual';
+    productLink.value = savedUrl;
+    productLink.setCustomValidity('');
+    showLinkField();
+    goalLink.hidden = !savedUrl;
+    if (savedUrl) goalLink.href = savedUrl;
+    else goalLink.removeAttribute('href');
     goalForm.elements.piece.value = networkState.goal?.piece || '';
     goalForm.elements.amount.value = networkState.goal ? Number((networkState.goal.amount*(network.value==='testnet'?prices[currency()]:1)).toFixed(2)) : '';
     clearBalance();
@@ -176,7 +276,13 @@ export async function mountWallet(element) {
     const piece = goalForm.elements.piece.value.trim();
     const amount = goalForm.elements.amount.valueAsNumber;
     if (!piece || !(amount > 0)) { goalText.textContent = 'Enter a piece and a positive target.'; return; }
-    networkState.goal = { piece, amount:network.value==='testnet'?amount/prices[currency()]:amount };
+    stopPreview();
+    sourceNote('');
+    const url = source.value === 'manual' ? '' : productUrl(source.value === 'link' ? productLink.value.trim() : source.value).href;
+    goalLink.hidden = !url;
+    if (url) goalLink.href = url;
+    else goalLink.removeAttribute('href');
+    networkState.goal = { piece, url, amount:network.value==='testnet'?amount/prices[currency()]:amount };
     showProgress();
     persist();
   });

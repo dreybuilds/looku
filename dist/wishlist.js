@@ -1,3 +1,4 @@
+import {productUrl,guessName,fetchProductPreview} from './shopping.js';
 import {merchantOffer,signOffer,submitOffer,newNonce,authorizationStatus} from './merchant-payment.js';
 import {baseUSDC,readWalletBalance} from './wallet.js';
 import {processPhoto} from './model.js';
@@ -12,7 +13,7 @@ const db = new Promise((resolve,reject)=>{
   open.onsuccess=()=>{const db=open.result;db.onversionchange=()=>db.close();resolve(db)};
   open.onerror=()=>reject(Error('Wishlist storage is unavailable on this device.'));
 });
-async function items(){
+export async function items(){
   const database=await db;
   return new Promise((resolve,reject)=>{
     const req=database.transaction('items').objectStore('items').getAll();
@@ -32,16 +33,6 @@ async function update(url,change,includeWalletItems=false) {
     };
     tx.oncomplete=resolve;tx.onabort=()=>reject(reason||Error('Could not update this wishlist.'));
   });
-}
-function productUrl(text){
-  const url=new URL(text);
-  if(url.protocol!=='https:'||url.username||url.password||url.href.length>4096)throw Error('Use the full HTTPS product link.');
-  return url;
-}
-function guessName(url){
-  let slug=url.pathname.split('/').filter(Boolean).pop()||url.hostname;
-  try{slug=decodeURIComponent(slug)}catch{}
-  return slug.replace(/[-_]+/g,' ').replace(/^./,c=>c.toUpperCase()).slice(0,120);
 }
 function cents(text){
   if(!/^\d{1,8}(\.\d{1,2})?$/.test(text))throw Error('Enter an amount with up to two decimal places.');
@@ -112,9 +103,7 @@ export async function mountWishlist(main){
     previewStatus.textContent='Loading product details…';
     previewTask=(async()=>{
       try{
-        const res=await fetch('/api/product-preview',{method:'POST',headers:{'X-Looku-Action':'product-preview'},body:url,signal});
-        if(!res.ok)throw Error();
-        const data=await res.json();
+        const data=await fetchProductPreview(url,signal);
         if(signal.aborted)return;
         setImported('title',data.title);setImported('variant',data.variant);
         if(['KES','USD'].includes(data.currency)&&!f.price.value&&!changed.has('price')&&(!changed.has('currency')||data.currency===f.currency.value)&&/^\d{1,8}(\.\d{1,2})?$/.test(data.price)&&Number(data.price)>0){

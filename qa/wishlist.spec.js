@@ -139,3 +139,33 @@ test('merchant x402 authorization is capped, bound to Base USDC and sent only af
  await expect(page.getByText('Payment authorization used on Base.')).toBeVisible();
  await expect(checkout).toHaveCount(0);expect(paid).toBe(1);
 });
+
+test('wallet goals accept a wishlist piece or a product link and keep the exact variant',async({page})=>{
+ const second='https://shop.example/products/linen-shirt?variant=blue';
+ await page.route('**/api/product-preview',route=>route.fulfill({json:route.request().postData()===second
+   ? {title:'Linen shirt',price:'55',currency:'USD'} : {title:'Ayla knit top',price:'2500',currency:'KES'}}));
+ await page.goto('/app#wishlist');
+ await page.getByLabel('Product link').fill(item);
+ await expect(page.getByLabel('Target price')).toHaveValue('2500');
+ await page.getByRole('button',{name:'Save item',exact:true}).click();
+ await expect(page.getByRole('article')).toContainText('Ayla knit top');
+ await page.goto('/app#wallet');
+ const open=()=>page.locator('summary').filter({hasText:'Save for a piece'}).click();
+ await open();
+ const source=page.getByLabel('Choose a piece');
+ const target=page.getByLabel('Target in');
+ await source.selectOption({label:'Ayla knit top'});
+ await expect(target).toHaveValue('2500.00');
+ await page.getByRole('button',{name:'Save goal'}).click();
+ await expect(page.getByRole('link',{name:'View product'})).toHaveAttribute('href',item);
+ await source.selectOption('link');
+ await page.getByLabel('Product link').fill(second);
+ await expect(page.getByLabel('What are you saving for?')).toHaveValue('Linen shirt');
+ await expect(target).toHaveValue('');
+ await target.fill('6000');
+ await page.getByRole('button',{name:'Save goal'}).click();
+ await page.reload();
+ await open();
+ await expect(page.getByRole('link',{name:'View product'})).toHaveAttribute('href',second);
+ await expect(target).toHaveValue('6000');
+});
