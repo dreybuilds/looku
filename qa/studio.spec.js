@@ -361,7 +361,7 @@ test('community publishes selective snapshots for visitors and enforces ownershi
 });
 
 test('shopping profile fills an affiliate order locally and supports both price lists',async({page})=>{
- await page.goto('/#wardrobe');
+ await page.goto('/#account');
  await page.getByText('My sizes and delivery details').click();
  const form=page.locator('#shopping-profile form');
  await form.getByLabel('Top size').fill('M');await form.getByLabel('Jacket size').selectOption('L');

@@ -9,7 +9,9 @@
     "build": "npm --prefix payments test && npm --prefix payments run build && node hosting/vercel-build.mjs && node hosting/verify-build.mjs"
   },
   "dependencies": {
-    "@vercel/blob": "2.8.2"
+    "@vercel/blob": "2.8.2",
+    "htmlparser2": "^10.0.0",
+    "ipaddr.js": "^2.2.0"
   },
   "overrides": {
     "zod": "4.6.6"

@@ -36,3 +36,21 @@ test('paste-only save works without a price and unsafe schemes cannot be opened'
  await page.getByLabel('Product link').fill(item);await page.getByRole('button',{name:'Save item',exact:true}).click();
  await expect(page.getByRole('article')).toContainText('Add a target');await expect(page.getByRole('link',{name:'View at store'})).toHaveAttribute('href',item);
 });
+
+test('pasted links fill product details and retain a small local thumbnail after reload',async({page})=>{
+ const sample=await page.request.get('/sample1.webp');
+ const photo='data:image/webp;base64,'+(await sample.body()).toString('base64');
+ await page.route('**/api/product-preview',r=>r.fulfill({json:{title:'Cropped jacket',variant:'M · Plum',price:'3500',currency:'KES',photo}}));
+ await page.goto('/app#wishlist');
+ await page.getByLabel('Product link').fill(item);
+ await expect(page.getByLabel('Item name')).toHaveValue('Cropped jacket');
+ await expect(page.getByLabel('Target price')).toHaveValue('3500');
+ await expect(page.getByAltText('Product thumbnail')).toBeVisible();
+ await page.getByLabel('Item name').fill('My plum jacket');
+ await page.getByRole('button',{name:'Save item',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'My plum jacket'})).toBeVisible();
+ await page.reload();
+ const thumbnail=page.getByRole('article').getByRole('img',{name:'My plum jacket'});
+ await expect(thumbnail).toHaveAttribute('src',/^data:image\/webp;base64,/);
+ expect(await thumbnail.evaluate(async img=>{await img.decode();return Math.max(img.naturalWidth,img.naturalHeight)})).toBeLessThanOrEqual(320);
+});

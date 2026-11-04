@@ -1,3 +1,4 @@
+import {productPreview} from './product-preview.mjs';
 import {Readable} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {get, put, del, list, BlobPreconditionFailedError, issueSignedToken, presignUrl} from '@vercel/blob';
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
   if (!response) {
     const request = new Request(url, {method: req.method, headers,
       ...(['GET', 'HEAD'].includes(req.method) ? {} : {body: Readable.toWeb(req), duplex: 'half'})});
-    response = await worker.fetch(request, {...process.env, ORDERS: orders});
+    response = url.pathname==='/api/product-preview'?await productPreview(request):await worker.fetch(request, {...process.env, ORDERS: orders});
   }
   res.statusCode = response.status;
   response.headers.forEach((value, key) => res.setHeader(key, value));

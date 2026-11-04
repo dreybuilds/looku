@@ -158,13 +158,13 @@ async function render(){
    const {mountWelcome}=await import('./welcome.js');
    if(root.isConnected)await mountWelcome(root);
  }
- else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div><details class="panel" id="shopping-profile"></details>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
+ else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
  }
  else if(section==='account'||section.startsWith('account/')){
-   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, social profiles and Pinterest imports.')+'<section id="member-account"></section>';
+   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, sizes, delivery details and connected profiles.')+'<section id="member-account"></section><details class="panel" id="shopping-profile"></details>';
    mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1));
  }
  else if(section==='support'){
@@ -211,7 +211,7 @@ async function render(){
  main.querySelector('#kenya-applications').innerHTML=stores.filter(s=>s.application).map(s=>`<li><b>${esc(s.name)}</b> · ${esc(s.application)}<p>${esc(s.nextStep)} <a href="${esc(s.url)}" target="_blank" rel="noopener">Official program ↗</a></p></li>`).join('');
  }}catch{if(id===renderId)main.querySelector('#store-list').textContent='Store directory is unavailable. Refresh to retry.'}}
  else main.innerHTML=studio();
- if(section==='wardrobe')mountProfile(main.querySelector('#shopping-profile'));
+ if(section.split('/')[0]==='account')mountProfile(main.querySelector('#shopping-profile'));
  if (section === 'wardrobe' && sessionStorage.getItem('looku.show-saved')) {
    sessionStorage.removeItem('looku.show-saved');
    document.querySelector('#saved-heading')?.focus();

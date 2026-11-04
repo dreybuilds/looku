@@ -1,4 +1,5 @@
 // Serves a single origin for wardrobe storage, Freighter and checkout.
+import {productPreview} from './hosting/product-preview.mjs';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +12,10 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'t
 const server=http.createServer(async(req,res)=>{
  try{
  const pathname=new URL(req.url,'http://localhost').pathname;
+ if(pathname==='/api/product-preview'){
+   const result=await productPreview(new Request('http://'+req.headers.host+pathname,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:req,duplex:'half'}:{})}));
+   res.writeHead(result.status,Object.fromEntries(result.headers));res.end(await result.text());return;
+ }
  if(pathname.startsWith('/api/payments/')){
  const proxy=http.request({hostname:'127.0.0.1',port:apiPort,path:req.url,method:req.method,headers:req.headers},up=>{res.writeHead(up.statusCode,up.headers);up.pipe(res)});
  proxy.on('error',()=>{if(!res.headersSent)res.writeHead(503,{'Content-Type':'text/plain'});res.end('Testnet checkout service unavailable. See README setup steps.')});req.pipe(proxy);return

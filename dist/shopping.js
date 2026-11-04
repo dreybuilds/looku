@@ -13,17 +13,17 @@ export function budgetUnits(input,unit=currency()){
 const storeKey='looku.shopping-profile.v1';
 const fields=[
  ['top','Top size'],['bottom','Bottom size'],['shoe','Shoe size and system'],['jacket','Jacket size'],
- ['name','Recipient name','name'],['street','Street and building','address-line1'],['city','Town or city','address-level2'],
+ ['name','Recipient name','name'],['email','Contact email','email'],['street','Street and building','address-line1'],['city','Town or city','address-level2'],
  ['postal','Postal code','postal-code'],['country','Country','country-name'],['phone','Delivery phone','tel']
 ];
 export const jacketSizes=['XS','S','M','L','XL','XXL'];
 export function loadProfile(){try{return JSON.parse(localStorage.getItem(storeKey))||{}}catch{return {}}}
 export function profileFields(checkout=false){
- const selected=checkout?fields.filter(([k])=>!['top','bottom','shoe'].includes(k)):fields;
+ const selected=checkout?fields.filter(([k])=>!['top','bottom','shoe','email'].includes(k)):fields;
  return selected.map(([key,label,autocomplete])=>{
    const required=checkout&&['jacket','name','street','city','country'].includes(key)?'required':'';
    const input=key==='jacket'?'<select name="jacket" '+required+'><option value="">Choose size</option>'+jacketSizes.map(s=>'<option>'+s+'</option>').join('')+'</select>':
-     '<input name="'+key+'" maxlength="100" autocomplete="'+(autocomplete||'off')+'" '+required+'>';
+     '<input type="'+(key==='email'?'email':key==='phone'?'tel':'text')+'" name="'+key+'" maxlength="100" autocomplete="'+(autocomplete||'off')+'" '+required+'>';
    return '<label>'+label+input+'</label>';
  }).join('');
 }

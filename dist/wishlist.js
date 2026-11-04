@@ -65,6 +65,7 @@ export async function mountWishlist(main){
   <p class="intro">Keep a piece you love, track what you’ve set aside and return to the exact store page when you’re ready.</p>
   <details class="panel" data-editor><summary>Save a product link</summary><form class="stack">
   <label>Product link<input type="url" name="url" placeholder="https://…" maxlength="4096" required></label>
+  <p class="fine" data-preview-status role="status"></p><img data-preview width="120" alt="Product thumbnail" hidden>
   <label>Item name<input name="title" maxlength="120" placeholder="e.g. Ayla Knit Top in Plum"></label>
   <label>Size or colour note<input name="variant" maxlength="100" placeholder="What you selected at the store"></label>
   <div class="row"><label>Currency<select name="currency" aria-label="Wishlist currency"><option>KES</option><option>USD</option></select></label>
@@ -80,14 +81,59 @@ export async function mountWishlist(main){
   const bookmark=main.querySelector('[data-bookmark]');
   bookmark.href=makeBookmark();
   bookmark.onclick=e=>{e.preventDefault();note.textContent='Drag Save to looku to your bookmarks bar, then click it on a product page.'};
-  let editing=null;
+  let editing=null,previewUrl='',previewTask=null,controller,timer;
+  const preview=form.querySelector('[data-preview]'),previewStatus=form.querySelector('[data-preview-status]');
+  const imported=new Map(),changed=new Set();
+  for(const key of ['title','variant','price','currency']){
+    f[key].addEventListener('input',()=>{changed.add(key);imported.delete(key)});
+  }
+  function clearPreview(){
+    clearTimeout(timer);controller?.abort();previewUrl='';previewTask=null;
+    for(const [key,value] of imported)if(f[key].value===value)f[key].value=key==='currency'?'KES':'';
+    imported.clear();preview.removeAttribute('src');preview.hidden=true;previewStatus.textContent='';
+  }
+  function setImported(key,value){
+    if(value&&!changed.has(key)&&(key==='currency'||!f[key].value)){
+      f[key].value=value;imported.set(key,f[key].value);
+    }
+  }
+  function loadPreview(){
+    if(editing)return;
+    let url;try{url=productUrl(f.url.value.trim()).href}catch{return}
+    if(url===previewUrl)return previewTask;
+    clearPreview();previewUrl=url;controller=new AbortController();
+    const signal=controller.signal;
+    previewStatus.textContent='Loading product details…';
+    previewTask=(async()=>{
+      try{
+        const res=await fetch('/api/product-preview',{method:'POST',headers:{'X-Looku-Action':'product-preview'},body:url,signal});
+        if(!res.ok)throw Error();
+        const data=await res.json();
+        if(signal.aborted)return;
+        setImported('title',data.title);setImported('variant',data.variant);
+        if(['KES','USD'].includes(data.currency)&&!f.price.value&&!changed.has('price')&&(!changed.has('currency')||data.currency===f.currency.value)&&/^\d{1,8}(\.\d{1,2})?$/.test(data.price)&&Number(data.price)>0){
+          setImported('currency',data.currency);setImported('price',data.price);
+        }
+        if(data.photo){
+          const blob=await (await fetch(data.photo)).blob();
+          const {photo}=await processPhoto(blob,320);
+          if(signal.aborted)return;
+          preview.src=photo;preview.hidden=false;
+        }
+        previewStatus.textContent=data.title||data.photo?'Review the imported details before saving.':'No product details were available. You can enter them below.';
+      }catch{if(!signal.aborted)previewStatus.textContent='Preview unavailable. You can still enter the details and save this link.'}
+    })();
+    return previewTask;
+  }
+  f.url.addEventListener('input',()=>{clearPreview();timer=setTimeout(loadPreview,450)});
+  f.url.addEventListener('change',loadPreview);
   function populate(item){
-    editing=item.url;f.url.value=item.url;f.url.readOnly=true;f.title.value=item.title;f.variant.value=item.variant;f.currency.value=item.currency;
+    reset();editing=item.url;if(item.photo){preview.src=item.photo;preview.hidden=false;}f.url.value=item.url;f.url.readOnly=true;f.title.value=item.title;f.variant.value=item.variant;f.currency.value=item.currency;
     f.currency.disabled=item.saved>0;f.price.value=item.target?item.target/100:'';editor.open=true;
     form.querySelector('button').textContent='Save changes';
     f.title.focus();
   }
-  function reset(){editing=null;form.reset();f.url.readOnly=false;f.currency.disabled=false;form.querySelector('button').textContent='Save item';}
+  function reset(){clearPreview();changed.clear();editing=null;form.reset();f.url.readOnly=false;f.currency.disabled=false;form.querySelector('button').textContent='Save item';}
   const cancel=el('button','Cancel');cancel.type='button';cancel.className='secondary';form.append(cancel);
   cancel.onclick=()=>{reset();editor.open=false};
   async function refresh(){
@@ -119,8 +165,8 @@ export async function mountWishlist(main){
     return all;
   }
   form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('button');btn.disabled=true;
-    try{const url=productUrl(f.url.value.trim()),title=f.title.value.trim()||guessName(url),variant=f.variant.value.trim(),currency=f.currency.value,target=f.price.value?cents(f.price.value):0;
-      const photo=f.photo.files[0]?(await processPhoto(f.photo.files[0])).photo:null;
+    try{const submittedUrl=f.url.value;await loadPreview();if(!editor.open||submittedUrl!==f.url.value||!form.isConnected)return;const url=productUrl(f.url.value.trim()),title=f.title.value.trim()||guessName(url),variant=f.variant.value.trim(),currency=f.currency.value,target=f.price.value?cents(f.price.value):0;
+      const photo=f.photo.files[0]?(await processPhoto(f.photo.files[0],320)).photo:preview.getAttribute('src');
       await update(url.href,old=>{
         if(old && !editing)throw Error('This exact product link is already on your wishlist. Choose Edit item to change it.');
         if(editing&&!old)throw Error('This item was removed.');
@@ -128,13 +174,14 @@ export async function mountWishlist(main){
         return {url:url.href,title,variant,currency,target,photo:photo||old?.photo||null,saved:old?.saved||0,created:old?.created||Date.now()};
       });reset();editor.open=false;history.replaceState(null,'',location.pathname+'#wishlist');await refresh();note.textContent='Saved '+title+'.';
     }catch(err){note.textContent=err.message}finally{btn.disabled=false}};
-  f.url.addEventListener('change',()=>{try{if(!f.title.value)f.title.value=guessName(productUrl(f.url.value))}catch{}});
+
   try{const all=await refresh();editor.open=!all.length;
     if(seed.has('url')){
       editor.open=true;const url=productUrl(seed.get('url'));const prior=all.find(item=>item.url===url.href);
       if(prior){populate(prior);note.textContent='Already saved. Your progress is here.';return}
-      f.url.value=url.href;f.title.value=(seed.get('title')||guessName(url)).slice(0,120);
+      f.url.value=url.href;f.title.value=(seed.get('title')||'').slice(0,120);
       const cur=seed.get('currency');if(['KES','USD'].includes(cur)){f.currency.value=cur;const price=seed.get('price')||'';if(/^\d{1,8}(\.\d{1,2})?$/.test(price)&&Number(price)>0)f.price.value=price}
+      loadPreview();
     }
   }catch(e){note.textContent=e.message}
 }

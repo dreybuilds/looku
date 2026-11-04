@@ -24,10 +24,10 @@ export function styleLook(items,occasion,palette,variation=0,request=null){
 const db=new Promise((resolve,reject)=>{const r=indexedDB.open('looku-studio',1);r.onupgradeneeded=()=>{r.result.createObjectStore('state')};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
 export async function read(k,fallback){const d=await db;return new Promise((yes,no)=>{const r=d.transaction('state').objectStore('state').get(k);r.onsuccess=()=>yes(r.result??fallback);r.onerror=()=>no(r.error)})}
 export async function write(k,v){const d=await db;return new Promise((yes,no)=>{const tx=d.transaction('state','readwrite');tx.objectStore('state').put(v,k);tx.oncomplete=yes;tx.onabort=()=>no(tx.error);tx.onerror=()=>no(tx.error)})}
-export async function processPhoto(file){
+export async function processPhoto(file,maxEdge=800){
  if(!file||!file.type.startsWith('image/'))throw Error('Choose an image file.');
  if(file.size>16*1024*1024)throw Error('Choose a photo smaller than 16 MB.');
- const url=URL.createObjectURL(file),img=new Image();try{img.src=url;try{await img.decode()}catch{throw Error('This image could not be opened. Try a JPEG, PNG or WebP photo.')}const scale=Math.min(1,800/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
+ const url=URL.createObjectURL(file),img=new Image();try{img.src=url;try{await img.decode()}catch{throw Error('This image could not be opened. Try a JPEG, PNG or WebP photo.')}const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
  const data=ctx.getImageData(0,0,c.width,c.height).data,bins=new Map();
  for(let y=Math.floor(c.height*.2);y<c.height*.8;y+=5)for(let x=Math.floor(c.width*.2);x<c.width*.8;x+=5){const i=4*(y*c.width+x);const key=[data[i],data[i+1],data[i+2]].map(v=>Math.min(255,Math.floor(v/32)*32+16)).map(v=>v.toString(16).padStart(2,'0')).join('');bins.set(key,(bins.get(key)||0)+1)}
  const color='#'+([...bins].sort((a,b)=>b[1]-a[1])[0]?.[0]||'808080');return {photo:c.toDataURL('image/webp',.8),color}

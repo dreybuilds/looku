@@ -1,3 +1,4 @@
+import {fillProfile} from './shopping.js';
 import {accountDetails,tagChoices,chosenTags,tagLinks} from './social.js';
 import {pinterestPanel,postToPinterest} from './pinterest.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
@@ -39,6 +40,7 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
  const form=body.querySelector('form'),button=form.querySelector('button'),status=form.querySelector('[role=status]');
  const visibility=form.elements.visibility;
  if(visibility){
+   fillProfile(form);
    const note=form.querySelector('[data-audience-note]'),publicNote=note.textContent;
    visibility.onchange=()=>{
      const privateLink=visibility.value==='private';
