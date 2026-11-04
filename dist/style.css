@@ -127,3 +127,4 @@ dialog [hidden] { display: none; }
   max-width: 100%;
   font: inherit;
 }
+.account-trigger:has(+ dialog[open]) { visibility: hidden; }

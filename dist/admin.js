@@ -15,7 +15,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
  }
  async function start(){
    const state=await api('access');body.replaceChildren();
-   if(state.state==='email-sign-in'){const open=emailAccount(body,start);open?.();return}
+   if(state.state==='email-sign-in'){const open=emailAccount(body,start,'Sign in to Admin');open?.();return}
    if(state.state==='sign-in'){
      const a=link('Sign in with ChatGPT','/signin-with-chatgpt?return_to='+encodeURIComponent('/#admin'));a.target='_top';body.append(a);return;
    }
