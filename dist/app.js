@@ -11,6 +11,7 @@ const optOcc=v=>options(occasions.map(x=>[x,x]),v);
 let items=await read('items',sample),saved=await read('looks',[]),receipts=await read('receipts',[]),inspo=await read('inspo',null);
 let foundPins=[];
 let lookRequest = null;
+let promptDraft = '';
 let paletteBook = await read('palette-book',{active:'',entries:[]});
 const presets = [
  {id:'orchid',name:'Orchid Hour',colors:['#a77bb6','#544160','#d599ae']},
@@ -56,7 +57,7 @@ document.querySelector('#install-looku').onclick = async () => {
  if (message) modal('<h2>Install looku</h2><p>'+esc(message)+'</p>');
 };
 function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device unless you choose online backup. We sample a colour from each image for styling.</small><button>Add to wardrobe</button><p role="status"></p></form>`);
- const form=body.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;try{const d=new FormData(form);const name=d.get('name').trim();if(!name)throw Error('Enter a name for this piece.');const image=await processPhoto(d.get('photo'));const next=[{...image,id:crypto.randomUUID(),name,type:d.get('type'),occasion:d.get('occasion')},...items];await write('items',next);items=next;dialog.close();notice('Added to your wardrobe');render()}catch(err){form.querySelector('[role=status]').textContent=err.message}finally{button.disabled=false}}}
+ const form=body.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;try{const d=new FormData(form);const name=d.get('name').trim();if(!name)throw Error('Enter a name for this piece.');const image=await processPhoto(d.get('photo'));const next=[{...image,id:crypto.randomUUID(),name,type:d.get('type'),occasion:d.get('occasion')},...items];await write('items',next);items=next;if(filter && filter!==next[0].type)filter=next[0].type;dialog.close();notice('Added to your wardrobe');render()}catch(err){form.querySelector('[role=status]').textContent=err.message}finally{button.disabled=false}}}
 function gallery(){
  const subset=items.filter(x=>!filter||x.type===filter);
  return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
@@ -82,12 +83,12 @@ function studio() {
 function stylist(){
  const look=currentLook();
  return title('Studio / Outfit builder','Style an outfit','Choose where you’re going. Add a reference photo to match its colour with pieces on your rail.')+`<form id="look-prompt" class="panel prompt-panel"><label for="look-brief">Describe your look</label>
- <input id="look-brief" name="brief" required maxlength="180" value="${esc(lookRequest?.text||'')}" placeholder="A lilac top and denim for brunch">
+ <input id="look-brief" name="brief" required maxlength="180" value="${esc(promptDraft)}" placeholder="A lilac top and denim for brunch">
  <p class="fine">Try an occasion, a colour, a piece name, or “no dress”. Matched on this device.</p>
  <div class="row"><button>Build my look</button></div><details><summary>Online GPT styling</summary><p class="fine">Sends only your written prompt to OpenAI. Photos and your wardrobe stay here. Sign in with your device wallet in <a href="#wallet">Wallet</a>.</p><button type="submit" name="engine" value="gpt" class="secondary">Style with GPT</button></details><p role="status" data-prompt-status></p><div class="row">${lookRequest?'<button type="button" class="secondary" data-reset-prompt>Clear prompt</button>':''}</div></form>
  ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>1 test XLM</strong><p class="fine">Includes a 0.10 test XLM referral commission to looku. Test purchase only.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
 }
-function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
+function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||'studio';
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section);if(a.hash==='#'+section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
@@ -102,10 +103,18 @@ async function render(){
      await mountWallet(panel);
      if(id!==renderId)return;
      if(sessionStorage.getItem('looku.return-to-order')){
-       panel.querySelector('.wallet-panel').insertAdjacentHTML('beforeend','<section class="alert order-return"><strong>Cropped jacket · 1 test XLM</strong><p>Create or restore your wallet here, then choose Get test XLM to fund it.</p><button data-buy>Return to checkout</button></section>');
+       panel.querySelector('.wallet-panel').open=true;
+       panel.insertAdjacentHTML('afterbegin','<section class="alert order-return"><strong>Cropped jacket · 1 test XLM</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>');
      }
      panel.querySelector('[data-account]').parentElement.insertAdjacentHTML('beforeend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>The test shopper paid 1 XLM for a cropped jacket. The boutique then paid 0.10 XLM to the looku account.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
      drawReceipts();
+     if(sessionStorage.getItem('looku.show-receipt')){
+       sessionStorage.removeItem('looku.show-receipt');
+       const receiptList=panel.querySelector('#receipts');
+       receiptList.closest('details').open=true;
+       receiptList.tabIndex=-1;
+       receiptList.focus();
+     }
    }catch{if(id===renderId)main.querySelector('#wallet-panel').textContent='Wallet tools could not load. Refresh to retry.'}
  }
  else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{stores??=await fetch('stores.json').then(r=>r.json());if(id===renderId){
@@ -134,13 +143,14 @@ async function checkout() {
   const create = body.querySelector('[data-create]');
   const message = body.querySelector('[role=status]');
   const budget = body.querySelector('[data-agent-limit]');
+  if(sessionStorage.getItem('looku.return-to-order')) budget.value=sessionStorage.getItem('looku.jacket-limit') ?? '1.00';
   body.querySelector('[data-check-limit]').onclick = async () => {
     try {
       (await paymentAPI()).checkBudget(budget.value.trim());
       message.textContent='The jacket fits your limit. Choose a wallet to approve this purchase.';
     } catch (error) { message.textContent=error.message; }
   };
-  create.onclick = () => { sessionStorage.setItem('looku.return-to-order','1'); dialog.close(); };
+  create.onclick = () => { sessionStorage.setItem('looku.jacket-limit',budget.value.trim()); sessionStorage.setItem('looku.return-to-order','1'); dialog.close(); };
   let wallet, address;
   try { wallet = await walletRecord(); } catch (e) { message.textContent = e.message; }
   if (wallet) { local.hidden = false; create.hidden = true; }
@@ -166,6 +176,8 @@ async function checkout() {
         onStatus:text => { message.textContent = text; }});
       await record(receipt);
       sessionStorage.removeItem('looku.return-to-order');
+      sessionStorage.removeItem('looku.jacket-limit');
+      sessionStorage.setItem('looku.show-receipt','1');
       dialog.close();
       if (location.hash === '#wallet') await render();
       location.hash = 'wallet';
@@ -178,6 +190,7 @@ async function checkout() {
   dialog.addEventListener('close', () => local.reset(), {once:true});
 }
 main.addEventListener('input', e => {
+ if(e.target.id==='look-brief') promptDraft=e.target.value;
  if (e.target.id !== 'turn-frame') return;
  const frame = e.target.valueAsNumber;
  main.querySelector('.turntable').style.backgroundPosition = (frame % 6 * 20) + '% ' + (Math.floor(frame / 6) * 100 / 3) + '%';
@@ -193,7 +206,7 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
    notice(activePalette().name+' palette applied');return
  }
  if(b.hasAttribute('data-palette-off')){await setPaletteBook({...paletteBook,active:''});return}
- if(b.hasAttribute('data-reset-prompt')){lookRequest=null;variation=0;render();main.querySelector('#look-brief')?.focus();return}
+ if(b.hasAttribute('data-reset-prompt')){promptDraft='';lookRequest=null;variation=0;render();main.querySelector('#look-brief')?.focus();return}
  if(b.dataset.pin){lookRequest=null;const pin=foundPins.find(p=>p.id===b.dataset.pin);if(!pin)return;const color=b.parentElement.querySelector('input').value;const ref={pinId:pin.id,title:pin.title,color};await write('inspo',ref);inspo=ref;render();notice('Pin palette applied');return}
  if(b.hasAttribute('data-edit-palette')) {
    lookRequest=null;
@@ -210,6 +223,10 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
  if(b.hasAttribute('data-save')){const look=currentLook();const pieces=look.pieces.map(({id,name})=>({id,name}));if(saved.some(s=>s.name===editName()&&s.pieces.map(p=>p.id).join()===pieces.map(p=>p.id).join()))return notice('This outfit is already saved');const next=[{id:crypto.randomUUID(),name:editName(),pieces},...saved];await write('looks',next);saved=next;notice('Outfit saved to Wardrobe')}
  if(b.dataset.unsave){if(!confirm('Remove this saved outfit? Your wardrobe pieces stay on this device.'))return;const next=saved.filter(s=>s.id!==b.dataset.unsave);await write('looks',next);saved=next;render()}
  if(b.hasAttribute('data-clearref')){await write('inspo',null);inspo=null;render()}
+ if(b.hasAttribute('data-cancel-order')){
+   sessionStorage.removeItem('looku.return-to-order');sessionStorage.removeItem('looku.jacket-limit');
+   b.closest('.order-return').remove();main.focus();return;
+ }
  if(b.hasAttribute('data-buy'))checkout();
  if(b.dataset.refresh){b.disabled=true;const api=await paymentAPI();await record(await api.getReceipt(b.dataset.refresh));drawReceipts()}
  }catch(err){b.disabled=false;notice(err.message)}});
