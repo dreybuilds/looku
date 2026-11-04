@@ -6,7 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "build": "npm --prefix payments run build && node hosting/vercel-build.mjs"
+    "build": "npm --prefix payments test && npm --prefix payments run build && node hosting/vercel-build.mjs && node hosting/verify-build.mjs"
   },
   "dependencies": {
     "@vercel/blob": "2.8.2"
