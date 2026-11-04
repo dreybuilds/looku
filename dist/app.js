@@ -140,7 +140,7 @@ async function render(){
      drawReceipts();
      if(sessionStorage.getItem('looku.show-receipt')){
        sessionStorage.removeItem('looku.show-receipt');
-       const receiptList=panel.querySelector('#receipts');
+       const receiptList=main.querySelector('#receipts');
        receiptList.tabIndex=-1;
        receiptList.focus();
      }
