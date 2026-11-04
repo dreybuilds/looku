@@ -25,12 +25,12 @@ export async function accountCall(path, data) {
  if(!response.ok)throw Error(info.error||'Account service unavailable.');
  return info;
 }
-async function mountAccount(panel,wallet,onOwnerSignIn) {
+export async function mountAccount(panel,wallet,onSignIn, owner=false) {
  panel.innerHTML='<h3>looku account</h3><p>Sign in with your demo wallet to get styling advice or manage your Community posts. Your first sign-in creates an account and lasts up to 12 hours. Community also offers email sign-in.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
  const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
- if(onOwnerSignIn)panel.querySelector('p').textContent='Unlock your linked wallet to verify owner access.';
+ if(owner)panel.querySelector('p').textContent='Unlock your linked wallet to verify owner access.';
  function signedIn(){
-   if(onOwnerSignIn){onOwnerSignIn();return}
+   if(onSignIn){onSignIn();return}
    form.hidden=true;
    note.textContent='Signed in with this device wallet.';
    const button=document.createElement('button');
@@ -81,7 +81,7 @@ export async function mountDeviceWallet(panel, selectAddress, onOwnerSignIn) {
   function showWallet() {
     panel.innerHTML = '<h3>Your device wallet</h3><p>Demo shopping balance</p><p data-public style="overflow-wrap:anywhere"></p><div class="actions"><button data-use>Use this address</button><button data-export class="secondary">Download recovery file</button></div><p class="fine">Keep the encrypted file and your passphrase to restore this wallet on another device.</p><section data-wallet-account class="stack"></section>';
     panel.querySelector('[data-public]').textContent = wallet.address;
-    mountAccount(panel.querySelector('[data-wallet-account]'),wallet,onOwnerSignIn);
+    mountAccount(panel.querySelector('[data-wallet-account]'),wallet,onOwnerSignIn,Boolean(onOwnerSignIn));
     panel.querySelector('[data-use]').onclick = () => selectAddress(wallet.address);
     if(onOwnerSignIn){
       panel.querySelector('h3').textContent='Owner wallet';

@@ -6,7 +6,7 @@ const photo=fileURLToPath(new URL('../dist/orchid-detail.webp',import.meta.url))
 async function toggleWallet(page,title){await page.locator('.wallet-panel > summary').filter({hasText:title}).click()}
 async function nav(page,name){await page.getByRole('navigation').getByRole('link',{name,exact:true}).click()}
 test('upload, prompt, save, reload, filter and remove',async({page})=>{
- await page.goto('/');
+ await page.goto('/app#studio');
  await page.getByRole('button',{name:'Add a piece',exact:true}).first().click();
  const dialog=page.getByRole('dialog',{name:'Add a piece'});
  await dialog.getByLabel('Clothing photo').setInputFiles(photo);
@@ -80,7 +80,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await dialog.getByRole('button',{name:'Close dialog'}).click();
  const fresh=await browser.newContext();
  try{
-   const restored=await fresh.newPage();await restored.goto('http://127.0.0.1:4315/#wallet');
+   const restored=await fresh.newPage();await restored.goto(new URL('/app#wallet',page.url()).href);
  await toggleWallet(restored,'See or create wallet');
    await restored.getByText('Restore a wallet',{exact:true}).click();
    const restore=restored.locator('[data-device-wallet] details form');
@@ -91,7 +91,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  }finally{await fresh.close()}
 });
 test('offline reload, navigation, store search, styling and 3D rotation',async({page,context})=>{
- await page.goto('/');
+ await page.goto('/app#studio');
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}))});
  await context.setOffline(true);await page.reload();
  await expect(page.getByRole('heading',{name:'The Orchid Edit.'})).toBeVisible();
@@ -104,11 +104,11 @@ test('offline reload, navigation, store search, styling and 3D rotation',async({
  await page.getByLabel('Find a program').fill('');
  expect(await page.locator('#store-list article').count()).toBeGreaterThan(20);
 });
-test('native PWA metadata and install affordance',async({},testInfo)=>{
+test('native PWA metadata and install affordance',async({baseURL},testInfo)=>{
  const context=await chromium.launchPersistentContext(testInfo.outputPath('disposable-profile'),{channel:'chrome',viewport:testInfo.project.use.viewport});
  try {
  const page=await context.newPage();
- await page.goto('http://127.0.0.1:4315/');
+ await page.goto(baseURL+'/app#studio');
  const cdp=await context.newCDPSession(page);
  await page.evaluate(()=>navigator.serviceWorker.ready.then(()=>true));
  expect((await cdp.send('Page.getAppManifest')).errors).toEqual([]);
@@ -148,7 +148,7 @@ test('accessible pages, dialog names and viewport fit',async({page})=>{
  expect(failures).toEqual([]);
 });
 test('custom palette persistence, sample portraits and local retailer applications',async({page})=>{
- await page.goto('/');
+ await page.goto('/app#studio');
  const images=page.locator('.sample-photo');await expect(images).toHaveCount(4);
  await images.evaluateAll(imgs=>Promise.all(imgs.map(image=>image.decode())));
  await nav(page,'Stylist');
@@ -239,7 +239,7 @@ test('shopping agent explains its decision before wallet access',async({page})=>
 });
 
 test('add and style opens a look with the new piece and receipts are directly visible',async({page})=>{
- await page.goto('/');
+ await page.goto('/app#studio');
  await page.getByRole('button',{name:'Add a piece',exact:true}).first().click();
  const dialog=page.getByRole('dialog',{name:'Add a piece'});
  await dialog.getByLabel('Clothing photo').setInputFiles(photo);
@@ -253,7 +253,7 @@ test('add and style opens a look with the new piece and receipts are directly vi
 });
 
 test('returning from checkout focuses the receipt without hiding wallet tools',async({page})=>{
- await page.goto('/');
+ await page.goto('/app#studio');
  await page.evaluate(()=>sessionStorage.setItem('looku.show-receipt','1'));
  await nav(page,'Wallet');
  await expect(page.locator('#receipts')).toBeFocused();

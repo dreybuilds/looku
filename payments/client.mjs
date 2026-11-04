@@ -8,13 +8,24 @@ export { generateWallet, unlockWallet, signLookuLogin } from './local-wallet.mjs
 
 const endpoint = new URL(BASE + '/', import.meta.url)
 const key = (address, sku) => 'looku-checkout:' + address + ':' + sku
-export async function connectWallet() {
-  if (!(await freighter.isConnected()).isConnected) throw Error('Install the Freighter wallet extension to use testnet checkout.')
+export async function freighterAddress() {
+  if (!(await freighter.isConnected()).isConnected) throw Error('Install or open the Freighter extension, then try again.')
   const result = await freighter.requestAccess()
   if (result.error || !result.address) throw Error(result.error?.message || 'Wallet access was declined.')
+  return result.address
+}
+
+export async function signFreighterLogin(address, message) {
+  const result = await freighter.signMessage(message, {address})
+  if (result.error || !result.signedMessage || result.signerAddress !== address) throw Error(result.error?.message || 'Freighter did not sign with the selected address.')
+  return typeof result.signedMessage === 'string' ? result.signedMessage : Buffer.from(result.signedMessage).toString('base64')
+}
+
+export async function connectWallet() {
+  const address = await freighterAddress()
   const network = await freighter.getNetwork()
   if (network.networkPassphrase !== PASSPHRASE) throw Error('Switch Freighter to Stellar Testnet, then reconnect.')
-  return result.address
+  return address
 }
 async function read(path, opts = {}) {
   const response = await fetch(new URL(path, endpoint), {cache:'no-store', ...opts})

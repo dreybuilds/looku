@@ -33,5 +33,5 @@ const ownerRoutes=[
   {src:'^/(?!(?:'+adminAssets+'|'+adminApi+')$).*$',has:adminHost,status:404}
 ];
 await writeFile(path.join(out, 'config.json'), JSON.stringify({
-  version: 3, routes: [...ownerRoutes,{src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
+  version: 3, routes: [...ownerRoutes,{src: '^/app/?$', dest: '/studio.html'}, {src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
 }));

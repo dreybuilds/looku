@@ -34,7 +34,8 @@ const bucket={
  },
  async delete(key){rows.delete(key)}
 };
-const host='http://127.0.0.1:4315';
+const port=Number(process.env.LOOKU_QA_PORT||4315);
+const host='http://127.0.0.1:'+port;
 http.createServer(async(req,res)=>{
  try{
    if(req.url==='/qa-privy-token'){res.end(await testToken());return}
@@ -44,4 +45,4 @@ http.createServer(async(req,res)=>{
    const result=await worker.fetch(new Request(host+req.url,{method:req.method,headers,body:bytes.length?Buffer.concat(bytes):undefined}),{ORDERS:bucket});
    res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));
  }catch{res.writeHead(500);res.end()}
-}).listen(4315,'127.0.0.1');
+}).listen(port,'127.0.0.1');

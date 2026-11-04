@@ -1,5 +1,5 @@
 import {prices,currency,money} from './shopping.js';
-import {mountDeviceWallet} from './local-wallet.js';
+import {accountCall,mountDeviceWallet} from './local-wallet.js';
 const networks = {
   testnet: { label: 'demo wallet', host: 'https://horizon-testnet.stellar.org', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' },
   stellar: { label: 'Stellar mainnet', host: 'https://horizon.stellar.org', issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN' },
@@ -193,5 +193,17 @@ export async function mountWallet(element) {
   try {
     const existing = await mountDeviceWallet(panel, selectDeviceAddress);
     if (existing && network.value === 'testnet' && !address.value) selectDeviceAddress(existing);
+    const session=await accountCall('/api/account').catch(()=>null);
+    if(session?.address && session.address!==existing){
+      const box=document.createElement('section');
+      box.className='panel';
+      box.innerHTML='<h3>Signed in with Stellar</h3><p></p><button class="secondary">Sign out of wallet</button>';
+      box.querySelector('p').textContent=session.address.slice(0,6)+'…'+session.address.slice(-6);
+      box.querySelector('button').onclick=async()=>{
+        try{await accountCall('/api/account/logout',{});location.assign('/app')}
+        catch(error){box.querySelector('p').textContent=error.message}
+      };
+      element.prepend(box);
+    }
   } catch (e) { panel.textContent = e.message; }
 }

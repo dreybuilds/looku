@@ -1,3 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#faf5fb"><link rel="icon" href="/icon-192.png"><link rel="manifest" crossorigin="use-credentials" href="/app.webmanifest"><link rel="apple-touch-icon" href="/icon-192.png"><title>looku / Wardrobe studio</title><link rel="stylesheet" href="/vendor/bootstrap-components.css"><link rel="stylesheet" href="style.css"></head><body>
-<a class="skip-link" href="#main">Skip to content</a><header><a class="logo" href="#studio" aria-label="looku studio"><img src="/looku-orchid.webp" alt="looku"></a><nav class="nav nav-pills" aria-label="Main navigation"><a class="nav-link" href="#studio">Studio</a><a class="nav-link" href="#wardrobe">Wardrobe</a><a class="nav-link" href="#stylist">Stylist</a><a class="nav-link" href="#community">Community</a><a class="nav-link" href="#wallet">Wallet</a><a class="nav-link" href="#shops">Stores</a><a class="nav-link" href="#support">Support</a></nav><div class="header-tools"><button id="install-looku" class="secondary" aria-label="Install looku"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v12m-5-5 5 5 5-5M4 14v5h16v-5"/></svg>Install</button><select id="shop-currency" aria-label="Shopping currency"><option>KES</option><option>USD</option></select></div></header>
-<main id="main" tabindex="-1"></main><footer><img class="foot-mark" src="/looku-orchid.webp" alt="looku"><span>YOUR PERSONAL WARDROBE STUDIO</span><a href="/privacy-policy">Privacy policy</a></footer><div id="toast" role="status"></div><dialog id="dialog"><div id="dialog-body"></div><button class="close" aria-label="Close dialog">×</button></dialog><script type="module" src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>looku / Your personal wardrobe studio</title>
+<meta name="description" content="Photograph the clothes you own, style them into outfits, and save your favourite looks in your personal wardrobe studio.">
+<link rel="icon" href="/icon-192.png"><link rel="manifest" href="/app.webmanifest"><link rel="stylesheet" href="/landing.css">
+<script>
+function openStudioLink(){
+ const oldRoute=/^#(studio|wardrobe|stylist|community|wallet|shops|support|admin|boutique)(\/|$)/;
+ if(oldRoute.test(location.hash)||location.hostname==='admin.lookuwear.xyz'||matchMedia('(display-mode: standalone)').matches||navigator.standalone)location.replace('/app'+location.search+location.hash);
+}
+openStudioLink();addEventListener('hashchange',openStudioLink);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+</script>
+</head>
+<body><a class="skip" href="#content">Skip to content</a>
+<header><a href="/" aria-label="Looku home"><img class="logo" src="/looku-orchid.webp" alt="looku"></a><nav aria-label="Main"><a class="tour-link" href="#how">How it works</a><a class="pill" href="/app">Launch app <span aria-hidden="true">↗</span></a></nav></header>
+<main id="content">
+<section class="cover"><div class="copy"><p class="label"><span class="star" aria-hidden="true">✳</span> Personal wardrobe studio</p>
+<h1>What can you wear with what you <em>already own?</em></h1>
+<p class="intro">Photograph your pieces, put a look together, and save it for the next time you need it.</p>
+<div class="actions"><a class="pill" href="/app">Launch app <span aria-hidden="true">↗</span></a><a href="#how">See how it works ↓</a></div></div>
+<figure class="cover-photo"><img src="/orchid-portrait.webp" alt="Model wearing plum sunglasses and a lilac jacket with pink piping" fetchpriority="high"><figcaption>Lookbook № 01 <i>The Orchid Edit</i></figcaption></figure></section>
+<section id="how"><p class="label">From the sample wardrobe &nbsp; / &nbsp; 001</p><h2>The everyday edit.</h2><p class="intro">Start with a piece you reach for. Here’s how a cotton shirt becomes a look you can wear again.</p>
+<div class="pieces"><figure><img loading="lazy" src="/sample1.webp" alt="Cotton camp shirt"><figcaption>01 &nbsp; Cotton camp shirt</figcaption></figure><figure><img loading="lazy" src="/sample2.webp" alt="Straight-leg denim"><figcaption>02 &nbsp; Straight-leg denim</figcaption></figure><figure><img loading="lazy" src="/sample3.webp" alt="Leather trainers"><figcaption>03 &nbsp; Leather trainers</figcaption></figure></div>
+<div class="steps"><p><b>Photograph a piece</b>Add your shirt to Wardrobe and tag it as a top.</p><p><b>Style the outfit</b>Choose Everyday in Stylist and pair the shirt with denim and trainers.</p><p><b>Save the look</b>Keep all three pieces together in Wardrobe for another morning.</p></div></section>
+<aside><div><p class="label">Community closet</p><h2>See what others are wearing.</h2></div><a href="/app#community">Browse the closet ↗</a></aside></main>
+<footer><img class="logo" src="/looku-orchid.webp" alt="looku"><a href="/privacy-policy">Privacy policy</a></footer>
+</body></html>
