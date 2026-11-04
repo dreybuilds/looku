@@ -1,3 +1,4 @@
+import {ticketList} from './support.js';
 import {emailHeaders,emailAccount} from './email-auth.js';
 const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n};
 const link=(text,href)=>{const a=node('a',text);a.href=href;return a};
@@ -32,6 +33,18 @@ export async function mountAdmin(root){
      const heading=node('h2',name);view.append(heading);
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
+     if(path==='support'){
+       await ticketList(view,(data,cursor)=>api(path+(cursor?'?cursor='+encodeURIComponent(cursor):''),data),true);return;
+     }
+     if(path==='dashboard'){
+       const counts=await api(path);
+       const cards=node('div');cards.className='grid';
+       for(const [label,key,target] of [['Support requests','support','support'],['Closet sales','sales','review/sale'],['Donations','donations','review/donate'],['Wallet accounts','accounts','accounts']]){
+         const card=node('article');card.className='panel';
+         card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
+       }
+       view.append(cards);return;
+     }
      const rows=node('div');rows.className='stack';view.append(rows);
      const more=button('Load more',()=>load(next));view.append(more);let next;
      async function load(cursor){
@@ -67,8 +80,8 @@ export async function mountAdmin(root){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
-   await section('Closet sales','review/sale');
+   for(const [name,path] of [['Dashboard','dashboard'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}
 }

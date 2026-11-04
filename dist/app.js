@@ -147,13 +147,18 @@ async function render(){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
  }
+ else if(section==='support'){
+   main.innerHTML=title('Looku Wear / Help','Support','Find an answer or send a private request to Looku support.')+'<section id="support-area"></section>';
+   const panel=main.querySelector('#support-area');
+   const {mountSupport}=await import('./support.js');await mountSupport(panel);
+ }
  else if(section==='admin'){
    main.innerHTML=title('Looku Wear / Administration','Admin workspace','Review community listings, manage affiliate links and inspect wallet accounts.')+'<section id="admin-workspace"></section>';
    const panel=main.querySelector('#admin-workspace');
    const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
  }
  else if(section==='stylist')main.innerHTML=stylist();
- else if(section==='wallet'||section==='wallet/admin'){
+ else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'){
    main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
@@ -161,7 +166,7 @@ async function render(){
      const panel=main.querySelector('#wallet-panel');
      await mountWallet(panel);
      if(id!==renderId)return;
-     if(section==='wallet/admin')panel.querySelector('.wallet-panel').open=true;
+     if(section==='wallet/admin'||section==='wallet/support')panel.querySelector('.wallet-panel').open=true;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);

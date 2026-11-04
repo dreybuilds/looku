@@ -1,3 +1,4 @@
+import {adminSupport,dashboard} from './support.mjs';
 import {session} from './account.mjs';
 import {walletReceipts} from './wallet-receipts.mjs';
 import {StrKey} from '@stellar/stellar-sdk';
@@ -34,6 +35,8 @@ export async function admin(req,env){
    return await write(store,ownerKey,{id,address:user.address})?reply(201,{ok:true}):conflict();
  }
  if(!authorized)return error(403,'Sign in with the owner account and its linked wallet.');
+ if(path==='support')return adminSupport(req,store,data);
+ if(path==='dashboard'&&req.method==='GET')return dashboard(store);
  const cursor=url.searchParams.get('cursor')||undefined;
  if(path==='affiliates'){
    const {items,revision}=await affiliates(store);
