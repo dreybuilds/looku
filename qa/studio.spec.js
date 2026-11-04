@@ -216,7 +216,7 @@ test('preset survives refresh and funding uses the displayed testnet destination
  const request=page.waitForRequest(req=>req.url().startsWith('https://friendbot.stellar.org/'));
  await page.getByRole('button',{name:'Get test XLM'}).click();
  expect(new URL((await request).url()).searchParams.get('addr')).toBe(destination);
- await expect(page.locator('[data-faucet-status]')).toContainText('Friendbot funded');
+ await expect(page.locator('[data-faucet-status]')).toContainText('Test XLM sent');
  await toggleWallet(page,'Check balance');
  await page.getByRole('combobox',{name:'Network',exact:true}).selectOption('base');
  await expect(funding).toHaveCount(0);
@@ -235,4 +235,18 @@ test('shopping agent explains its decision before wallet access',async({page})=>
  await expect(dialog.getByRole('status')).toContainText('fits your limit');
  const response=await page.request.get('/api/account/receipts');
  expect(response.status()).toBe(401);
+});
+
+test('add and style opens a look with the new piece and receipts are directly visible',async({page})=>{
+ await page.goto('/');
+ await page.getByRole('button',{name:'Add a piece',exact:true}).first().click();
+ const dialog=page.getByRole('dialog',{name:'Add a piece'});
+ await dialog.getByLabel('Clothing photo').setInputFiles(photo);
+ await dialog.getByLabel('Piece name').fill('Lilac linen camp shirt');
+ await dialog.getByRole('button',{name:'Add and style'}).click();
+ await expect(page.getByRole('heading',{name:'Style an outfit'})).toBeVisible();
+ await expect(page.getByLabel('Describe your look')).toHaveValue(/Lilac linen camp shirt/);
+ await expect(page.getByRole('article').filter({hasText:'Lilac linen camp shirt'})).toBeVisible();
+ await nav(page,'Wallet');
+ await expect(page.getByRole('heading',{name:'Purchase receipts'})).toBeVisible();
 });

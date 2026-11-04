@@ -56,8 +56,38 @@ document.querySelector('#install-looku').onclick = async () => {
  const message = await requestInstall();
  if (message) modal('<h2>Install looku</h2><p>'+esc(message)+'</p>');
 };
-function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device unless you choose online backup. We sample a colour from each image for styling.</small><button>Add to wardrobe</button><p role="status"></p></form>`);
- const form=body.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;try{const d=new FormData(form);const name=d.get('name').trim();if(!name)throw Error('Enter a name for this piece.');const image=await processPhoto(d.get('photo'));const next=[{...image,id:crypto.randomUUID(),name,type:d.get('type'),occasion:d.get('occasion')},...items];await write('items',next);items=next;if(filter && filter!==next[0].type)filter=next[0].type;dialog.close();notice('Added to your wardrobe');render()}catch(err){form.querySelector('[role=status]').textContent=err.message}finally{button.disabled=false}}}
+function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device unless you choose online backup. We sample a colour from each image for styling.</small><div class="actions"><button>Add to wardrobe</button><button type="submit" value="style" class="secondary">Add and style</button></div><p role="status"></p></form>`);
+ const form=body.querySelector('form');
+ form.onsubmit=async event=>{
+   event.preventDefault();
+   const openStylist=event.submitter?.value==='style';
+   const buttons=[...form.querySelectorAll('button')];
+   if(buttons.some(button=>button.disabled))return;
+   buttons.forEach(button=>button.disabled=true);
+   try{
+     const fields=new FormData(form);
+     const name=fields.get('name').trim();
+     if(!name)throw Error('Enter a name for this piece.');
+     const image=await processPhoto(fields.get('photo'));
+     const piece={...image,id:crypto.randomUUID(),name,type:fields.get('type'),occasion:fields.get('occasion')};
+     const next=[piece,...items];
+     await write('items',next);
+     items=next;
+     if(filter && filter!==piece.type)filter=piece.type;
+     dialog.close();
+     if(openStylist){
+       promptDraft='Style my '+piece.name+' for '+piece.occasion.toLowerCase();
+       lookRequest=interpretLook(promptDraft,items);
+       occasion=piece.occasion;
+       variation=0;
+       location.hash='stylist';
+     }
+     await render();
+     notice('Added to your wardrobe');
+   }catch(error){form.querySelector('[role=status]').textContent=error.message}
+   finally{buttons.forEach(button=>button.disabled=false)}
+ };
+}
 function gallery(){
  const subset=items.filter(x=>!filter||x.type===filter);
  return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
@@ -106,12 +136,11 @@ async function render(){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin','<section class="alert order-return"><strong>Cropped jacket · 1 test XLM</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>');
      }
-     panel.querySelector('[data-account]').parentElement.insertAdjacentHTML('beforeend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>The test shopper paid 1 XLM for a cropped jacket. The boutique then paid 0.10 XLM to the looku account.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
+     panel.insertAdjacentHTML('afterend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>The test shopper paid 1 XLM for a cropped jacket. The boutique then paid 0.10 XLM to the looku account.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
      drawReceipts();
      if(sessionStorage.getItem('looku.show-receipt')){
        sessionStorage.removeItem('looku.show-receipt');
        const receiptList=panel.querySelector('#receipts');
-       receiptList.closest('details').open=true;
        receiptList.tabIndex=-1;
        receiptList.focus();
      }
@@ -130,7 +159,23 @@ async function render(){
 function drawStores(q){const list=stores.filter(s=>[s.name,s.region,s.note].some(v=>v.toLowerCase().includes(q.toLowerCase())));document.querySelector('#store-list').innerHTML=list.map(s=>`<article class="store"><span class="eyebrow">${esc(s.region)}</span><h3>${esc(s.name)}</h3><p class="fine">${esc(s.note)}</p>${s.shop?`<a href="${esc(s.shop)}" target="_blank" rel="noopener noreferrer">Shop ${esc(s.name)} ↗</a>`:''}<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">Visit program ↗</a></article>`).join('')||'<p>No programs match your search.</p>'}
 const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';
-function drawReceipts(){document.querySelector('#receipts').innerHTML=receipts.length?receipts.map(r=>`<div class="receipt"><h3>${esc(r.item||'Cropped jacket')}</h3><p class="status">${esc(r.status)} · Commission ${esc(r.commission??'0.10')} test XLM</p><div class="row">${txLink(r.purchaseTx,'Purchase transaction')}${txLink(r.payoutTx,'Affiliate payout')}<button class="secondary small" data-refresh="${esc(r.id)}">Refresh receipt</button></div></div>`).join(''):'<p class="empty">Your first test purchase and its affiliate payout will appear here.</p>'}
+const purchaseStates={
+ awaiting_signature:'Waiting for wallet approval',confirming_purchase:'Confirming on Stellar',
+ payout_pending:'Payment confirmed',complete:'Payment confirmed',failed:'Payment failed'
+};
+function drawReceipts(){
+ const list=document.querySelector('#receipts');
+ if(!list)return;
+ list.innerHTML=receipts.length?receipts.map(receipt=>{
+   const purchase=receipt.purchaseTx?'Payment confirmed':purchaseStates[receipt.status]||'Check payment status';
+   const affiliate=receipt.payoutTx?'Paid to looku':receipt.purchaseTx?'Awaiting payout':'Awaiting purchase';
+   const refresh=['complete','failed'].includes(receipt.status)?'':`<button class="secondary small" data-refresh="${esc(receipt.id)}">Refresh receipt</button>`;
+   return `<article class="receipt"><h3>${esc(receipt.item||'Cropped jacket')}</h3>
+   <p><strong>Your purchase</strong> · ${esc(receipt.amount||'1.00')} test XLM · ${purchase}</p>
+   <p><strong>Affiliate payout</strong> · ${esc(receipt.commission??'0.10')} test XLM · ${affiliate}</p>
+   <div class="row">${txLink(receipt.purchaseTx,'Purchase transaction')}${txLink(receipt.payoutTx,'Affiliate payout')}${refresh}</div></article>`;
+ }).join(''):'<p class="empty">Your first test purchase and its affiliate payout will appear here.</p>';
+}
 async function record(r){const next=[r,...receipts.filter(x=>x.id!==r.id)];await write('receipts',next);receipts=next}
 async function checkout() {
   modal(`<div class="eyebrow">Demo boutique / Stellar testnet</div><h2>Cropped jacket</h2><p>Order total <b>1 test XLM</b>. The boutique pays looku a 0.10 test XLM commission. No physical item ships.</p>
@@ -168,6 +213,7 @@ async function checkout() {
         extension.textContent = 'Approve 1 test XLM in Freighter';
         return;
       }
+      message.textContent=useLocal?'Unlocking your wallet and checking the order…':'Checking the order…';
       const signer = useLocal ? await api.unlockWallet(wallet, local.elements.phrase.value) : undefined;
       local.reset();
       if (!dialog.open || !local.isConnected) return;
@@ -228,7 +274,7 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
    b.closest('.order-return').remove();main.focus();return;
  }
  if(b.hasAttribute('data-buy'))checkout();
- if(b.dataset.refresh){b.disabled=true;const api=await paymentAPI();await record(await api.getReceipt(b.dataset.refresh));drawReceipts()}
+ if(b.dataset.refresh){b.disabled=true;b.textContent='Checking Stellar…';try{const api=await paymentAPI();await record(await api.getReceipt(b.dataset.refresh));drawReceipts()}finally{b.textContent='Refresh receipt'}}
  }catch(err){b.disabled=false;notice(err.message)}});
 document.addEventListener('click', event => {
  if (event.target.closest('[data-saved-link]')) sessionStorage.setItem('looku.show-saved','1');
