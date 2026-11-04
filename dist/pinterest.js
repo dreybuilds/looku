@@ -1,3 +1,4 @@
+import {tagChoices,chosenTags} from './social.js';
 import {emailHeaders} from './email-auth.js';
 
 function node(tag,text){
@@ -36,8 +37,9 @@ async function choose(parent,resource,label,status,onPick){
  }
  const controls=node('div');controls.className='stack';
  controls.append(caption);
+ const tags=node('div');if(resource==='pins'){controls.append(tags);await tagChoices(tags)}
  const more=action(controls,'Load more',status,page);
- const submit=action(controls,label,status,()=>onPick(select.value));
+ const submit=action(controls,label,status,()=>onPick(select.value,chosenTags(tags)));
  await page();parent.replaceChildren(controls);
 }
 export function pinterestPanel(){
@@ -54,8 +56,8 @@ export function pinterestPanel(){
    try{
      const {connected}=await call('connection');
      if(connected){
-       action(controls,'Choose a Pin to import',status,()=>choose(picker,'pins','Publish selected Pin to Lookuwear',status,async pinId=>{
-         const result=await call('import','POST',{pinId});location.hash='community/look/'+result.id;
+       action(controls,'Choose a Pin to import',status,()=>choose(picker,'pins','Publish selected Pin to Lookuwear',status,async (pinId,tags)=>{
+         const result=await call('import','POST',{pinId,...(Object.keys(tags).length?{tags}:{})});location.hash='community/look/'+result.id;
          status.textContent='Published in Lookuwear.';
        }));
        action(controls,'Disconnect Pinterest',status,async()=>{await call('connection','DELETE');await load();status.textContent='Pinterest disconnected.'});
@@ -75,7 +77,7 @@ export function postToPinterest(tools,look){
      const link=node('a','Open Pin on Pinterest');link.href='https://www.pinterest.com/pin/'+pin.id+'/';
      picker.replaceChildren(link);status.textContent='Posted to Pinterest.';button.hidden=true;
    });
-   status.textContent='The first piece photo is the cover. The Pin links to this look.';
+   status.textContent='The first piece photo is the cover. The Pin links to this look and includes any social tags you published with it.';
  });
  tools.append(picker,status);
 }

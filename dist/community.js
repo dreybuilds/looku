@@ -1,3 +1,4 @@
+import {accountDetails,tagChoices,chosenTags,tagLinks} from './social.js';
 import {pinterestPanel,postToPinterest} from './pinterest.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 const labels={look:'Published looks',sale:'Closet sale',donate:'Donations'};
@@ -31,24 +32,26 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
  <div class="public-pieces">${pieces.map(p=>`<figure>${photoOf(p)?`<img src="${esc(photoOf(p))}" alt="">`:''}<figcaption>${esc(p.name)}</figcaption></figure>`).join('')}</div>
  ${kind==='sale'?'<label>Asking price (KSh)<input type="number" name="price" min="1" max="99999999" step="1" required></label>':''}
  ${kind!=='look'?'<label>Contact email<input type="email" name="email" maxlength="160" required></label>':''}
+ ${kind==='look'?'<div data-tags></div>':''}
  <p class="fine">Once published, anyone can see this title, the piece names and their thumbnails.${kind==='look'?'':' An admin reviews this listing first. After approval, signed-in members can see your contact email to arrange a handoff.'} You can withdraw the post in Community.</p>
  <button>${actions[kind]}</button><p role="status"></p></form>`);
  const form=body.querySelector('form'),button=form.querySelector('button'),status=form.querySelector('[role=status]');
  const accountPanel=body.querySelector('[data-email-account]');
- emailAccount(accountPanel,()=>{status.textContent='You can continue with this post.'});
- function signIn(){const details=accountPanel.querySelector('details');if(details){details.open=true;details.querySelector('input').focus()}}
+ const tags=form.querySelector('[data-tags]');if(tags)tagChoices(tags);
+ const signIn=emailAccount(accountPanel,()=>{if(tags)tagChoices(tags);status.textContent='You can continue with this post.'});
  function postLink(id){const a=link('View submission',route(kind,id));a.onclick=()=>dialog.close();status.append(' ',a)}
  form.onsubmit=async e=>{
    e.preventDefault();if(button.disabled)return;button.disabled=true;status.textContent='Publishing…';
    try{
      const fields=new FormData(form);
      const post={sourceId:source.id,title:fields.get('title'),pieces:await Promise.all(pieces.map(async p=>({name:p.name,photo:await thumbnail(p)})))};
+     if(tags&&Object.keys(chosenTags(tags)).length)post.tags=chosenTags(tags);
      if(kind!=='look')post.email=fields.get('email').trim();
      if(kind==='sale')post.price=Number(fields.get('price'));
      const result=await call(kind,{method:'POST',headers,body:JSON.stringify(post)});
      if(form.isConnected&&dialog.open){dialog.close();location.hash=route(kind,result.id)}
    }catch(error){
-     status.textContent=error.message;if(error.status===401)signIn();if(error.status===409&&error.id)postLink(error.id);
+     status.textContent=error.message;if(error.status===401)signIn?.();if(error.status===409&&error.id)postLink(error.id);
    }finally{button.disabled=false}
  };
 
@@ -65,8 +68,8 @@ export async function mountCommunity(panel,[requested,id]){
  const status=element('p');status.setAttribute('role','status');
  const more=element('button','Load more');more.hidden=true;
  const accountPanel=element('section');panel.replaceChildren(tabs,accountPanel,help,list,status,more);
- if(kind==='look')help.after(pinterestPanel());
- emailAccount(accountPanel,()=>mountCommunity(panel,[requested,id]));
+ if(kind==='look')help.after(accountDetails(),pinterestPanel());
+ const signIn=emailAccount(accountPanel,()=>mountCommunity(panel,[requested,id]));
  function draw(post){
    const card=element('article');card.className='panel community-post';
    const badge=element('span',post.pinterestId?'Pinterest':post.kind==='look'?'Lookbook':post.kind==='sale'?'For sale':'Free to a new closet');badge.className='eyebrow';
@@ -76,10 +79,11 @@ export async function mountCommunity(panel,[requested,id]){
      figure.append(element('figcaption',p.name));pieces.append(figure);
    }
    card.append(badge,element('h2',post.title),pieces);
+   if(post.tags)card.append(tagLinks(post.tags));
    if(post.mine&&kind!=='look')card.append(element('p',post.status==='pending'?'Awaiting admin review':post.status==='rejected'?'Rejected · Withdraw to revise and resubmit.':'Approved'));
    if(kind!=='look'&&!post.email)card.append(element('strong',kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),link('Sign in to see contact details','#community-email'));
    const contactLogin=card.querySelector('[href="#community-email"]');
-   if(contactLogin)contactLogin.onclick=e=>{e.preventDefault();const details=accountPanel.querySelector('details');if(details){details.open=true;details.querySelector('input').focus()}};
+   if(contactLogin)contactLogin.onclick=e=>{e.preventDefault();signIn?.()};
    if(post.email){
      card.append(element('strong',post.kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),element('p',post.email),link(post.kind==='sale'?'Contact seller':'Contact donor','mailto:'+encodeURIComponent(post.email).replace('%40','@')));
    }

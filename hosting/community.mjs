@@ -1,3 +1,4 @@
+import {savedHandles,saveHandles,selectedHandles} from './social.mjs';
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 
@@ -13,7 +14,7 @@ const textFits=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.length<=n;
 const visible=(row,address)=>row.owner===address||row.kind==='look'||row.status==='approved';
 function publicPost(row,address){
  const {id,kind,title,pieces,price}=row,mine=row.owner===address;
- return {id,kind,title,pieces,price,mine,...(row.pinterestId?{pinterestId:row.pinterestId}:{}),status:kind==='look'?'published':row.status||'pending',
+ return {id,kind,title,pieces,price,mine,...(row.tags?{tags:row.tags}:{}),...(row.pinterestId?{pinterestId:row.pinterestId}:{}),status:kind==='look'?'published':row.status||'pending',
    ...(address&&(mine||row.status==='approved')?{email:row.email}:{})};
 }
 
@@ -23,9 +24,12 @@ export async function community(req,{ORDERS:store}){
  const did=await privySubject(req);
  const owner=did||(await session(req,store))?.address;
  if(kind==='session'&&!id&&req.method==='GET')return reply(200,{signedIn:!!owner});
- if(!kinds.includes(kind)||rest.length||(id&&!/^[a-f0-9]{64}$/.test(id)))return reply(404,{error:'Post not found.'});
+ const profile=kind==='profile'&&!id;
+ if(!profile&&!kinds.includes(kind)||rest.length||(id&&!/^[a-f0-9]{64}$/.test(id)))return reply(404,{error:'Post not found.'});
  const prefix='community/'+kind+'/';
 
+ if(profile&&!owner)return reply(401,{error:'Sign in to manage social accounts.'});
+ if(profile&&req.method==='GET')return reply(200,{handles:await savedHandles(store,owner)});
  if(req.method==='GET'&&!id){
    const cursor=url.searchParams.get('cursor')||undefined;
    const page=await store.list({prefix,limit:8,cursor});
@@ -45,7 +49,7 @@ export async function community(req,{ORDERS:store}){
    return reply(200,{removed:true});
  }
  if(req.method!=='POST'||id)return reply(405,{error:'Unsupported action.'});
- const maxBytes=300000;
+ const maxBytes=profile?1024:300000;
  if(!req.body||Number(req.headers.get('Content-Length'))>maxBytes)return reply(413,{error:'Post too large.'});
  const reader=req.body.getReader(),chunks=[];
  let size=0;
@@ -56,6 +60,7 @@ export async function community(req,{ORDERS:store}){
    chunks.push(value);
  }
  let data;try{data=JSON.parse(await new Blob(chunks).text())}catch{return reply(400,{error:'Invalid post.'})}
+ if(profile)return await saveHandles(store,owner,data?.handles)?reply(200,{saved:true}):reply(400,{error:'Enter valid social usernames without a profile URL.'});
  if(!textFits(data?.sourceId,80)||!textFits(data.title,180)||!Array.isArray(data.pieces)||!data.pieces.length||data.pieces.length>(kind==='look'?5:1))return reply(400,{error:'Choose a title and wardrobe pieces.'});
  const pieces=[];
  for(const piece of data.pieces){
@@ -64,6 +69,7 @@ export async function community(req,{ORDERS:store}){
    pieces.push({name:piece.name.trim(),photo});
  }
  const post={kind,title:data.title.trim(),pieces};
+ if(kind==='look'&&data.tags)post.tags=await selectedHandles(store,owner,data.tags);
  if(kind!=='look'){
    if(!textFits(data.email,160)||!/^[^\s@?<>&#]+@[^\s@?<>&#]+\.[^\s@?<>&#]+$/.test(data.email))return reply(400,{error:'Enter a contact email.'});
    post.email=data.email;post.status='pending';

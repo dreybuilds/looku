@@ -1,3 +1,4 @@
+import {selectedHandles} from './social.mjs';
 import {EncryptJWT,jwtDecrypt} from 'jose';
 import {session} from './account.mjs';
 import {privySubject} from './privy.mjs';
@@ -92,6 +93,7 @@ async function pinterest(req,env){
    const id=Array.from(new Uint8Array(await hash(JSON.stringify([owner,'pinterest',pin.id]))),b=>b.toString(16).padStart(2,'0')).join('');
    const title=(pin.title||pin.description||'Pinterest look').slice(0,180);
    const post={owner,id,kind:'look',title,pinterestId:pin.id,pieces:[{name:title,photo}]};
+   if(data.tags)post.tags=await selectedHandles(store,owner,data.tags);
    const saved=await store.put('community/look/'+id,JSON.stringify(post),{onlyIf:{etagDoesNotMatch:'*'}});
    return reply(saved?201:200,{id});
  }
@@ -107,7 +109,7 @@ async function pinterest(req,env){
    return existing?.id?reply(200,{id:existing.id}):reply(409,{error:'This post was already requested. Check the board before posting again.'});
  }
  let pin;
- try{pin=await request('/pins',{board_id:data.boardId,title:look.title.slice(0,100),description:look.pieces.map(p=>p.name).join(', '),
+ try{pin=await request('/pins',{board_id:data.boardId,title:look.title.slice(0,100),description:[look.pieces.map(p=>p.name).join(', '),...Object.entries(look.tags||{}).map(([network,handle])=>network+' @'+handle)].join(' · ').slice(0,800),
    link:url.origin+'/app#community/look/'+look.id,media_source:{source_type:'image_base64',content_type:'image/jpeg',data:photo.split(',')[1]}})}
  catch(error){if(error.status>=400&&error.status<500)await store.delete(receipt);throw error}
  if(!pinId.test(pin.id))throw fail(502,'Check your Pinterest board to confirm this post.');
