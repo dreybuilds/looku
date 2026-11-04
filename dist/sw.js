@@ -1,4 +1,4 @@
-const CACHE='looku-shell-social-tags-rounded-forms-2';
+const CACHE='looku-shell-account-private-listings-1';
 const SHELL=['/','/index.html','/app','/welcome.js','/landing.css','/style.css','/vendor/bootstrap-components.css','/app.js','/wishlist.js','/shopping.js','/community.js','/social.js','/pinterest.js','/email-auth.js','/admin.js','/support.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);

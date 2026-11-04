@@ -333,6 +333,23 @@ test('community publishes selective snapshots for visitors and enforces ownershi
      page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Withdraw post'}).click();
      await expect(page.getByText('Post withdrawn.')).toBeVisible();
      expect((await guest.request.get(path)).status()).toBe(404);
+     if(kind!=='look'){
+       await nav(page,'Wardrobe');await page.getByRole('button',{name:action,exact:true}).click();
+       await dialog.getByLabel('Who can see this listing?').selectOption('private');
+       await dialog.getByLabel('Listing title').fill(title);
+       await dialog.getByLabel('Contact email').fill('family@example.com');
+       if(kind==='sale')await dialog.getByLabel('Asking price').fill('400');
+       await dialog.getByRole('button',{name:submit,exact:true}).click();
+       const share=page.getByRole('link',{name:'Private link',exact:true});
+       await expect(share).toBeVisible();
+       const privateUrl=await share.getAttribute('href');
+       const queue=await (await admin.request.get('/api/admin/review/'+kind)).json();
+       expect(queue.items.some(row=>row.title===title)).toBe(false);
+       await guest.clearCookies();await viewer.goto(privateUrl);
+       await expect(viewer.getByText('family@example.com',{exact:true})).toBeVisible();
+       page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Withdraw post'}).click();
+       await expect(page.getByText('Post withdrawn.')).toBeVisible();
+     }
    }
    const accounts=await (await admin.request.get('/api/admin/accounts')).json();
    const record=accounts.items.find(x=>x.address===seller);

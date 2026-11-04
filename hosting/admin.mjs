@@ -75,13 +75,14 @@ export async function admin(req,env,recheckPayout){
    const prefix='community/'+review[1]+'/';
    if(req.method==='GET'&&!review[2]){
      const page=await store.list({prefix,limit:12,cursor});
-     const rows=await Promise.all(page.objects.map(async x=>{const obj=await store.get(x.key);if(!obj)return null;const {id,title,pieces,price,status}=await obj.json();return {id,title,pieces,price,status:status||'pending',revision:obj.etag}}));
+     const rows=await Promise.all(page.objects.map(async x=>{const obj=await store.get(x.key);if(!obj)return null;const {id,title,pieces,price,status}=await obj.json();if(status==='private')return null;return {id,title,pieces,price,status:status||'pending',revision:obj.etag}}));
      return reply(200,{items:rows.filter(Boolean),next:page.truncated?page.cursor:null});
    }
    if(req.method==='POST'&&review[2]&&['approved','rejected'].includes(data.status)){
      const key=prefix+review[2],obj=await store.get(key);
      if(!obj||obj.etag!==data.revision)return conflict();
-     return await write(store,key,{...await obj.json(),status:data.status,reviewedAt:new Date().toISOString()},obj.etag)?reply(200,{ok:true}):conflict();
+     const row=await obj.json();if(row.status==='private')return error(404,'Listing not found.');
+     return await write(store,key,{...row,status:data.status,reviewedAt:new Date().toISOString()},obj.etag)?reply(200,{ok:true}):conflict();
    }
  }
  return error(404,'Unknown admin action.');

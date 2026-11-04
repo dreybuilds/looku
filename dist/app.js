@@ -1,6 +1,6 @@
 import {mountWishlist,receiveSharedLink} from './wishlist.js';
 import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
-import {mountCommunity,composePost} from './community.js';
+import {mountCommunity,mountMemberAccount,composePost} from './community.js';
 import {interpretLook} from './look-prompt.js';
 import { walletRecord, accountCall } from './local-wallet.js';
 import {devicePanel,deviceAction,requestInstall} from './device.js';
@@ -162,6 +162,10 @@ async function render(){
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
+ }
+ else if(section==='account'||section.startsWith('account/')){
+   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, social profiles and Pinterest imports.')+'<section id="member-account"></section>';
+   mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1));
  }
  else if(section==='support'){
    main.innerHTML=title('Looku Wear / Help','Support','Find an answer or send a private request to Looku support.')+'<section id="support-area"></section>';

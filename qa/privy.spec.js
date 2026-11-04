@@ -28,6 +28,7 @@ test('email sign-up preserves a draft and authorizes closet posts without a wall
  const path='/api/'+page.url().split('#')[1],headers={Origin:baseURL,'X-Looku-Action':'community',Authorization:'Bearer '+token};
  await expect(page.getByRole('link',{name:'Instagram @wardrobe.test'})).toHaveAttribute('href','https://www.instagram.com/wardrobe.test');
  expect((await (await request.get(path)).json()).tags).toEqual({Instagram:'wardrobe.test'});
+ await page.getByRole('link',{name:'Account',exact:true}).click();
  await page.getByText('Account details · social accounts').click();
  await page.getByLabel('Instagram username').fill('@new.handle');
  await page.getByRole('button',{name:'Save social accounts'}).click();
@@ -46,4 +47,29 @@ test('email sign-up preserves a draft and authorizes closet posts without a wall
  await page.getByRole('button',{name:'Sign out',exact:true}).click();
  await expect(page.getByRole('button',{name:'Withdraw post'})).toHaveCount(0);
  expect((await request.delete(path,{headers})).status()).toBe(200);
+});
+
+test('private sale and donation links work for guests and expire on withdrawal',async({page,request,baseURL})=>{
+ const token=await (await request.get('/qa-privy-token')).text();
+ const headers={Authorization:'Bearer '+token,Origin:baseURL,'X-Looku-Action':'community'};
+ for(const kind of ['sale','donate']){
+   const path='/api/community/'+kind;
+   const data={visibility:'private',sourceId:crypto.randomUUID(),title:'Family listing '+crypto.randomUUID(),pieces:[{name:'Linen shirt'}],email:'family@example.test',price:300};
+   const posted=await request.post(path,{headers,data});
+   expect(posted.status()).toBe(201);
+   const {id,shareKey}=await posted.json();
+   const item=path+'/'+id, shared={headers:{'X-Looku-Share':shareKey}};
+   expect((await request.get(item)).status()).toBe(404);
+   const feed=await (await request.get(path)).json();
+   expect(JSON.stringify(feed)).not.toContain(data.title);
+   await page.goto('/app#community/'+kind+'/'+id+'/'+shareKey);
+   await expect(page.getByRole('heading',{name:data.title})).toBeVisible();
+   await expect(page.getByRole('link',{name:/Contact (seller|donor)/})).toHaveAttribute('href','mailto:family@example.test');
+   expect((await request.delete(item,{headers})).status()).toBe(200);
+   expect((await request.get(item,shared)).status()).toBe(404);
+   const again=await request.post(path,{headers,data});
+   expect((await again.json()).shareKey).not.toBe(shareKey);
+   expect((await request.get(item,shared)).status()).toBe(404);
+   await request.delete(item,{headers});
+ }
 });

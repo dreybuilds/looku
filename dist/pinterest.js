@@ -71,7 +71,7 @@ export function postToPinterest(tools,look){
  const picker=node('div'),status=node('p');status.setAttribute('role','status');
  let button;
  button=action(tools,'Post to Pinterest',status,async()=>{
-   if(!(await call('connection')).connected){status.textContent='Open Pinterest account and imports above to connect first.';return}
+   if(!(await call('connection')).connected){status.textContent='Open Account → Pinterest account and imports to connect first.';return}
    await choose(picker,'boards','Post look to selected board',status,async boardId=>{
      const pin=await call('publish','POST',{boardId,lookId:look.id});
      const link=node('a','Open Pin on Pinterest');link.href='https://www.pinterest.com/pin/'+pin.id+'/';

@@ -26,7 +26,7 @@ export async function tagChoices(container){
  container.replaceChildren();let saved;
  try{saved=await profile()}catch(error){if(error.status!==401)container.textContent='Social accounts could not load.';return}
  const entries=Object.entries(saved);
- if(!entries.length){container.textContent='Add usernames in Community → Account details to tag them on looks.';return}
+ if(!entries.length){container.textContent='Add usernames in Account → Social accounts to tag them on looks.';return}
  const field=el('fieldset');field.append(el('legend','Tag social accounts on this look'));
  for(const [name,handle] of entries){
    const label=el('label',name+' @'+handle),check=el('input');check.type='checkbox';check.dataset.network=name;check.value=handle;label.prepend(check);field.append(label);

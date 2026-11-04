@@ -44,7 +44,7 @@ async function pinterest(req,env){
        outcome='connected';
      }
    }catch{outcome='failed'}
-   return new Response(null,{status:303,headers:{Location:'/app?pinterest='+outcome+'#community/look','Set-Cookie':cookie('',0),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
+   return new Response(null,{status:303,headers:{Location:'/app?pinterest='+outcome+'#account','Set-Cookie':cookie('',0),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
  }
  const owner=await privySubject(req)||(await session(req,store))?.address;
  if(!owner)return reply(401,{error:'Sign in with email or your Looku wallet to connect Pinterest.'});

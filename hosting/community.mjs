@@ -14,6 +14,7 @@ const textFits=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.length<=n;
 const visible=(row,address)=>row.owner===address||row.kind==='look'||row.status==='approved';
 function publicPost(row,address){
  const {id,kind,title,pieces,price}=row,mine=row.owner===address;
+ if(row.status==='private')return {id,kind,title,pieces,price,mine,status:'private',email:row.email,...(mine?{shareKey:row.shareKey}:{})};
  return {id,kind,title,pieces,price,mine,...(row.tags?{tags:row.tags}:{}),...(row.pinterestId?{pinterestId:row.pinterestId}:{}),status:kind==='look'?'published':row.status||'pending',
    ...(address&&(mine||row.status==='approved')?{email:row.email}:{})};
 }
@@ -38,7 +39,8 @@ export async function community(req,{ORDERS:store}){
  }
  if(req.method==='GET'){
    const row=(kind==='look'&&featuredLooks.find(look=>look.id===id))||await (await store.get(prefix+id))?.json();
-   return row&&visible(row,owner)?reply(200,publicPost(row,owner)):reply(404,{error:'This post is no longer available.'});
+   const shared=row?.status==='private'&&row.shareKey&&row.shareKey===req.headers.get('X-Looku-Share');
+   return row&&(visible(row,owner)||shared)?reply(200,publicPost(row,owner)):reply(404,{error:'This post is no longer available.'});
  }
  if(req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='community')return reply(403,{error:'Open Community in Looku Wear.'});
  if(!owner)return reply(401,{error:'Sign in with email or your Looku wallet to publish or withdraw a post.'});
@@ -72,7 +74,10 @@ export async function community(req,{ORDERS:store}){
  if(kind==='look'&&data.tags)post.tags=await selectedHandles(store,owner,data.tags);
  if(kind!=='look'){
    if(!textFits(data.email,160)||!/^[^\s@?<>&#]+@[^\s@?<>&#]+\.[^\s@?<>&#]+$/.test(data.email))return reply(400,{error:'Enter a contact email.'});
-   post.email=data.email;post.status='pending';
+   if(data.visibility!==undefined&&!['public','private'].includes(data.visibility))return reply(400,{error:'Choose a listing audience.'});
+   post.email=data.email;
+   post.status=data.visibility==='private'?'private':'pending';
+   if(post.status==='private')post.shareKey=crypto.randomUUID();
    if(kind==='sale'){
      if(!Number.isSafeInteger(data.price)||data.price<=0||data.price>99999999)return reply(400,{error:'Enter a positive price in whole KSh.'});
      post.price=data.price;
@@ -81,5 +86,5 @@ export async function community(req,{ORDERS:store}){
  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([owner,kind,data.sourceId])));
  post.id=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');
  const stored=await store.put(prefix+post.id,JSON.stringify({...post,owner}),{onlyIf:{etagDoesNotMatch:'*'}});
- return reply(stored?201:409,{id:post.id,...(!stored?{error:'Already submitted. Withdraw the existing post to change it.'}:{})});
+ return reply(stored?201:409,{id:post.id,...(stored&&post.shareKey?{shareKey:post.shareKey}:{}),...(!stored?{error:'Already submitted. Withdraw the existing post to change it.'}:{})});
 }

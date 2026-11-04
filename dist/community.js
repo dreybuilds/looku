@@ -28,14 +28,24 @@ async function thumbnail(piece){
 }
 export function composePost({kind,source,pieces,modal,body,dialog,esc}){
  modal(`<div class="eyebrow">Looku Wear / Community</div><h2>${actions[kind]}</h2>
- <section data-email-account></section><form class="stack"><label>Public title<input name="title" maxlength="180" required value="${esc(source.name)}"></label>
+ <section data-email-account></section><form class="stack"><label><span data-title-label>Public title</span><input name="title" maxlength="180" required value="${esc(source.name)}"></label>
  <div class="public-pieces">${pieces.map(p=>`<figure>${photoOf(p)?`<img src="${esc(photoOf(p))}" alt="">`:''}<figcaption>${esc(p.name)}</figcaption></figure>`).join('')}</div>
+ ${kind!=='look'?'<label>Who can see this listing?<select name="visibility"><option value="public">Public Community listing</option><option value="private">Private · anyone with the link</option></select></label>':''}
  ${kind==='sale'?'<label>Asking price (KSh)<input type="number" name="price" min="1" max="99999999" step="1" required></label>':''}
  ${kind!=='look'?'<label>Contact email<input type="email" name="email" maxlength="160" required></label>':''}
  ${kind==='look'?'<div data-tags></div>':''}
- <p class="fine">Once published, anyone can see this title, the piece names and their thumbnails.${kind==='look'?'':' An admin reviews this listing first. After approval, signed-in members can see your contact email to arrange a handoff.'} You can withdraw the post in Community.</p>
+ <p class="fine" data-audience-note>Once published, anyone can see this title, the piece names and their thumbnails.${kind==='look'?'':' An admin reviews this listing first. After approval, signed-in members can see your contact email to arrange a handoff.'} You can withdraw the post in Community.</p>
  <button>${actions[kind]}</button><p role="status"></p></form>`);
  const form=body.querySelector('form'),button=form.querySelector('button'),status=form.querySelector('[role=status]');
+ const visibility=form.elements.visibility;
+ if(visibility){
+   const note=form.querySelector('[data-audience-note]'),publicNote=note.textContent;
+   visibility.onchange=()=>{
+     const privateLink=visibility.value==='private';
+     note.textContent=privateLink?'Anyone with the link can see this listing and your contact email, including people it is forwarded to. It skips admin review. Withdraw it to disable the link.':publicNote;
+     form.querySelector('[data-title-label]').textContent=privateLink?'Listing title':'Public title';
+   };
+ }
  const accountPanel=body.querySelector('[data-email-account]');
  const tags=form.querySelector('[data-tags]');if(tags)tagChoices(tags);
  const signIn=emailAccount(accountPanel,()=>{if(tags)tagChoices(tags);status.textContent='You can continue with this post.'});
@@ -46,17 +56,25 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
      const fields=new FormData(form);
      const post={sourceId:source.id,title:fields.get('title'),pieces:await Promise.all(pieces.map(async p=>({name:p.name,photo:await thumbnail(p)})))};
      if(tags&&Object.keys(chosenTags(tags)).length)post.tags=chosenTags(tags);
-     if(kind!=='look')post.email=fields.get('email').trim();
+     if(visibility){post.email=fields.get('email').trim();post.visibility=visibility.value}
      if(kind==='sale')post.price=Number(fields.get('price'));
      const result=await call(kind,{method:'POST',headers,body:JSON.stringify(post)});
-     if(form.isConnected&&dialog.open){dialog.close();location.hash=route(kind,result.id)}
+     if(form.isConnected&&dialog.open){dialog.close();location.hash=route(kind,result.id)+(result.shareKey?'/'+result.shareKey:'')}
    }catch(error){
      status.textContent=error.message;if(error.status===401)signIn?.();if(error.status===409&&error.id)postLink(error.id);
    }finally{button.disabled=false}
  };
 
 }
-export async function mountCommunity(panel,[requested,id]){
+export function mountMemberAccount(panel,[kind,id]=[]){
+ const login=element('section');
+ panel.replaceChildren(login,accountDetails(),pinterestPanel());
+ emailAccount(login,()=>{
+   if(['sale','donate'].includes(kind)&&/^[a-f0-9]{64}$/.test(id))location.hash=route(kind,id);
+   else mountMemberAccount(panel);
+ });
+}
+export async function mountCommunity(panel,[requested,id,shareKey]){
  const kind=Object.hasOwn(labels,requested)?requested:'look';
  const tabs=element('div');tabs.className='community-tabs actions';
  for(const [key,label] of Object.entries(labels)){
@@ -67,9 +85,7 @@ export async function mountCommunity(panel,[requested,id]){
  const list=element('div');list.className='community-grid';
  const status=element('p');status.setAttribute('role','status');
  const more=element('button','Load more');more.hidden=true;
- const accountPanel=element('section');panel.replaceChildren(tabs,accountPanel,help,list,status,more);
- if(kind==='look')help.after(accountDetails(),pinterestPanel());
- const signIn=emailAccount(accountPanel,()=>mountCommunity(panel,[requested,id]));
+ panel.replaceChildren(tabs,help,list,status,more);
  function draw(post){
    const card=element('article');card.className='panel community-post';
    const badge=element('span',post.pinterestId?'Pinterest':post.kind==='look'?'Lookbook':post.kind==='sale'?'For sale':'Free to a new closet');badge.className='eyebrow';
@@ -80,20 +96,27 @@ export async function mountCommunity(panel,[requested,id]){
    }
    card.append(badge,element('h2',post.title),pieces);
    if(post.tags)card.append(tagLinks(post.tags));
-   if(post.mine&&kind!=='look')card.append(element('p',post.status==='pending'?'Awaiting admin review':post.status==='rejected'?'Rejected · Withdraw to revise and resubmit.':'Approved'));
-   if(kind!=='look'&&!post.email)card.append(element('strong',kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),link('Sign in to see contact details','#community-email'));
-   const contactLogin=card.querySelector('[href="#community-email"]');
-   if(contactLogin)contactLogin.onclick=e=>{e.preventDefault();signIn?.()};
+   if(post.mine&&kind!=='look')card.append(element('p',post.status==='private'?'Private · anyone with the link':post.status==='pending'?'Awaiting admin review':post.status==='rejected'?'Rejected · Withdraw to revise and resubmit.':'Approved'));
+   if(kind!=='look'&&!post.email)card.append(element('strong',kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),link('Sign in to see contact details','#account/'+kind+'/'+post.id));
    if(post.email){
      card.append(element('strong',post.kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),element('p',post.email),link(post.kind==='sale'?'Contact seller':'Contact donor','mailto:'+encodeURIComponent(post.email).replace('%40','@')));
    }
    const tools=element('div');tools.className='actions';if(['approved','published'].includes(post.status))tools.append(link('Public link',route(kind,post.id)));
+   if(post.mine&&post.status==='private'){
+     const url=new URL('/app'+route(kind,post.id)+'/'+post.shareKey,location.origin);
+     const copy=element('button','Copy private link');
+     copy.onclick=async()=>{
+       try{await navigator.clipboard.writeText(url.href);status.textContent='Private link copied.'}
+       catch{status.textContent='Copy the address from the Private link below.'}
+     };
+     tools.append(copy,link('Private link',url.href));
+   }
    if(post.pinterestId)tools.append(link('View original Pin ↗','https://www.pinterest.com/pin/'+post.pinterestId+'/'));
    if(post.mine&&kind==='look'&&!post.pinterestId&&post.pieces.some(p=>p.photo))postToPinterest(tools,post);
    if(post.mine){
      const remove=element('button','Withdraw post');remove.className='secondary small';tools.append(remove);
      remove.onclick=async()=>{
-       if(!confirm('Withdraw this post from the public community?'))return;
+       if(!confirm(post.status==='private'?'Withdraw this listing and disable its private link?':'Withdraw this post from the public community?'))return;
        remove.disabled=true;
        try{await call(kind+'/'+post.id,{method:'DELETE',headers});card.remove();status.textContent='Post withdrawn.'}
        catch(e){status.textContent=e.message;remove.disabled=false}
@@ -105,7 +128,7 @@ export async function mountCommunity(panel,[requested,id]){
  async function load(){
    more.disabled=true;status.textContent='Loading…';
    try{
-     if(id){draw(await call(kind+'/'+encodeURIComponent(id)));status.textContent='';return}
+     if(id){draw(await call(kind+'/'+encodeURIComponent(id),shareKey?{headers:{'X-Looku-Share':shareKey}}:{}));status.textContent='';return}
      const page=await call(kind+(cursor?'?cursor='+encodeURIComponent(cursor):''));
      page.posts.forEach(draw);cursor=page.cursor;more.hidden=!cursor;
      status.textContent=list.children.length?'':'Nothing published here yet.';

@@ -12,6 +12,8 @@ test('featured Pinterest looks link to their originals and members can choose a 
  const original=page.getByRole('link',{name:'View original Pin'});
  await expect(original).toHaveCount(2);
  await expect(original.first()).toHaveAttribute('href',/7388786884333608/);
+ await expect(page.getByText('Pinterest account and imports',{exact:true})).toHaveCount(0);
+ await page.getByRole('link',{name:'Account',exact:true}).click();
  await page.getByText('Pinterest account and imports',{exact:true}).click();
  await page.getByRole('button',{name:'Choose a Pin to import'}).click();
  await page.getByLabel('Your published image Pins').selectOption('100');
