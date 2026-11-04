@@ -1,4 +1,4 @@
-const CACHE='looku-shell-20261104-shopping-agent';
+const CACHE='looku-shell-20261104-workflow-2';
 const SHELL=['/','/index.html','/style.css','/vendor/bootstrap-components.css','/app.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);

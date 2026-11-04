@@ -3,6 +3,8 @@ A personal wardrobe studio for the EmpowerHer agentic payments hackathon. Intend
 
 See the [architecture and Demo Day walkthrough](ARCHITECTURE.md) for the shopping agent, wallet identity, settlement boundaries and pilot roadmap.
 
+[Design inspiration sites and workflow checklist](INSPIRATION.md)
+
 ## Try it
 Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four sample garment portraits are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
 

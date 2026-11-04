@@ -16,6 +16,8 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await nav(page,'Stylist');
  const prompt='Lilac linen shirt and jeans for brunch, no dress';
  await page.getByLabel('Describe your look').fill(prompt);
+ await page.getByRole('button',{name:/Orchid Hour/}).click();
+ await expect(page.getByLabel('Describe your look')).toHaveValue(prompt);
  await page.getByRole('button',{name:'Build my look'}).click();
  await expect(page.getByRole('heading',{name:'Weekend edit'})).toBeFocused();
  await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toBeVisible();
@@ -25,6 +27,9 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await expect(page.getByRole('heading',{name:prompt})).toBeVisible();
  await page.reload();
  await expect(page.getByRole('heading',{name:prompt})).toBeVisible();
+ await page.getByText('View outfit pieces',{exact:true}).click();
+ await expect(page.locator('details[open] img[alt="Lilac linen shirt"]')).toBeVisible();
+ await page.getByText('View outfit pieces',{exact:true}).click();
  await page.getByLabel('Category').selectOption('jacket');
  await expect(page.getByText('No pieces in this category yet.')).toBeVisible();
  await page.getByLabel('Category').selectOption('shirt');
@@ -35,8 +40,8 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
 test('checkout detour, wallet recovery, savings and wrong signing passphrase',async({page,browser})=>{
  await page.goto('/#stylist');
  await page.getByRole('button',{name:'Review purchase'}).click();
+ await page.getByLabel('Shopping agent limit').fill('0.75');
  await page.getByRole('link',{name:'Create a testnet wallet'}).click();
- await toggleWallet(page,'See or create wallet');
  const form=page.locator('[data-device-wallet] form').first();
  const phrase=crypto.randomUUID();
  await form.getByLabel('Wallet passphrase').fill(phrase);
@@ -64,9 +69,10 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  await page.reload();
  await toggleWallet(page,'Save for a piece');
  await expect(page.getByText(/Cropped jacket · 12 XLM/)).toBeVisible();
- await toggleWallet(page,'See or create wallet');
  await page.getByRole('button',{name:'Return to checkout'}).click();
  const dialog=page.getByRole('dialog',{name:'Cropped jacket'});
+ await expect(dialog.getByLabel('Shopping agent limit')).toHaveValue('0.75');
+ await dialog.getByLabel('Shopping agent limit').fill('1');
  await dialog.getByLabel('Wallet passphrase').fill('incorrect phrase');
  await dialog.getByRole('button',{name:'Pay 1 test XLM with device wallet'}).click();
  await expect(dialog.getByRole('status')).toContainText('Could not unlock');
