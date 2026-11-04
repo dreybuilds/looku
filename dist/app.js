@@ -168,7 +168,7 @@ async function render(){
    mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1));
  }
  else if(section==='support'){
-   main.innerHTML=title('Looku Wear / Help','Support','Find an answer or send a private request to Looku support.')+'<section id="support-area"></section>';
+   main.innerHTML='<div id="support-area"></div>';
    const panel=main.querySelector('#support-area');
    const {mountSupport}=await import('./support.js');await mountSupport(panel);
  }

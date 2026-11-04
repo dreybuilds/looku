@@ -1,11 +1,11 @@
 import {emailAccount,emailHeaders} from './email-auth.js';
 
 const questions=[
- ['How do I find my wardrobe on another device?','Your wardrobe lives in this browser. In Wardrobe, open “Install looku & manage storage” to save an encrypted backup. Sign in with the same account on the other device and restore it with your backup passphrase.'],
- ['Why is my sale or donation still pending?','Public listings go through review. Private sales and donations can be shared immediately with anyone who has the link. Open your post in Community to check its status. After approval, signed-in users can see the contact email to arrange a handoff.'],
- ['Where can I find a payment receipt?','Open Wallet and look under Purchase receipts. Sign in with the wallet you used for the purchase to see its linked purchases. Demo boutique purchases use Stellar testnet.'],
- ['How do I restore my device wallet?','In Wallet, open “See or create wallet”. Use your encrypted recovery file and wallet passphrase. Keep both private.'],
- ['Where will I see a support reply?','Return to Support with the same email account or wallet you used to submit the request. Open it under My requests to read replies or add a follow-up.']
+ ['Wardrobe','How do I find my wardrobe on another device?','Your wardrobe lives in this browser. In Wardrobe, open “Install looku & manage storage” to save an encrypted backup. Sign in with the same account on the other device and restore it with your backup passphrase.'],
+ ['Listings','Why is my sale or donation still pending?','Public listings go through review. Private sales and donations can be shared immediately with anyone who has the link. Open your post in Community to check its status. After approval, signed-in users can see the contact email to arrange a handoff.'],
+ ['Payments','Where can I find a payment receipt?','Open Wallet and look under Purchase receipts. Sign in with the wallet you used for the purchase to see its linked purchases. Demo boutique purchases use Stellar testnet.'],
+ ['Wallet','How do I restore my device wallet?','In Wallet, open “See or create wallet”. Use your encrypted recovery file and wallet passphrase. Keep both private.'],
+ ['Requests','Where will I see a support reply?','Return to Support with the same email account or wallet you used to submit the request. Open it under My requests to read replies or add a follow-up.']
 ];
 function node(tag,text){const el=document.createElement(tag);if(text)el.textContent=text;return el}
 function button(text,fn){const el=node('button',text);el.type='button';el.onclick=fn;return el}
@@ -52,17 +52,36 @@ export async function ticketList(root,api,isAdmin=false){
  return ()=>load(true);
 }
 export async function mountSupport(root){
- const faq=node('section');faq.append(node('h2','Frequently asked questions'));
- for(const [q,a] of questions){const item=node('details');item.className='panel';item.append(node('summary',q),node('p',a));faq.append(item)}
- const area=node('section');root.append(faq,area);
+ root.innerHTML=`<div class="help-cover">
+   <div class="help-cover-copy"><span class="eyebrow">Looku Wear / Help desk</span><h1>Support</h1>
+   <p>Find answers about your wardrobe, listings and wallet, or send us a private request.</p></div>
+   <svg class="help-pattern" viewBox="0 0 270 170" fill="none" aria-hidden="true" focusable="false">
+     <g stroke="currentColor" stroke-width="1" opacity=".48">
+       <path d="M12 143 246 29" stroke-dasharray="4 5"/>
+       <path d="M24 18v12m-6-6h12m210 118v12m-6-6h12"/>
+     </g>
+     <g transform="rotate(-19 135 85)" stroke="currentColor" stroke-linejoin="round">
+       <path d="M119 77Q164 62 239 64Q199 75 129 85L112 93Z" fill="#d6c8a7"/>
+       <path d="M118 83Q175 79 233 103Q185 98 115 92Z" fill="#ad96ac"/>
+       <path d="M124 83Q102 83 84 67C64 46 30 41 27 59C23 79 60 99 80 84Q97 78 118 92M119 84Q100 96 84 103C67 100 46 106 43 121C40 141 78 137 92 118Q103 103 125 92" stroke-width="5"/>
+       <circle cx="124" cy="86" r="4" fill="#342035"/>
+     </g>
+   </svg></div><div class="help-layout">
+   <section class="help-faq"><div class="eyebrow">Quick reference</div><h2>Frequently asked questions</h2></section>
+   <section class="help-contact" aria-label="Private support"></section></div>`;
+ const faq=root.querySelector('.help-faq'),area=root.querySelector('.help-contact');
+ for(const [topic,q,a] of questions){
+   const item=node('details'),summary=node('summary'),label=node('span',topic),copy=node('span',q);
+   label.className='help-topic';summary.append(label,copy);item.append(summary,node('p',a));faq.append(item);
+ }
  async function start(){
-   area.replaceChildren();const form=document.createElement('form');form.className='panel stack';
+   area.replaceChildren();const kicker=node('div','Private correspondence');kicker.className='eyebrow';area.append(kicker);const form=document.createElement('form');form.className='stack';
    form.innerHTML='<h2>New support request</h2><label>Topic<select name="category"><option>Account</option><option>Wardrobe</option><option>Listings</option><option>Payments</option><option>Other</option></select></label><label>Subject<input name="subject" maxlength="100" required></label><label>How can we help?<textarea name="message" maxlength="2000" required></textarea></label><p class="fine">Only you and Looku support can see this conversation. Keep passwords, recovery files and payment details private.</p><button>Submit request</button><p role="status"></p>';
    const inbox=node('div');area.append(form,node('h2','My requests'),inbox);
    const submit=form.querySelector('button');submit.disabled=true;let refresh;
    try{refresh=await ticketList(inbox,userApi);submit.disabled=false}
    catch(e){
-     area.replaceChildren(node('h2','Contact support'));
+     area.replaceChildren(kicker,node('h2','Contact support'));
      if(e.status===401){
        area.append(node('p','Sign in with email or your wallet to send a private request and read replies.'));
        const auth=node('div');area.append(auth);emailAccount(auth,start);const wallet=node('a','Sign in with Wallet');wallet.href='#wallet/support';area.append(wallet);
