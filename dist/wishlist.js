@@ -1,9 +1,14 @@
+import {baseUSDC,readWalletBalance} from './wallet.js';
 import {processPhoto} from './model.js';
 
 const db = new Promise((resolve,reject)=>{
-  const open=indexedDB.open('looku-wishlist',1);
-  open.onupgradeneeded=()=>open.result.createObjectStore('items',{keyPath:'url'});
-  open.onsuccess=()=>resolve(open.result);
+  const open=indexedDB.open('looku-wishlist',2);
+  open.onupgradeneeded=event=>{
+    const store=event.oldVersion?open.transaction.objectStore('items'):open.result.createObjectStore('items',{keyPath:'url'});
+    store.createIndex('goalWallet','goalWallet',{unique:true});
+  };
+  open.onblocked=()=>reject(Error('Close other Lookuwear tabs, then reload to update your wishlist.'));
+  open.onsuccess=()=>{const db=open.result;db.onversionchange=()=>db.close();resolve(db)};
   open.onerror=()=>reject(Error('Wishlist storage is unavailable on this device.'));
 });
 async function items(){
@@ -24,7 +29,7 @@ async function update(url,change) {
       try {const next=change(read.result); if(next)store.put(next);else store.delete(url);}
       catch(e){reason=e;tx.abort()}
     };
-    tx.oncomplete=resolve;tx.onabort=()=>reject(reason||Error('Could not update this wishlist.'));
+    tx.oncomplete=resolve;tx.onabort=()=>reject(reason||Error(tx.error?.name==='ConstraintError'?'That wallet already belongs to another wishlist item.':'Could not update this wishlist.'));
   });
 }
 function productUrl(text){
@@ -62,7 +67,7 @@ function makeBookmark(){
 export async function mountWishlist(main){
   const seed=new URLSearchParams(location.hash.split('?').slice(1).join('?'));
   main.innerHTML=`<div class="eyebrow">Your shopping list</div><h1 class="page-title">Wishlist</h1>
-  <p class="intro">Keep a piece you love, track what you’ve set aside and return to the exact store page when you’re ready.</p>
+  <p class="intro">Keep a piece you love, plan for its price and return to the exact store page when you’re ready.</p>
   <details class="panel" data-editor><summary>Save a product link</summary><form class="stack">
   <label>Product link<input type="url" name="url" placeholder="https://…" maxlength="4096" required></label>
   <p class="fine" data-preview-status role="status"></p><img data-preview width="120" alt="Product thumbnail" hidden>
@@ -75,7 +80,7 @@ export async function mountWishlist(main){
   <div class="row" data-editor-actions><button>Save item</button></div></form></details>
   <p role="status" data-wish-note></p><div class="stack" data-items></div>
   <details class="panel"><summary>Save while browsing</summary><p>On a supported phone with looku installed, share the product page to looku. You can always copy the link and paste it above.</p><p>On desktop, drag <a data-bookmark>Save to looku</a> to your bookmarks bar. Click that bookmark on a product page to review it here.</p></details>
-  <p class="fine">Your wishlist, photos and savings notes stay in this browser. Logging an amount records money you set aside elsewhere. Clearing site data removes this list.</p>`;
+  <p class="fine">Your wishlist, photos and price targets stay in this browser. Clearing site data removes this list.</p>`;
   const editor=main.querySelector('[data-editor]'),form=editor.querySelector('form'),f=form.elements;
   const note=main.querySelector('[data-wish-note]'),list=main.querySelector('[data-items]');
   const bookmark=main.querySelector('[data-bookmark]');
@@ -129,14 +134,14 @@ export async function mountWishlist(main){
   f.url.addEventListener('change',loadPreview);
   function populate(item){
     reset();editing=item.url;if(item.photo){preview.src=item.photo;preview.hidden=false;}f.url.value=item.url;f.url.readOnly=true;f.title.value=item.title;f.variant.value=item.variant;f.currency.value=item.currency;
-    f.currency.disabled=item.saved>0;f.price.value=item.target?item.target/100:'';editor.open=true;
+    f.price.value=item.target?item.target/100:'';editor.open=true;
     form.querySelector('button').textContent='Save changes';
     f.title.focus();
   }
   function reset(){clearPreview();changed.clear();editing=null;form.reset();f.url.readOnly=false;f.currency.disabled=false;form.querySelector('button').textContent='Save item';}
   const cancel=el('button','Cancel');cancel.type='button';cancel.className='secondary';form.querySelector('[data-editor-actions]').append(cancel);
   cancel.onclick=()=>{reset();editor.open=false};
-  async function refresh(){
+  async function refresh(openFundingUrl){
     const all=await items();list.replaceChildren();
     if(!all.length)list.append(el('p','Your saved pieces will appear here.'));
     for(const item of all){
@@ -144,23 +149,14 @@ export async function mountWishlist(main){
       if(item.photo){const image=document.createElement('img');image.src=item.photo;image.alt=item.title;image.width=100;card.append(image)}
       card.append(el('small',url.hostname.replace(/^www\./,'')),el('h2',item.title));
       if(item.variant)card.append(el('p',item.variant));
-      const saved=fmt(item.saved,item.currency);
-      card.append(el('p',item.target?saved+' set aside of '+fmt(item.target,item.currency)+' · '+(item.saved>=item.target?'Goal reached':fmt(item.target-item.saved,item.currency)+' to go'):saved+' set aside · Add a target when you know the price.'));
-      if(item.target){const bar=document.createElement('progress');bar.max=item.target;bar.value=Math.min(item.target,item.saved);bar.setAttribute('aria-label','Savings progress');card.append(bar)}
+      card.append(el('p',item.target?'Target price · '+fmt(item.target,item.currency):'Add a target when you know the price.'));
+      if(item.saved>0)card.append(el('small','Previous manual entry: '+fmt(item.saved,item.savedCurrency||item.currency)+'. No deposit was recorded.'));
       const row=el('div','');row.className='actions';
       const shop=el('a','View at store ↗');shop.href=item.url;shop.target='_blank';shop.rel='noopener noreferrer';shop.className='button';
       const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>populate(item);
-      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item and its savings note?'))return;try{await update(item.url,()=>null);if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
+      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await update(item.url,()=>null);if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
       row.append(shop,edit,remove);card.append(row);
-      const savings=document.createElement('form');savings.className='row';
-      const label=el('label','Amount set aside ('+item.currency+')'),amount=document.createElement('input');amount.type='number';amount.min='0.01';amount.max='99999999';amount.step='0.01';amount.required=true;label.append(amount);
-      savings.append(label,el('button','Log savings'));card.append(savings);
-      savings.onsubmit=async e=>{e.preventDefault();const btn=savings.querySelector('button');btn.disabled=true;try{
-        const value=cents(amount.value);if(!value)throw Error('Enter a positive amount.');
-        await update(item.url,current=>{if(!current||current.currency!==item.currency)throw Error('Item changed. Reopen the wishlist.');if(current.saved+value>9999999999)throw Error('Amount too large.');return {...current,saved:current.saved+value}});
-        await refresh();note.textContent='Savings recorded for '+item.title+'.';
-      }catch(err){note.textContent=err.message}finally{btn.disabled=false}};
-      list.append(card);
+      const funding=fundingPanel(item,refresh);funding.open=item.url===openFundingUrl;card.append(funding);list.append(card);
     }
     return all;
   }
@@ -170,18 +166,75 @@ export async function mountWishlist(main){
       await update(url.href,old=>{
         if(old && !editing)throw Error('This exact product link is already on your wishlist. Choose Edit item to change it.');
         if(editing&&!old)throw Error('This item was removed.');
-        if(old?.saved && old.currency!==currency)throw Error('Keep the original currency for recorded savings.');
-        return {url:url.href,title,variant,currency,target,photo:photo||old?.photo||null,saved:old?.saved||0,created:old?.created||Date.now()};
+        const priorNote=old?.saved?{saved:old.saved,savedCurrency:old.savedCurrency||old.currency}:{};
+        return {url:url.href,title,variant,currency,target,photo:photo||old?.photo||null,...priorNote,...(old?.goalWallet?{goalWallet:old.goalWallet}:{}),created:old?.created||Date.now()};
       });reset();editor.open=false;history.replaceState(null,'',location.pathname+'#wishlist');await refresh();note.textContent='Saved '+title+'.';
     }catch(err){note.textContent=err.message}finally{btn.disabled=false}};
 
   try{const all=await refresh();editor.open=!all.length;
     if(seed.has('url')){
       editor.open=true;const url=productUrl(seed.get('url'));const prior=all.find(item=>item.url===url.href);
-      if(prior){populate(prior);note.textContent='Already saved. Your progress is here.';return}
+      if(prior){populate(prior);note.textContent='Already saved. You can edit this item here.';return}
       f.url.value=url.href;f.title.value=(seed.get('title')||'').slice(0,120);
       const cur=seed.get('currency');if(['KES','USD'].includes(cur)){f.currency.value=cur;const price=seed.get('price')||'';if(/^\d{1,8}(\.\d{1,2})?$/.test(price)&&Number(price)>0)f.price.value=price}
       loadPreview();
     }
   }catch(e){note.textContent=e.message}
+}
+
+function fundingPanel(item,refresh){
+  const panel=el('details','');panel.className='wish-funding';
+  const summary=el('summary','Fund this item'),body=el('div',''),status=el('p','');body.className='stack';status.setAttribute('role','status');panel.append(summary,body);
+  function action(label,fn){
+    const button=el('button',label);button.type='button';body.append(button);
+    button.onclick=async()=>{
+      button.disabled=true;status.textContent='Working…';
+      try{await fn()}catch(e){status.textContent=e.code===4001?'Wallet request cancelled.':e.message||'Could not reach the wallet.'}
+      finally{button.disabled=false}
+    };
+  }
+  async function walletAccount(){
+    if(!window.ethereum?.request)throw Error('Open Lookuwear in your Base-compatible wallet browser or connect a browser wallet.');
+    const [address]=await window.ethereum.request({method:'eth_requestAccounts'});
+    if(!/^0x[0-9a-f]{40}$/i.test(address)||/^0x0{40}$/i.test(address))throw Error('Select a valid wallet account.');
+    return address.toLowerCase();
+  }
+  const read=(address,block)=>readWalletBalance('base',address,AbortSignal.timeout(12000),block);
+  if(!item.goalWallet){
+    body.append(el('p','Choose a separate receiving account in your wallet for this item. Start with zero USDC on Base. You keep control of the funds.'));
+    action('Choose receiving wallet',async()=>{
+      const address=await walletAccount();
+      if(!confirm('Use '+address+' on Base as the receiving wallet for '+item.title+'?')){status.textContent='Wallet selection cancelled.';return}
+      if((await read(address,'latest')).usdc!==0||(await read(address,'finalized')).usdc!==0)throw Error('Choose a receiving account with zero USDC on Base.');
+      await update(item.url,current=>{
+        if(!current||current.goalWallet)throw Error('This item changed. Reopen the wishlist.');
+        return {...current,goalWallet:address};
+      });
+      await refresh(item.url);
+    });
+  }else{
+    const address=item.goalWallet;
+    const destination=el('code',address);
+    body.append(el('strong','Receiving wallet · Base mainnet'),destination,el('p','Send native USDC here from another wallet, or choose Buy in MiniSend and use this address for your M-Pesa purchase.'));
+    action('Copy receiving address',async()=>{await navigator.clipboard.writeText(address);status.textContent='Receiving address copied.'});
+    const mini=el('a','Fund with M-Pesa via MiniSend ↗');mini.className='button secondary';mini.href='https://app.minisend.xyz/';mini.target='_blank';mini.rel='noopener noreferrer';body.append(mini);
+    const label=el('label','Transfer amount (USDC)'),input=el('input','');input.inputMode='decimal';input.placeholder='0.00';label.append(input);body.append(label);
+    action('Review transfer in wallet',async()=>{
+      const value=input.value.trim();
+      if(!/^\d{1,8}(\.\d{1,6})?$/.test(value))throw Error('Enter a positive USDC amount with up to six decimals.');
+      const [whole,fraction='']=value.split('.'),units=BigInt(whole)*1000000n+BigInt(fraction.padEnd(6,'0'));
+      if(!units)throw Error('Enter a positive transfer amount.');
+      const sender=await walletAccount();
+      if(sender===address)throw Error('Select a different sending account in your wallet, then try again.');
+      await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]});
+      if(await window.ethereum.request({method:'eth_chainId'})!=='0x2105')throw Error('Switch your wallet to Base mainnet.');
+      await window.ethereum.request({method:'eth_sendTransaction',params:[{from:sender,to:baseUSDC,chainId:'0x2105',data:'0xa9059cbb'+address.slice(2).padStart(64,'0')+units.toString(16).padStart(64,'0')}]});
+      input.value='';status.textContent='Transfer submitted. Check the balance after Base confirms it.';
+    });
+    action('Check confirmed funds',async()=>{
+      const {usdc}=await read(address,'finalized');
+      status.textContent='Confirmed wallet balance: '+usdc.toLocaleString(undefined,{maximumFractionDigits:6})+' USDC · checked '+new Date().toLocaleTimeString()+'.';
+    });
+  }
+  body.append(status);return panel;
 }

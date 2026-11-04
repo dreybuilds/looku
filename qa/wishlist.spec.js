@@ -8,13 +8,13 @@ test('save a shared product, track its own target offline and reopen the exact r
  await page.getByRole('button',{name:'Save item',exact:true}).click();
  const card=page.getByRole('article').filter({hasText:'Ayla Knit Top'});
  await expect(card.getByRole('link',{name:'View at store'})).toHaveAttribute('href',item);
- await card.getByLabel('Amount set aside').fill('500');await card.getByRole('button',{name:'Log savings'}).click();
- await expect(card).toContainText(/2,000 to go/);
+ await expect(card.getByRole('button',{name:'Log savings'})).toHaveCount(0);
+ await expect(card).toContainText(/Target price.*2,500/);
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(r=>navigator.serviceWorker.addEventListener('controllerchange',r,{once:true}))});
- await context.setOffline(true);await page.reload();await expect(card).toContainText(/2,000 to go/);
- await card.getByRole('button',{name:'Edit item'}).click();await expect(page.getByLabel('Wishlist currency',{exact:true})).toBeDisabled();
+ await context.setOffline(true);await page.reload();await expect(card).toContainText(/Target price.*2,500/);
+ await card.getByRole('button',{name:'Edit item'}).click();
  await page.getByLabel('Target price').fill('2600');await page.getByRole('button',{name:'Save changes'}).click();
- await expect(card).toContainText(/2,100 to go/);
+ await expect(card).toContainText(/Target price.*2,600/);
  await page.goto('/app?'+new URLSearchParams({share_url:item}));await expect(page.getByText(/Already saved/)).toBeVisible();
  await expect(page.getByRole('article')).toHaveCount(1);
 });
@@ -31,6 +31,7 @@ test('review from a desktop bookmark uses product metadata and cannot auto-save'
  await expect(draft.getByRole('article')).toHaveCount(0);
 });
 test('paste-only save works without a price and unsafe schemes cannot be opened',async({page})=>{
+ await page.route('**/api/product-preview',r=>r.fulfill({json:{}}));
  await page.goto('/app#wardrobe');await page.getByRole('link',{name:'Wishlist',exact:true}).click();
  await page.getByLabel('Product link').fill('javascript:alert(1)');await page.getByRole('button',{name:'Save item',exact:true}).click();await expect(page.getByRole('article')).toHaveCount(0);
  await page.getByLabel('Product link').fill(item);await page.getByRole('button',{name:'Save item',exact:true}).click();
@@ -53,4 +54,35 @@ test('pasted links fill product details and retain a small local thumbnail after
  const thumbnail=page.getByRole('article').getByRole('img',{name:'My plum jacket'});
  await expect(thumbnail).toHaveAttribute('src',/^data:image\/webp;base64,/);
  expect(await thumbnail.evaluate(async img=>{await img.decode();return Math.max(img.naturalWidth,img.naturalHeight)})).toBeLessThanOrEqual(320);
+});
+
+test('wallet and MiniSend funding count only finalized Base holdings',async({page,context})=>{
+ const receive='0x1111111111111111111111111111111111111111',payer='0x2222222222222222222222222222222222222222';
+ await page.addInitScript(({receive,payer})=>{
+   window.sender=receive;window.ethereum={request:async({method,params})=>{
+     if(method==='eth_requestAccounts')return [window.sender];
+     if(method==='eth_chainId')return '0x2105';
+     if(method==='wallet_switchEthereumChain')return null;
+     if(method==='eth_sendTransaction'){window.submitted=params[0];return '0x'+'a'.repeat(64)}
+     throw Error(method);
+   }};
+ },{receive,payer});
+ let balance=0n;
+ await context.route('https://mainnet.base.org/**',r=>{
+   const data=r.request().postDataJSON();expect(data.method).toBe('eth_call');expect(data.params[0].data.endsWith(receive.slice(2))).toBe(true);
+   return r.fulfill({json:{jsonrpc:'2.0',id:1,result:'0x'+balance.toString(16).padStart(64,'0')}});
+ });
+ await page.goto('/app?'+new URLSearchParams({share_url:item,share_title:'Funding test'}));
+ await page.getByRole('button',{name:'Save item',exact:true}).click();
+ await page.getByText('Fund this item',{exact:true}).click();
+ page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Choose receiving wallet'}).click();
+ await expect(page.getByRole('link',{name:/M-Pesa via MiniSend/})).toHaveAttribute('href','https://app.minisend.xyz/');
+ await page.evaluate(payer=>{window.sender=payer},payer);
+ await page.getByLabel('Transfer amount (USDC)').fill('2.5');
+ await page.getByRole('button',{name:'Review transfer in wallet'}).click();
+ await expect(page.getByText(/Transfer submitted/)).toBeVisible();
+ expect(await page.evaluate(()=>window.submitted.data)).toBe('0xa9059cbb'+receive.slice(2).padStart(64,'0')+(2500000).toString(16).padStart(64,'0'));
+ const check=page.getByRole('button',{name:'Check confirmed funds'});
+ await check.click();await expect(page.getByText(/Confirmed wallet balance: 0 USDC/)).toBeVisible();
+ balance=2500000n;await check.click();await expect(page.getByText(/Confirmed wallet balance: 2.5 USDC/)).toBeVisible();
 });

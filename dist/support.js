@@ -1,7 +1,7 @@
 import {emailAccount,emailHeaders} from './email-auth.js';
 
 const questions=[
- ['Wardrobe','How do I find my wardrobe on another device?','Your wardrobe lives in this browser. In Wardrobe, open “Install looku & manage storage” to save an encrypted backup. Sign in with the same account on the other device and restore it with your backup passphrase.'],
+ ['Wardrobe','How do I find my wardrobe on another device?','Your wardrobe lives in this browser. In Account, open “Install looku & manage storage” to save an encrypted backup. Sign in with the same account on the other device and restore it with your backup passphrase.'],
  ['Listings','Why is my sale or donation still pending?','Public listings go through review. Private sales and donations can be shared immediately with anyone who has the link. Open your post in Community to check its status. After approval, signed-in users can see the contact email to arrange a handoff.'],
  ['Payments','Where can I find a payment receipt?','Open Wallet and look under Purchase receipts. Sign in with the wallet you used for the purchase to see its linked purchases. Demo boutique purchases use Stellar testnet.'],
  ['Wallet','How do I restore my device wallet?','In Wallet, open “See or create wallet”. Use your encrypted recovery file and wallet passphrase. Keep both private.'],

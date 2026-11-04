@@ -167,6 +167,8 @@ test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',a
  // Run once: the temporary test site has one synthetic signed-in backup owner.
  test.skip(info.project.name==='phone');
  await page.goto('/#wardrobe');
+ await expect(page.getByText('Install looku & manage storage')).toHaveCount(0);
+ await nav(page,'Account');
  await page.getByText('Install looku & manage storage').click();
  const pass=page.locator('[data-pass]');const phrase=crypto.randomUUID();
  await pass.fill(phrase);page.once('dialog',d=>d.accept());

@@ -1,14 +1,15 @@
 import {prices,currency,money} from './shopping.js';
 import {accountCall,mountDeviceWallet} from './local-wallet.js';
+export const baseUSDC='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const networks = {
   testnet: { label: 'demo wallet', host: 'https://horizon-testnet.stellar.org', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' },
   stellar: { label: 'Stellar mainnet', host: 'https://horizon.stellar.org', issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN' },
-  base: { label: 'Base mainnet', host: 'https://mainnet.base.org', contract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' }
+  base: { label: 'Base mainnet', host: 'https://mainnet.base.org', contract: baseUSDC }
 };
 const format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 7 });
 const storageKey = 'looku.wallet.v1';
 
-export async function readWalletBalance(network, address, signal) {
+export async function readWalletBalance(network, address, signal, block='latest') {
   if (!Object.hasOwn(networks, network)) throw Error('Choose a supported network.');
   const plan = networks[network];
   if (network === 'base') {
@@ -16,7 +17,7 @@ export async function readWalletBalance(network, address, signal) {
     const res = await fetch(plan.host, {
       method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [
-        { to: plan.contract, data: '0x70a08231' + address.slice(2).padStart(64, '0') }, 'latest'
+        { to: plan.contract, data: '0x70a08231' + address.slice(2).padStart(64, '0') }, block
       ] })
     });
     if (!res.ok) throw Error('The Base balance service is unavailable. Try again.');

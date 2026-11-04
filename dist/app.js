@@ -158,13 +158,13 @@ async function render(){
    const {mountWelcome}=await import('./welcome.js');
    if(root.isConnected)await mountWelcome(root);
  }
- else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
+ else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}`;
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
  }
  else if(section==='account'||section.startsWith('account/')){
-   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, sizes, delivery details and connected profiles.')+'<section id="member-account"></section><details class="panel" id="shopping-profile"></details>';
+   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, sizes, delivery details and connected profiles.')+'<section id="member-account"></section><details class="panel" id="shopping-profile"></details>'+devicePanel();
    mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1));
  }
  else if(section==='support'){
@@ -179,7 +179,7 @@ async function render(){
  }
  else if(section==='stylist')main.innerHTML=stylist();
  else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'){
-   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist savings goals →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
+   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist price targets →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
      if(id!==renderId)return;
