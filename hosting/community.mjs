@@ -1,13 +1,19 @@
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 
+const featuredLooks=[
+ {id:'e7fad9f391aa82fc506e38f9c0927b90e7040e583fe6b881fe7484ce243ddcb6',pinterestId:'7388786884333608',kind:'look',owner:'editorial',title:'Menswear · Olive overshirt and sand trousers',
+  pieces:[{name:'Olive overshirt, white tee, beige trousers and white sneakers',photo:'https://i.pinimg.com/originals/33/c1/2a/33c12a641b587194632499da8730a2ad.png'}]},
+ {id:'50e0782f757de2940f710a7c710e34fa09a42aeb0887aa1e662e9fe3872392bd',pinterestId:'496803402663384164',kind:'look',owner:'editorial',title:'Womenswear · White linen and woven straw',
+  pieces:[{name:'White linen shirt, wide-leg trousers and a woven tote',photo:'https://i.pinimg.com/originals/a4/a0/53/a4a053ea0e956ad41f64e030f54d651b.jpg'}]}
+];
 const kinds=['look','sale','donate'];
 const reply=(status,data)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const textFits=(s,n)=>typeof s==='string'&&s.trim().length>0&&s.length<=n;
 const visible=(row,address)=>row.owner===address||row.kind==='look'||row.status==='approved';
 function publicPost(row,address){
  const {id,kind,title,pieces,price}=row,mine=row.owner===address;
- return {id,kind,title,pieces,price,mine,status:kind==='look'?'published':row.status||'pending',
+ return {id,kind,title,pieces,price,mine,...(row.pinterestId?{pinterestId:row.pinterestId}:{}),status:kind==='look'?'published':row.status||'pending',
    ...(address&&(mine||row.status==='approved')?{email:row.email}:{})};
 }
 
@@ -24,10 +30,10 @@ export async function community(req,{ORDERS:store}){
    const cursor=url.searchParams.get('cursor')||undefined;
    const page=await store.list({prefix,limit:8,cursor});
    const rows=await Promise.all(page.objects.map(async obj=>(await store.get(obj.key))?.json()));
-   return reply(200,{posts:rows.filter(row=>row&&visible(row,owner)).map(row=>publicPost(row,owner)),cursor:page.truncated?page.cursor:null});
+   return reply(200,{posts:[...(kind==='look'&&!cursor?featuredLooks:[]),...rows].filter(row=>row&&visible(row,owner)).map(row=>publicPost(row,owner)),cursor:page.truncated?page.cursor:null});
  }
  if(req.method==='GET'){
-   const row=await (await store.get(prefix+id))?.json();
+   const row=(kind==='look'&&featuredLooks.find(look=>look.id===id))||await (await store.get(prefix+id))?.json();
    return row&&visible(row,owner)?reply(200,publicPost(row,owner)):reply(404,{error:'This post is no longer available.'});
  }
  if(req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='community')return reply(403,{error:'Open Community in Looku Wear.'});

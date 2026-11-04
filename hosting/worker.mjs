@@ -10,6 +10,7 @@ import { ITEM, SKU, NETWORK, BASE } from '../payments/common.mjs';
 import { StrKey } from '@stellar/stellar-sdk';
 import assets from 'looku:public';
 import {backup} from './backup.mjs';
+import {pinterestAccount} from './pinterest-account.mjs';
 import {searchPins} from './pinterest.mjs';
 const json=(status,obj,headers={})=>Response.json(obj,{status,headers:{'Cache-Control':'no-store',...headers}});
 const encoded=obj=>btoa(JSON.stringify(obj));
@@ -52,6 +53,7 @@ async function handle(request,env){
  if(p==='/api/account'||p.startsWith('/api/account/')||p==='/api/stylist/gpt')return account(request,env);
  if(p==='/api/wardrobe-backup')return backup(request,env);
  if(p==='/api/pinterest/search')return searchPins(request,env);
+ if(p.startsWith('/api/pinterest/'))return pinterestAccount(request,env);
  if(!p.startsWith(BASE+'/'))return json(404,{error:'Not found'});
  if(request.headers.has('origin')&&request.headers.get('origin')!==url.origin)throw new HttpError(403,'Use checkout from the looku studio.');
  const chain=makeChain(env),offer=terms(chain),bucket=env.ORDERS;

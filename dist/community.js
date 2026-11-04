@@ -1,3 +1,4 @@
+import {pinterestPanel,postToPinterest} from './pinterest.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 const labels={look:'Published looks',sale:'Closet sale',donate:'Donations'};
 const actions={look:'Publish look',sale:'List for sale',donate:'Offer for donation'};
@@ -64,10 +65,11 @@ export async function mountCommunity(panel,[requested,id]){
  const status=element('p');status.setAttribute('role','status');
  const more=element('button','Load more');more.hidden=true;
  const accountPanel=element('section');panel.replaceChildren(tabs,accountPanel,help,list,status,more);
+ if(kind==='look')help.after(pinterestPanel());
  emailAccount(accountPanel,()=>mountCommunity(panel,[requested,id]));
  function draw(post){
    const card=element('article');card.className='panel community-post';
-   const badge=element('span',post.kind==='look'?'Lookbook':post.kind==='sale'?'For sale':'Free to a new closet');badge.className='eyebrow';
+   const badge=element('span',post.pinterestId?'Pinterest':post.kind==='look'?'Lookbook':post.kind==='sale'?'For sale':'Free to a new closet');badge.className='eyebrow';
    const pieces=element('div');pieces.className='public-pieces';
    for(const p of post.pieces){
      const figure=element('figure');if(p.photo){const img=element('img');img.src=p.photo;img.alt='';figure.append(img)}
@@ -82,6 +84,8 @@ export async function mountCommunity(panel,[requested,id]){
      card.append(element('strong',post.kind==='sale'?'KSh '+post.price.toLocaleString():'Free donation'),element('p',post.email),link(post.kind==='sale'?'Contact seller':'Contact donor','mailto:'+encodeURIComponent(post.email).replace('%40','@')));
    }
    const tools=element('div');tools.className='actions';if(['approved','published'].includes(post.status))tools.append(link('Public link',route(kind,post.id)));
+   if(post.pinterestId)tools.append(link('View original Pin ↗','https://www.pinterest.com/pin/'+post.pinterestId+'/'));
+   if(post.mine&&kind==='look'&&!post.pinterestId&&post.pieces.some(p=>p.photo))postToPinterest(tools,post);
    if(post.mine){
      const remove=element('button','Withdraw post');remove.className='secondary small';tools.append(remove);
      remove.onclick=async()=>{
