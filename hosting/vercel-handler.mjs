@@ -6,7 +6,8 @@ import {session} from './account.mjs';
 
 const orders = {
   async get(key) {
-    const result = await get(key, {access: 'private', useCache: false});
+    // A compressed response carries a weak ETag that cannot guard the next write.
+    const result = await get(key, {access: 'private', useCache: false, headers: {'Accept-Encoding': 'identity'}});
     if (!result) return null;
     const response = new Response(result.stream);
     return {etag: result.blob.etag, body: result.stream, json: () => response.json(), text: () => response.text()};
