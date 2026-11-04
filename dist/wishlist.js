@@ -254,6 +254,51 @@ function fundingPanel(item,refresh,all){
       status.textContent='Confirmed wallet balance: '+show(units)+' · Available for this item: '+show(limit)+' · checked '+new Date().toLocaleTimeString()+'.';
     });
 
+    const contribution=item.contribution;
+    const fundingPath=link=>'/api/wishlist-funding/'+link.id+'/'+address+'/'+link.amount;
+    if(!contribution||contribution.closed){
+      if(contribution?.credited)body.append(el('p','Received '+show(BigInt(contribution.amount))+' from the last funding link.'));
+      const amountLabel=el('label','Request from an agent (USDC)'),amount=el('input','');
+      amount.inputMode='decimal';amount.placeholder='0.00';amountLabel.append(amount);body.append(amountLabel);
+      action('Create x402 funding link',async()=>{
+        const units=parseUSDC(amount.value);
+        if(!units)throw Error('Enter a positive contribution amount.');
+        const next={id:crypto.randomUUID(),amount:String(units)};
+        await update(item.url,current=>{
+          if(current?.goalWallet!==address||(current.contribution&&!current.contribution.closed))throw Error('Reopen this item to see its current funding link.');
+          return {...current,contribution:next};
+        });
+        await refresh(item.url);
+      });
+    }else{
+      const path=fundingPath(contribution),share=el('input',''),linkLabel=el('label','Agent funding link');
+      share.readOnly=true;share.value=new URL(path,location.origin).href;linkLabel.append(share);
+      body.append(el('p','Share this link with an x402 agent to request '+show(BigInt(contribution.amount))+'. It contains your receiving address and the requested amount.'),linkLabel);
+      action('Copy funding link',async()=>{await navigator.clipboard.writeText(share.value);status.textContent='Funding link copied.'});
+      action('Check incoming contribution',async()=>{
+        const response=await fetch(path,{cache:'no-store'});
+        if(response.status===402){status.textContent='Waiting for an agent to fund this item.';return}
+        if(response.status===410){
+          await update(item.url,current=>{
+            if(current?.contribution?.id!==contribution.id)throw Error('Reopen this item.');
+            return {...current,contribution:{...current.contribution,closed:true}};
+          });
+          await refresh(item.url);return;
+        }
+        if(!response.ok)throw Error('Could not check the contribution. Try again.');
+        const receipt=await response.json();
+        if(receipt.status==='pending'||receipt.finalized===false){status.textContent='Payment submitted. Check again after Base finalizes it.';return}
+        if(receipt.status!=='paid'||receipt.finalized!==true||!/^0x[0-9a-f]{64}$/i.test(receipt.transaction))throw Error('No confirmed receipt for this link.');
+        const {units}=await read(address,'finalized');
+        await update(item.url,(current,rows)=>{
+          if(current?.goalWallet!==address||current.contribution?.id!==contribution.id||current.contribution.closed)throw Error('This link changed. Reopen this item.');
+          const target=BigInt(current.allocation||0)+BigInt(contribution.amount),available=availableForItem(rows,units);
+          return {...current,allocation:String(target<available?target:available),contribution:{...contribution,closed:true,credited:true,tx:receipt.transaction}};
+        },true);
+        await refresh(item.url);
+      });
+    }
+
     const lastPayment=item.agentPayment;
     if(lastPayment){
       const detail=el('p',lastPayment.closed?'Payment authorization used on Base.':lastPayment.tx?'Merchant reported settlement.':'A previous checkout may have been submitted. Check your wallet and merchant before trying again.');

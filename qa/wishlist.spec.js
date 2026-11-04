@@ -77,6 +77,14 @@ test('wallet and MiniSend funding count only finalized Base holdings',async({pag
  await page.getByText('Fund this item',{exact:true}).click();
  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Choose receiving wallet'}).click();
  await expect(page.getByRole('link',{name:/M-Pesa via MiniSend/})).toHaveAttribute('href','https://app.minisend.xyz/');
+ await page.getByLabel('Request from an agent').fill('0.25');
+ await page.getByRole('button',{name:'Create x402 funding link'}).click();
+ const link=await page.getByLabel('Agent funding link').inputValue();
+ const challenge=await page.request.get(link);
+ expect(challenge.status()).toBe(402);
+ expect((await challenge.json()).accepts[0]).toMatchObject({payTo:receive,amount:'250000',network:'eip155:8453'});
+ await page.getByRole('button',{name:'Check incoming contribution'}).click();
+ await expect(page.getByText('Waiting for an agent to fund this item.')).toBeVisible();
  await page.evaluate(payer=>{window.sender=payer},payer);
  await page.getByLabel('Transfer amount (USDC)').fill('2.5');
  await page.getByRole('button',{name:'Review transfer in wallet'}).click();

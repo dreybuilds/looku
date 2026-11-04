@@ -10,7 +10,7 @@
     "build": "node build.mjs",
     "start": "node --env-file-if-exists=.env server.mjs",
     "setup:testnet": "node setup.mjs",
-    "test": "node --test checkout.test.mjs",
+    "test": "node --test checkout.test.mjs wishlist-funding.test.mjs",
     "test:live": "node --env-file-if-exists=.env smoke.mjs"
   },
   "dependencies": {

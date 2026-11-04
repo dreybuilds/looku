@@ -1,3 +1,4 @@
+import {wishlistFunding} from './wishlist-funding.mjs';
 import {support} from './support.mjs';
 import {demoSelection} from '../payments/demo-order.mjs';
 import {admin,affiliates} from './admin.mjs';
@@ -41,6 +42,7 @@ function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Obj
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
+ if(p.startsWith('/api/wishlist-funding/'))return wishlistFunding(request,env.ORDERS);
  if(p==='/api/support')return support(request,env);
  if(p.startsWith('/api/admin/'))return admin(request,env,async id=>{
    const order=await load(env.ORDERS,id);
