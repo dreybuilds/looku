@@ -43,6 +43,16 @@ The demo boutique is the only integrated seller. In this single-referrer demo, o
 
 ## Vercel deployment
 
+Pushing to `main` triggers the production deployment. For owner releases, set the repository’s Git identity in the checkout before committing:
+
+```sh
+git config --local user.name dreybuilds
+git config --local user.email 51991846+dreybuilds@users.noreply.github.com
+git var GIT_AUTHOR_IDENT
+```
+
+The owner workspace opens at [admin.lookuwear.xyz](https://admin.lookuwear.xyz).
+
 The `looku` Vercel project builds the static studio and Node API with `npm run build`. Production uses a private Vercel Blob store for orders, wallet sessions and encrypted backups. Set `LOOKU_MERCHANT_TEST_SECRET`, `LOOKU_FACILITATOR_TEST_SECRET`, `LOOKU_PLATFORM_ADDRESS` and `OPENROUTER_API_KEY` in the project. Online styling sends the signed-in shopper’s written brief through OpenRouter to `openai/gpt-4.1-mini`. On Vercel, backups are scoped to the signed-in wallet.
 
 ## Sites deployment
