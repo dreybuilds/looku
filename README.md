@@ -5,6 +5,8 @@ See the [architecture and Demo Day walkthrough](ARCHITECTURE.md) for the shoppin
 
 [Design inspiration sites and workflow checklist](INSPIRATION.md)
 
+The shopping pilot uses fixed catalogue prices of KES 2,600 or USD 20 for the jacket. These are alternative demo prices, not FX quotes. In Wardrobe, save sizing and a delivery profile on this device. In Stores, the demo boutique referral opens the order review; the agent fills the profile and submits only after approval. The demo merchant validates the destination in memory and records only the variant, size and referral. No real charge or shipment occurs. Other retailers still use their own checkout.
+
 ## Try it
 Use **Studio → Add a piece** to upload a clothing photo, name it, and tag its category and occasion. Four sample garment portraits are supplied so the first visit is usable. In **Style an outfit**, select an occasion and optionally add an inspiration photo. The stylist chooses a top and bottom or a dress, adds shoes and any available layer, and ranks garments by occasion, ownership and distance from the reference colour. Save the result in Wardrobe.
 

@@ -1,6 +1,7 @@
+import {prices,currency,money} from './shopping.js';
 import {mountDeviceWallet} from './local-wallet.js';
 const networks = {
-  testnet: { label: 'Stellar testnet', host: 'https://horizon-testnet.stellar.org', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' },
+  testnet: { label: 'demo wallet', host: 'https://horizon-testnet.stellar.org', issuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5' },
   stellar: { label: 'Stellar mainnet', host: 'https://horizon.stellar.org', issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN' },
   base: { label: 'Base mainnet', host: 'https://mainnet.base.org', contract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' }
 };
@@ -41,12 +42,12 @@ export async function mountWallet(element) {
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
   const heading = (number, title, description) => `<summary><span class="eyebrow" aria-hidden="true">${number}</span><span>${title}</span></summary><p class="wallet-description">${description}</p>`;
-  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','See or create wallet','Your public Stellar address lives here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></details>
+  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','See or create wallet','Manage your shopping wallet here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></details>
     <details name="wallet-tool" class="panel wallet-panel" data-funding></details>
     <details name="wallet-tool" class="panel wallet-panel">
       ${heading('03','Check balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
       <form data-account>
-        <label>Network<select name="network"><option value="testnet">Stellar testnet · demo funds</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
+        <label>Network<select name="network"><option value="testnet">Demo shopping balance</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
         <label>Public wallet address<input name="address" required autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="56"></label>
         <button class="btn" type="submit">Check balance</button>
       </form><p data-balance role="status"></p></div>
@@ -80,14 +81,14 @@ export async function mountWallet(element) {
     if (!networkState.goal) { goalText.textContent = ''; return; }
     const { piece, amount } = networkState.goal;
     if (!Number.isFinite(amount) || amount <= 0) return;
-    const unit = network.value === 'testnet' ? 'XLM' : 'USDC';
-    const caption = piece + ' · ' + format.format(amount) + ' ' + unit;
+    const display = value => network.value==='testnet'?money(value):format.format(value)+' USDC';
+    const caption = piece + ' · ' + display(amount);
     if (balance === null) { goalText.textContent = caption + '. Check your balance to see progress.'; return; }
     const held = network.value === 'testnet' ? balance.xlm : balance.usdc;
     const remaining = Math.max(0, amount - held);
     bar.value = Math.min(100, 100 * held / amount);
     bar.hidden = false;
-    goalText.textContent = caption + (remaining > 0 ? ' · ' + format.format(remaining) + ' ' + unit + ' to go.' : ' · Goal reached.');
+    goalText.textContent = caption + (remaining > 0 ? ' · ' + display(remaining) + ' to go.' : ' · Goal reached.');
   }
   function clearBalance() {
     activeRequest?.abort();
@@ -97,16 +98,16 @@ export async function mountWallet(element) {
   }
   function setNetwork() {
     networkState = saved[network.value] || {};
-    element.querySelector('[data-unit]').textContent = network.value === 'testnet' ? 'XLM' : 'USDC';
+    element.querySelector('[data-unit]').textContent = network.value === 'testnet' ? currency() : 'USDC';
     address.value = networkState.address || '';
     address.placeholder = network.value === 'base' ? '0x…' : 'G…';
     address.maxLength = network.value === 'base' ? 42 : 56;
     goalForm.elements.piece.value = networkState.goal?.piece || '';
-    goalForm.elements.amount.value = networkState.goal?.amount || '';
+    goalForm.elements.amount.value = networkState.goal ? Number((networkState.goal.amount*(network.value==='testnet'?prices[currency()]:1)).toFixed(2)) : '';
     clearBalance();
     const funding = element.querySelector('[data-funding]');
     if (network.value === 'testnet') {
-      funding.innerHTML = heading('02','Get testnet XLM','Request free demo funds from Stellar Friendbot for a test purchase.') + '<div class="wallet-body"><label>Testnet funding address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Get test XLM</button><p data-faucet-status role="status"></p></div>';
+      funding.innerHTML = heading('02','Add demo funds','Add free practice funds to try an order.') + '<div class="wallet-body"><label>Demo wallet address<input data-faucet-address placeholder="G…" maxlength="56" autocomplete="off" spellcheck="false"></label><button type="button" data-friendbot>Add demo funds</button><p data-faucet-status role="status"></p></div>';
       funding.querySelector('input').value = address.value;
     } else if (network.value === 'base') {
       funding.innerHTML = heading('02','Fund with MiniSend','Base mainnet · real funds') + '<div class="wallet-body"><p>Choose Buy in MiniSend, select USDC, and use your Base wallet address. Review the rate and fees there.</p><a href="https://app.minisend.xyz/" target="_blank" rel="noopener noreferrer">Open MiniSend ↗</a></div>';
@@ -126,19 +127,19 @@ export async function mountWallet(element) {
       return;
     }
     button.disabled = true;
-    note.textContent = 'Requesting free test XLM…';
+    note.textContent = 'Requesting demo funds…';
     try {
       const response = await fetch('https://friendbot.stellar.org/?addr=' + destination, { signal: AbortSignal.timeout(30000) });
       if (response.ok) {
-        note.textContent = 'Test XLM sent to ' + destination.slice(0,6) + '…' + destination.slice(-4) + '. ';
+        note.textContent = 'Demo funds added to ' + destination.slice(0,6) + '…' + destination.slice(-4) + '. ';
         if(sessionStorage.getItem('looku.return-to-order')){
           const checkout=document.createElement('button');
           checkout.type='button';checkout.dataset.buy='';checkout.textContent='Continue to jacket checkout';
           note.append(checkout);
         } else note.append('Choose Check balance to see your funds.');
       }
-      else note.textContent = 'Friendbot could not fund this address. Check your balance first. Accounts that already hold test funds may be ineligible.';
-    } catch { note.textContent = 'Could not reach Friendbot. Check your balance before trying again.'; }
+      else note.textContent = 'Could not add demo funds to this wallet. Check your balance first. Accounts that already hold test funds may be ineligible.';
+    } catch { note.textContent = 'The demo funding service is unavailable. Check your balance before trying again.'; }
     finally { button.disabled = false; }
   });
   element.addEventListener('input', event => {
@@ -159,8 +160,8 @@ export async function mountWallet(element) {
       if (controller.signal.aborted) return;
       balance = result;
       networkState.address = address.value.trim();
-      const lines = [format.format(result.usdc) + ' USDC'];
-      if (result.xlm !== undefined) lines.push(format.format(result.xlm) + ' XLM');
+      const lines = network.value==='testnet'?[money(result.xlm)+' in practice funds']:[format.format(result.usdc) + ' USDC'];
+      if (network.value!=='testnet' && result.xlm !== undefined) lines.push(format.format(result.xlm) + ' XLM');
       status.textContent = lines.join(' · ') + ' on ' + networks[network.value].label + '.'
         + (network.value === 'stellar' && result.needsTrustline ? ' Add the Circle USDC trustline in your Stellar wallet to receive USDC.' : '');
       showProgress();
@@ -174,7 +175,7 @@ export async function mountWallet(element) {
     const piece = goalForm.elements.piece.value.trim();
     const amount = goalForm.elements.amount.valueAsNumber;
     if (!piece || !(amount > 0)) { goalText.textContent = 'Enter a piece and a positive target.'; return; }
-    networkState.goal = { piece, amount };
+    networkState.goal = { piece, amount:network.value==='testnet'?amount/prices[currency()]:amount };
     showProgress();
     persist();
   });
@@ -187,7 +188,7 @@ export async function mountWallet(element) {
     element.querySelector('[data-faucet-address]').value = value;
     networkState.address = value;
     persist();
-    status.textContent = 'Device wallet selected. Choose Get test XLM to fund it, or Check balance.';
+    status.textContent = 'Device wallet selected. Choose Add demo funds to fund it, or Check balance.';
   }
   try {
     const existing = await mountDeviceWallet(panel, selectDeviceAddress);

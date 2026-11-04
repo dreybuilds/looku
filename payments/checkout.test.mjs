@@ -77,3 +77,12 @@ test('a wallet history exposes only its own confirmed orders, including after a 
  assert.deepEqual((await walletReceipts(store,'alice')).receipts.map(r=>r.id),['a'])
  assert.deepEqual((await walletReceipts(store,'bob')).receipts.map(r=>r.id),['b'])
 })
+
+test('demo retailer binds the selected size and referral to an order while omitting personal delivery fields',()=>{
+ const {shop}=fixture(),address=Keypair.random().publicKey();
+ const details={jacket:'L',name:'Test Buyer',street:'42 Demo Lane',city:'Nairobi',country:'Kenya',referral:'looku'};
+ const order=shop.create(SKU,address,details);
+ assert.deepEqual(shop.receipt(order.id).selection,{size:'L',variant:'cropped-jacket-l',referral:'looku'});
+ assert(!JSON.stringify(order).includes(details.street));
+ for(const change of [{street:''},{jacket:'unknown'},{referral:'other'}])assert.throws(()=>shop.create(SKU,address,{...details,...change}));
+});

@@ -1,3 +1,4 @@
+import {demoSelection} from '../payments/demo-order.mjs';
 import {admin,affiliates} from './admin.mjs';
 import {indexPaidOrder} from './wallet-receipts.mjs';
 import {community} from './community.mjs';
@@ -12,7 +13,7 @@ import {searchPins} from './pinterest.mjs';
 const json=(status,obj,headers={})=>Response.json(obj,{status,headers:{'Cache-Control':'no-store',...headers}});
 const encoded=obj=>btoa(JSON.stringify(obj));
 function terms(chain){return {scheme:'exact',network:NETWORK,asset:nativeAsset,amount:'10000000',payTo:chain.merchant,maxTimeoutSeconds:120,extra:{areFeesSponsored:true}}}
-function receipt(row){const {id,status,merchant,platform,address,purchaseTx,payoutTx}=row;return {id,status,merchant,platform,address,purchaseTx,payoutTx,item:ITEM.name,sku:SKU,amount:ITEM.amount,commission:ITEM.commission,currency:ITEM.currency,network:NETWORK}}
+function receipt(row){const {id,status,merchant,platform,address,purchaseTx,payoutTx}=row;return {id,status,merchant,platform,address,purchaseTx,payoutTx,selection:row.selection||null,item:ITEM.name,sku:SKU,amount:ITEM.amount,commission:ITEM.commission,currency:ITEM.currency,network:NETWORK}}
 async function load(bucket,id){
  const key='orders/'+id,r=await bucket.get(key);if(!r)throw new HttpError(404,'Receipt not found.');
  let etag=r.etag;const row=await r.json();
@@ -49,9 +50,11 @@ async function handle(request,env){
  const chain=makeChain(env),offer=terms(chain),bucket=env.ORDERS;
  if(p===BASE+'/catalog'&&request.method==='GET')return json(200,{items:[ITEM],network:NETWORK,asset:nativeAsset,merchant:chain.merchant,platform:chain.platform});
  if(p===BASE+'/orders'&&request.method==='POST'){
- const {sku,address}=await request.json();if(sku!==SKU||!StrKey.isValidEd25519PublicKey(address||''))throw new HttpError(400,'Choose the demo jacket and a valid Stellar address.');
+ const {sku,address,details}=await request.json();
+ let selection;try{selection=demoSelection(details)}catch(error){throw new HttpError(400,error.message)}
+ if(sku!==SKU||!StrKey.isValidEd25519PublicKey(address||''))throw new HttpError(400,'Choose the demo jacket and a valid Stellar address.');
  if((await (await bucket.get('wallet-accounts/'+address))?.json())?.suspended)throw new HttpError(403,'Wallet account suspended.');
- const row={id:crypto.randomUUID(),status:'awaiting_signature',address,merchant:chain.merchant,platform:chain.platform,purchaseTx:null,payoutTx:null};
+ const row={id:crypto.randomUUID(),selection,status:'awaiting_signature',address,merchant:chain.merchant,platform:chain.platform,purchaseTx:null,payoutTx:null};
  await bucket.put('orders/'+row.id,JSON.stringify(row));return json(201,receipt(row));
  }
  const route=p.match(/^\/api\/payments\/orders\/([a-f0-9-]{36})(\/checkout)?$/);

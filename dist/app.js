@@ -1,3 +1,4 @@
+import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
 import {mountCommunity,composePost} from './community.js';
 import {interpretLook} from './look-prompt.js';
 import { walletRecord, accountCall } from './local-wallet.js';
@@ -50,6 +51,10 @@ function modal(html) {
 document.querySelector('.skip-link').onclick = event => { event.preventDefault(); main.focus(); };
 dialog.querySelector('.close').onclick=()=>dialog.close();
 dialog.onclick=e=>{if(e.target===dialog)dialog.close()};
+const currencyPicker=document.querySelector('#shop-currency');
+currencyPicker.value=currency();
+currencyPicker.onchange=()=>{localStorage.setItem('looku.currency',currencyPicker.value);render()};
+let checkoutDraft=null;
 const samplePhoto = piece => /^sample[1-4]$/.test(piece.id) ? '/'+piece.id+'.webp' : '';
 const card=(p,i=0)=>`<article class="card"><div class="visual" style="--bg:${esc(p.bg||'#e7e7dc')}"><span class="num">${String(i+1).padStart(2,'0')} / ${esc(categories[p.type])}</span>${(p.photo || samplePhoto(p))?`<img class="${p.photo?'upload-photo':'sample-photo'}" alt="${esc(p.name)}" src="${esc(p.photo || samplePhoto(p))}">`:garment(p.type,p.color,i)}</div><div class="meta"><h3>${esc(p.name)}</h3><small>${esc(p.occasion)}</small></div></article>`;
 const title=(label,heading,desc)=>`<div class="eyebrow">${label}</div><h1 class="page-title">${heading}</h1><p class="intro">${desc}</p>`;
@@ -117,13 +122,13 @@ function stylist(){
  <input id="look-brief" name="brief" required maxlength="180" value="${esc(promptDraft)}" placeholder="A lilac top and denim for brunch">
  <p class="fine">Try an occasion, a colour, a piece name, or “no dress”. Matched on this device.</p>
  <div class="row"><button>Build my look</button></div><details><summary>Online GPT styling</summary><p class="fine">Sends only your written prompt to OpenAI. Photos and your wardrobe stay here. Sign in with your device wallet in <a href="#wallet">Wallet</a>.</p><button type="submit" name="engine" value="gpt" class="secondary">Style with GPT</button></details><p role="status" data-prompt-status></p><div class="row">${lookRequest?'<button type="button" class="secondary" data-reset-prompt>Clear prompt</button>':''}</div></form>
- ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>1 test XLM</strong><p class="fine">Includes a 0.10 test XLM referral commission to looku. Test purchase only.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
+ ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>${money()}</strong><p class="fine">The boutique pays looku ${money(.1)} for the referral. Demo order.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
 }
 function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="secondary small" data-publish="${esc(l.id)}">Publish look</button> <button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||'studio';
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
+ if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div><details class="panel" id="shopping-profile"></details>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}${devicePanel()}`;
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
@@ -135,7 +140,7 @@ async function render(){
  }
  else if(section==='stylist')main.innerHTML=stylist();
  else if(section==='wallet'){
-   main.innerHTML=title('Account / Stellar','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
+   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
      if(id!==renderId)return;
@@ -144,9 +149,9 @@ async function render(){
      if(id!==renderId)return;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
-       panel.insertAdjacentHTML('afterbegin','<section class="alert order-return"><strong>Cropped jacket · 1 test XLM</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>');
+       panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);
      }
-     panel.insertAdjacentHTML('afterend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>The test shopper paid 1 XLM for a cropped jacket. The boutique then paid 0.10 XLM to the looku account.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
+     panel.insertAdjacentHTML('afterend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>See the shopper’s payment and the boutique’s referral payout in the payment records.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
      drawReceipts();
      if(sessionStorage.getItem('looku.show-receipt')){
        sessionStorage.removeItem('looku.show-receipt');
@@ -156,13 +161,17 @@ async function render(){
      }
    }catch{if(id===renderId)main.querySelector('#wallet-panel').textContent='Wallet tools could not load. Refresh to retry.'}
  }
- else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
+ else if(section==='boutique/looku/cropped-jacket'){
+   main.innerHTML=title('looku referral / Demo boutique','Cropped jacket','An optional layer to finish your look.')+`<section class="panel stack"><h2>${money()}</h2><p>Delivery included. The boutique pays looku ${money(.1)} for the referral. Practice order only.</p><button data-buy>Review purchase →</button></section>`;
+ }
+ else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+`<section class="panel"><div class="eyebrow">Featured partner · Practice order</div><h2>Demo boutique</h2><p>Cropped jacket · ${money()} · Delivery included</p><a class="button" href="#boutique/looku/cropped-jacket">Shop the jacket</a></section>`+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
  const partners=await fetch('/api/affiliates',{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));if(id===renderId){
  stores=[...(partners.items||[]).map(p=>({name:p.name,region:'Affiliate partner',note:'Looku may earn a commission through this link.',url:p.url,referral:true})),...catalog];
  drawStores('');
  main.querySelector('#kenya-applications').innerHTML=stores.filter(s=>s.application).map(s=>`<li><b>${esc(s.name)}</b> · ${esc(s.application)}<p>${esc(s.nextStep)} <a href="${esc(s.url)}" target="_blank" rel="noopener">Official program ↗</a></p></li>`).join('');
  }}catch{if(id===renderId)main.querySelector('#store-list').textContent='Store directory is unavailable. Refresh to retry.'}}
  else main.innerHTML=studio();
+ if(section==='wardrobe')mountProfile(main.querySelector('#shopping-profile'));
  if (section === 'wardrobe' && sessionStorage.getItem('looku.show-saved')) {
    sessionStorage.removeItem('looku.show-saved');
    document.querySelector('#saved-heading')?.focus();
@@ -172,7 +181,7 @@ function drawStores(q){const list=stores.filter(s=>[s.name,s.region,s.note].some
 const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';
 const purchaseStates={
- awaiting_signature:'Waiting for wallet approval',confirming_purchase:'Confirming on Stellar',
+ awaiting_signature:'Waiting for wallet approval',confirming_purchase:'Confirming payment',
  payout_pending:'Payment confirmed',complete:'Payment confirmed',failed:'Payment failed'
 };
 function drawReceipts(){
@@ -183,31 +192,46 @@ function drawReceipts(){
    const affiliate=receipt.payoutTx?'Paid to looku':receipt.purchaseTx?'Awaiting payout':'Awaiting purchase';
    const refresh=['complete','failed'].includes(receipt.status)?'':`<button class="secondary small" data-refresh="${esc(receipt.id)}">Refresh receipt</button>`;
    return `<article class="receipt"><h3>${esc(receipt.item||'Cropped jacket')}</h3>
-   <p><strong>Your purchase</strong> · ${esc(receipt.amount||'1.00')} test XLM · ${purchase}</p>
-   <p><strong>Affiliate payout</strong> · ${esc(receipt.commission??'0.10')} test XLM · ${affiliate}</p>
+   ${receipt.selection?`<p>Size ${esc(receipt.selection.size)} · Demo order</p>`:''}<p><strong>Your purchase</strong> · ${money(receipt.amount||1)} · ${purchase}</p>
+   <p><strong>Affiliate payout</strong> · ${money(receipt.commission??.1)} · ${affiliate}</p>
    <div class="row">${txLink(receipt.purchaseTx,'Purchase transaction')}${txLink(receipt.payoutTx,'Affiliate payout')}${refresh}</div></article>`;
  }).join(''):'<p class="empty">Your first test purchase and its affiliate payout will appear here.</p>';
 }
 async function record(r){const next=[r,...receipts.filter(x=>x.id!==r.id)];await write('receipts',next);receipts=next}
 async function checkout() {
-  modal(`<div class="eyebrow">Demo boutique / Stellar testnet</div><h2>Cropped jacket</h2><p>Order total <b>1 test XLM</b>. The boutique pays looku a 0.10 test XLM commission. No physical item ships.</p>
-    <section class="panel stack"><label>Shopping agent limit · test XLM<input data-agent-limit type="text" inputmode="decimal" value="1.00" maxlength="16"></label><p class="fine">Approve one jacket from the demo boutique. The agent checks the price and merchant before your wallet signs.</p><button type="button" class="secondary" data-check-limit>Check my limit</button></section>
-    <form class="stack" data-local-pay hidden><label>Wallet passphrase<input type="password" name="phrase" autocomplete="current-password" required></label><button>Pay 1 test XLM with device wallet</button></form>
-    <div class="actions"><button class="secondary" data-freighter>Connect Freighter</button><a href="#wallet" data-create>Create a testnet wallet</a></div>
-    <p role="status"></p>`);
+  const unit=currency();
+  modal(`<div class="eyebrow">Demo boutique / Practice order</div><h2>Cropped jacket</h2><p>Total <b>${money()}</b>, including delivery. The boutique pays looku ${money(.1)}. This is a demo price. No real money is charged and no item ships.</p>
+    <form class="stack" data-order-fields><h3>Size and delivery</h3><p>Review the details the agent will send to the demo boutique. You can use example details.</p><button type="button" class="secondary" data-example>Use example details</button>${profileFields(true)}<button type="button" class="secondary" data-save-delivery>Remember these details on this device</button><span data-saved-detail aria-live="polite"></span></form>
+    <section class="panel stack"><label>Spending limit · ${unit}<input data-agent-limit type="text" inputmode="decimal" value="${prices[unit]}" maxlength="16"></label><p class="fine">Approve one jacket from the demo boutique. The agent checks the price and merchant before your wallet signs.</p><button type="button" class="secondary" data-check-limit>Check my limit</button></section>
+    <form class="stack" data-local-pay hidden><label>Wallet passphrase<input type="password" name="phrase" autocomplete="current-password" required></label><button>Place demo order · ${money()}</button></form>
+    <div class="actions"><button class="secondary" data-freighter>Use an external wallet</button><a href="#wallet" data-create>Set up checkout</a></div>
+    <p role="status" data-order-status></p>`);
   const local = body.querySelector('[data-local-pay]');
   const extension = body.querySelector('[data-freighter]');
   const create = body.querySelector('[data-create]');
-  const message = body.querySelector('[role=status]');
+  const message = body.querySelector('[data-order-status]');
   const budget = body.querySelector('[data-agent-limit]');
-  if(sessionStorage.getItem('looku.return-to-order')) budget.value=sessionStorage.getItem('looku.jacket-limit') ?? '1.00';
+  const deliveryForm=body.querySelector('[data-order-fields]');
+  fillProfile(deliveryForm);
+  if(checkoutDraft)for(const [k,v] of Object.entries(checkoutDraft))if(deliveryForm.elements[k])deliveryForm.elements[k].value=v;
+  deliveryForm.onsubmit=event=>event.preventDefault();
+  deliveryForm.querySelector('[data-save-delivery]').onclick=()=>{
+    if(!deliveryForm.reportValidity())return;
+    try{saveProfile(readProfile(deliveryForm));deliveryForm.querySelector('[data-saved-detail]').textContent='Saved for future orders.'}
+    catch{deliveryForm.querySelector('[data-saved-detail]').textContent='Could not save on this device.'}
+  };
+  body.querySelector('[data-example]').onclick=()=>{
+    const sample={name:'Demo Shopper',street:'10 Example Lane',city:'Nairobi',country:'Kenya',postal:'00100',phone:'',jacket:'M'};
+    for(const [k,v] of Object.entries(sample))deliveryForm.elements[k].value=v;
+  };
+  if(sessionStorage.getItem('looku.return-to-order') && sessionStorage.getItem('looku.limit-unit')===unit)budget.value=sessionStorage.getItem('looku.jacket-limit')??String(prices[unit]);
   body.querySelector('[data-check-limit]').onclick = async () => {
     try {
-      (await paymentAPI()).checkBudget(budget.value.trim());
+      budgetUnits(budget.value.trim(),unit);
       message.textContent='The jacket fits your limit. Choose a wallet to approve this purchase.';
     } catch (error) { message.textContent=error.message; }
   };
-  create.onclick = () => { sessionStorage.setItem('looku.jacket-limit',budget.value.trim()); sessionStorage.setItem('looku.return-to-order','1'); dialog.close(); };
+  create.onclick = () => { checkoutDraft=readProfile(deliveryForm);sessionStorage.setItem('looku.limit-unit',unit);sessionStorage.setItem('looku.jacket-limit',budget.value.trim()); sessionStorage.setItem('looku.return-to-order','1'); dialog.close(); };
   let wallet, address;
   try { wallet = await walletRecord(); } catch (e) { message.textContent = e.message; }
   if (wallet) { local.hidden = false; create.hidden = true; }
@@ -217,22 +241,24 @@ async function checkout() {
     controls.forEach(button => button.disabled = true);
     try {
       const api = await paymentAPI();
-      const limit = budget.value.trim();
-      api.checkBudget(limit);
+      const limit=budgetUnits(budget.value.trim(),unit);
+      if(!deliveryForm.reportValidity())return;
+      const details={...readProfile(deliveryForm),referral:'looku'};
       if (!useLocal && !address) {
         address = await api.connectWallet();
         message.textContent = 'Connected ' + address;
-        extension.textContent = 'Approve 1 test XLM in Freighter';
+        extension.textContent = 'Place demo order · '+money();
         return;
       }
       message.textContent=useLocal?'Unlocking your wallet and checking the order…':'Checking the order…';
       const signer = useLocal ? await api.unlockWallet(wallet, local.elements.phrase.value) : undefined;
       local.reset();
       if (!dialog.open || !local.isConnected) return;
-      const receipt = await api.buyPiece({limit,sku:'cropped-jacket', address:useLocal ? wallet.address : address, signer,
+      const receipt = await api.buyPiece({limit,details,sku:'cropped-jacket', address:useLocal ? wallet.address : address, signer,
         onOrder:id => { if (!receipts.some(r => r.id === id)) return record({id,status:'awaiting_signature',commission:'0.10'}).catch(() => notice('Receipt storage unavailable')); },
         onStatus:text => { message.textContent = text; }});
       await record(receipt);
+      checkoutDraft=null;
       sessionStorage.removeItem('looku.return-to-order');
       sessionStorage.removeItem('looku.jacket-limit');
       sessionStorage.setItem('looku.show-receipt','1');
@@ -290,10 +316,10 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
  if(b.hasAttribute('data-clearref')){await write('inspo',null);inspo=null;render()}
  if(b.hasAttribute('data-cancel-order')){
    sessionStorage.removeItem('looku.return-to-order');sessionStorage.removeItem('looku.jacket-limit');
-   b.closest('.order-return').remove();main.focus();return;
+   checkoutDraft=null;b.closest('.order-return').remove();main.focus();return;
  }
  if(b.hasAttribute('data-buy'))checkout();
- if(b.dataset.refresh){b.disabled=true;b.textContent='Checking Stellar…';try{const api=await paymentAPI();await record(await api.getReceipt(b.dataset.refresh));drawReceipts()}finally{b.textContent='Refresh receipt'}}
+ if(b.dataset.refresh){b.disabled=true;b.textContent='Checking payment…';try{const api=await paymentAPI();await record(await api.getReceipt(b.dataset.refresh));drawReceipts()}finally{b.textContent='Refresh receipt'}}
  }catch(err){b.disabled=false;notice(err.message)}});
 document.addEventListener('click', event => {
  if (event.target.closest('[data-saved-link]')) sessionStorage.setItem('looku.show-saved','1');
