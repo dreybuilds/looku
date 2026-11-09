@@ -126,12 +126,12 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      if(path==='dashboard'){
        const counts=await api(path);
-       const cards=node('div');cards.className='grid';
+       const cards=node('div');cards.className='ui-grid admin-metrics';
        for(const [label,key,target] of [['Support requests','support','support'],['Closet sales','sales','review/sale'],['Donations','donations','review/donate'],['Wallet accounts','accounts','accounts']]){
-         const card=node('article');card.className='panel';
+         const card=node('article');card.className='ui-card';
          card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
        }
-       view.append(cards,button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));return;
+       const actions=node('div');actions.className='ui-actions';actions.append(button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));view.append(cards,actions);return;
      }
      const rows=node('div');rows.className='stack';view.append(rows);
      const more=button('Load more',()=>load(next));view.append(more);let next;

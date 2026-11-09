@@ -37,6 +37,16 @@ export function contentCard({title,description,label,action}){
   }
   return card;
 }
-export function emptyState(message){
-  const note=element('p','ui-empty',message);note.setAttribute('role','status');return note;
+export function emptyState(message,title){
+  const note=element(title?'div':'p','ui-empty',title?null:message);note.setAttribute('role','status');
+  if(title)note.append(element('h3','ui-card-title',title),element('p','ui-description',message));
+  return note;
+}
+
+export function selectionCard({label,title,description,selected=false}){
+  const card=element('button','ui-choice');card.type='button';card.setAttribute('aria-pressed',String(selected));
+  if(label)card.append(element('span','ui-eyebrow',label));
+  card.append(element('strong','ui-choice-title',title));
+  if(description)card.append(element('span','ui-choice-description',description));
+  return card;
 }

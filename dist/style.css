@@ -409,31 +409,18 @@ body.storefront{--ink:#252521;--muted:#63635b;--line:#e2dfd6;color:var(--ink);ba
 .stellar-budget { display:grid; gap:.65rem; }
 .stellar-budget > :is(p,h3) { margin:0; }
 
-/* Shared page, form and empty-state components. Collections keep their wider canvas. */
-.page-intro {display:grid;gap:.8rem;margin: .6rem 0 2rem;max-width:64ch}
-.page-intro h1,.page-intro .page-title {font-size:clamp(2.6rem,5vw,4rem);line-height:1.04;margin:0;letter-spacing:-.055em}
-.page-intro p {color:var(--muted);max-width:62ch;font-size:1rem}
-.surface-heading {display:grid;gap:.5rem;margin-bottom:1.2rem}
-.surface-heading h2, .panel > h2, .panel form > h2, #wallet-panel > h2 {font-size:clamp(1.6rem,2.8vw,2.2rem);line-height:1.12;letter-spacing:-.04em}
-.empty-state {display:grid;gap:.65rem;padding:1.5rem;border:1px dashed var(--line);border-radius:16px;background:#f8f3fa;color:var(--muted);line-height:1.6}
-.empty-state h3 {color:var(--ink);font-size:1rem}
-.workspace-grid {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:1.5rem;align-items:start}
-.workspace-grid > .panel {margin:0;min-width:0}
+/* Booking and merchant editing use the shared app components. */
 main:has(#booking-area,#merchant-area) {max-width:76rem}
-.service-choices {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-bottom:1.5rem}
-.service-card {display:grid;justify-content:stretch;justify-items:start;gap:.6rem;padding:1.4rem;text-align:left;white-space:normal;color:var(--ink);background:#fffbff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--widget-rest);transition:box-shadow .18s,border-color .18s,transform .18s}
-.service-card strong {font:normal 1.5rem/1.15 Georgia,serif;letter-spacing:-.03em}
-.service-card > span:last-child {font-size:.875rem;font-weight:400;line-height:1.5;color:var(--muted)}
-.service-card[aria-pressed=true] {border-color:#9751a0;background:#f2e8f5;box-shadow:inset 0 0 0 1px #9751a0,var(--widget-rest)}
+.service-choices {margin-bottom:1.5rem}
 .booking-request {display:grid;gap:1.1rem;background:linear-gradient(135deg,#fffaff,#faf3ed)}
-.booking-request .surface-heading {margin:0}.booking-auth .account-trigger {background:#61216c;color:white;border-color:#61216c}
+.booking-request.panel .ui-section-header {margin:0}.booking-auth .account-trigger {background:#61216c;color:white;border-color:#61216c}
 .quiet-disclosure {font-size:.875rem;color:var(--muted)}.quiet-disclosure summary {cursor:pointer;padding:.3rem 0}.quiet-disclosure[open] a {display:inline-block;margin-top:.7rem}
 .booking-steps {list-style:none;counter-reset:steps;margin:1.7rem 0 0;padding:0;display:grid;gap:1.2rem}
 .booking-steps li {counter-increment:steps;display:grid;grid-template-columns:1.8rem 1fr;gap:.25rem .65rem;font-size:.85rem;line-height:1.5}
 .booking-steps li::before {content:counter(steps);grid-row:span 2;display:grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:#eee2f0;color:#61216c;font-weight:bold}
 .booking-steps span {grid-column:2;color:var(--muted)}.booking-card {display:grid;gap:.5rem;margin:0;background:#fffaff}.booking-card h3 {line-height:1.4}
 .booking-form > h2 {margin-bottom:.5rem}.booking-form textarea {min-height:7rem;resize:vertical}
-.merchant-manager > section {display:grid;gap:1.25rem}.merchant-manager > section > .panel {margin:0}
+.merchant-manager > section {display:grid;gap:1.25rem}.merchant-manager > section > .panel {margin:0}.merchant-manager > section > :is(.grid,[role=status]):empty {display:none}
 .store-editor > h2 {margin-bottom:1.2rem}.store-editor > p {margin-bottom:.75rem}
 .store-editor > form {margin-top:1rem}.store-editor textarea {min-height:6rem;resize:vertical}
 .brand-editor {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:1.5rem;margin:.8rem 0;padding-top:1.5rem;border-top:1px solid var(--line)}
@@ -451,7 +438,9 @@ body.storefront {background:var(--store-background,#fffefb);--ink:var(--store-ba
 .storefront .merchant-monogram,.store-brand-preview .merchant-monogram {background:var(--store-primary,#393c31);color:var(--store-primary-text,#fff)}
 .storefront .merchant-product .button {background:var(--store-primary,#393c31);border-color:var(--store-primary,#393c31);color:var(--store-primary-text,#fff)}
 .storefront main :is(a,button):focus-visible {outline-color:var(--store-background-text)}
-@media(hover:hover) and (pointer:fine){.service-card:hover{transform:translateY(-2px);box-shadow:var(--widget-active);filter:none}}
-@media(max-width:760px){.workspace-grid,.brand-editor{grid-template-columns:1fr}.service-choices{gap:.65rem}.service-card{padding:1rem}.service-card strong{font-size:1.15rem}.service-card>span:last-child{font-size:.8rem}}
-@media(max-width:480px){.service-choices{grid-template-columns:1fr}.service-card{grid-template-columns:1.7rem 1fr;gap:.35rem .6rem}.service-card .eyebrow{grid-row:span 2;padding-top:.15rem}.service-card>span:last-child{grid-column:2}.theme-colours{gap:.5rem}.page-intro{margin-bottom:1.4rem}.merchant-logo{width:90px;height:75px}}
-@media(prefers-reduced-motion:reduce){.service-card{transition:none!important;transform:none!important}}
+@media(max-width:760px){.brand-editor{grid-template-columns:1fr}}
+@media(max-width:480px){.theme-colours{gap:.5rem}.merchant-logo{width:90px;height:75px}}
+
+/* Admin dashboard uses the shared card and action spacing. */
+.looku-ui .admin-metrics {grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));margin:1.25rem 0}
+.looku-ui .admin-metrics .ui-card button {margin-top:auto}

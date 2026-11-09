@@ -1,4 +1,4 @@
-import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard} from './ui.js';
 const main=document.querySelector('main');
 main.append(pageHeader({eyebrow:'Looku / Interface library',title:'A little more room to browse',description:'The same components, spacing and hierarchy used by the app. These examples update with the shared source.',actions:[{label:'Open your wishlist',href:'/app#wishlist'},{label:'Create a store',href:'/app#merchant'}]}));
 const gallery=document.createElement('div');gallery.className='ui-gallery';main.append(gallery);
@@ -14,3 +14,17 @@ const forms=document.createElement('section');
 const search=document.createElement('label');search.className='ui-search';search.textContent='Find a store';
 const input=document.createElement('input');input.type='search';input.placeholder='Name or category';search.append(input);
 forms.append(sectionHeader({title:'A section with a control',description:'Controls align beside the heading, then stack on small screens.',control:search}));gallery.append(forms);
+
+const choices=document.createElement('section');choices.append(sectionHeader({title:'Service selection',description:'An accessible choice stays selected while the member completes the next step.'}));
+const choiceGrid=document.createElement('div');choiceGrid.className='ui-choice-grid';
+for(const [index,title] of ['Fashion stylist','Makeup artist','Hair stylist'].entries()){
+ const card=selectionCard({label:'0'+(index+1),title,description:'A service option with room for a short description.',selected:index===0});
+ card.onclick=()=>{for(const item of choiceGrid.children)item.setAttribute('aria-pressed',String(item===card))};choiceGrid.append(card);
+}
+choices.append(choiceGrid);gallery.append(choices);
+const workspace=document.createElement('section');workspace.append(sectionHeader({title:'Task and history',description:'A focused task beside its supporting details, stacked on a phone.'}));
+const pair=document.createElement('div');pair.className='ui-workspace';
+for(const [title,message] of [['Your next step','Keep the primary action in this panel.'],['Your activity','An empty state explains what will appear here.']]){
+ const panel=document.createElement('section');panel.className='panel';panel.append(sectionHeader({title}),emptyState(message));pair.append(panel);
+}
+workspace.append(pair);gallery.append(workspace);

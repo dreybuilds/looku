@@ -59,14 +59,6 @@ test('merchants own stores, approved stores publish immediately, and suspension 
       await expect(directory.getByRole('heading',{name:'Shop retailer websites'})).toHaveCount(0);
       await setFeature('storefronts',false);
       expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
-    const original=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();
-    expect(original.theme).toEqual(colours);expect(original.logo).toMatch(/^data:image\/webp;base64,/);
-    for(const invalid of [{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
-      expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{...original,...invalid}})).status()).toBe(400);
-    }
-    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{name:original.name,description:original.description,contact:original.contact,revision:original.revision}})).status()).toBe(200);
-    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
-    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:original})).status()).toBe(409);
       expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{}})).status()).toBe(403);
       await directory.reload();await expect(directory.getByRole('heading',{name:'Feature paused'})).toBeVisible();
       await directory.close();

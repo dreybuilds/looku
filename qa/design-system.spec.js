@@ -31,7 +31,7 @@ test('Stores prioritises browsing with shared hierarchy and usable actions',asyn
  expect(errors).toEqual([]);
 });
 
-test('component gallery and admin share the same readable scale',async({page})=>{
+test('component gallery and admin share the same readable scale',async({page},info)=>{
  await page.goto('/design-system.html');
  await expect(page.getByRole('heading',{name:'A little more room to browse'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
@@ -42,8 +42,12 @@ test('component gallery and admin share the same readable scale',async({page})=>
    return {images:card.querySelectorAll('img').length,text:card.querySelector('h3').textContent,rejected};
  });
  expect(safety).toEqual({images:0,text:'<img src=x onerror=alert(1)>',rejected:true});
+ await page.screenshot({path:'/private/tmp/looku-component-gallery-'+info.project.name+'.png',fullPage:true});
+ await page.setExtraHTTPHeaders({'oai-authenticated-user-email':'nzauaudrey@gmail.com'});
  await page.goto('/owner.html');
+ await expect(page.getByRole('button',{name:'Manage merchant stores'})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Admin workspace'})).toBeVisible();
  expect(await page.locator('h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize))).toBeLessThanOrEqual(42);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+ await page.screenshot({path:'/private/tmp/looku-admin-design-'+info.project.name+'.png',fullPage:true});
 });

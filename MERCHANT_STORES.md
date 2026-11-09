@@ -49,3 +49,7 @@ Other store addresses work immediately at `/store/{address}` after approval. The
 - `npm --prefix qa test -- merchant-stores.spec.js --workers=1`: desktop and phone creation, ownership, approval, publishing, edits, stale revision rejection and suspension.
 
 Browser flow tests use an isolated in-memory bucket and temporary identities. They do not add test merchants or products to production.
+
+## Store identity
+
+Create and manage forms accept an optional PNG, JPEG or WebP logo and brand, page-background and feature-background colours. The editor previews changes before save, preserves transparency while resizing to WebP, and supports replacing/removing the logo or resetting colours. Store logos are capped at 80,000 encoded characters; the API rejects non-WebP payloads and invalid hex colours. Existing stores receive the default theme and monogram. Ordinary updates that omit branding preserve it. Approved storefronts and directory cards display the saved identity, with automatically chosen dark/light text for contrast. Branding changes keep the existing owner checks, revision checks and approval status.

@@ -5,7 +5,7 @@
  --ui-page-size:clamp(30px,3.2vw,42px);--ui-section-size:clamp(22px,2vw,28px);
  --ui-card-size:18px;--ui-body-size:15px;--ui-caption-size:13px;
  --ui-surface:#fffcff;--ui-border:#e4d8e8;--ui-muted:#6b5a70;--ui-accent:#61216c;
- --ui-radius:16px;--ui-card-pad:24px;
+ --ui-shadow:0 2px 4px #37213908,0 8px 22px -14px #37213945;--ui-radius:16px;--ui-card-pad:24px;
  font-size:var(--ui-body-size);line-height:1.55;
 }
 .looku-ui main{max-width:1240px;padding:var(--ui-space-6) clamp(20px,4vw,48px) var(--ui-space-7)}
@@ -13,7 +13,7 @@
 .looku-ui main h2{font-size:var(--ui-section-size);line-height:1.25;letter-spacing:-.025em}
 .looku-ui main h3{font-size:var(--ui-card-size);line-height:1.35;letter-spacing:-.01em}
 .looku-ui main :is(h1,h2,h3)+:is(p,form,button,a){margin-top:var(--ui-space-3)}
-.looku-ui :is(.panel,.toolbar){padding:var(--ui-card-pad);border-radius:var(--ui-radius);box-shadow:none}
+.looku-ui :is(.panel,.toolbar){padding:var(--ui-card-pad);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow)}
 .looku-ui .stack{gap:var(--ui-space-4)}
 .looku-ui main p{line-height:1.6}
 .looku-ui .ui-page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ui-space-5);margin-bottom:var(--ui-space-7)}
@@ -27,7 +27,7 @@
 .looku-ui .ui-section{margin-block:var(--ui-space-7)}
 .looku-ui .ui-section-header{display:flex;justify-content:space-between;align-items:center;gap:var(--ui-space-5);margin-bottom:var(--ui-space-5)}
 .looku-ui .ui-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:var(--ui-space-5)}
-.looku-ui .ui-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--ui-space-3);padding:var(--ui-card-pad);background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);box-shadow:none;margin:0;min-width:0;overflow-wrap:anywhere}
+.looku-ui .ui-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--ui-space-3);padding:var(--ui-card-pad);background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);margin:0;min-width:0;overflow-wrap:anywhere}
 .looku-ui .ui-card>*{margin:0}
 .looku-ui .ui-card-label{font-size:var(--ui-caption-size);color:var(--ui-muted)}
 .looku-ui .ui-card-description{font-size:14px;color:var(--ui-muted)}
@@ -49,3 +49,17 @@
  .looku-ui .ui-search{width:100%}
  .looku-ui .ui-grid{gap:var(--ui-space-4)}
 }
+
+.looku-ui .ui-workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:var(--ui-space-5);align-items:start}
+.looku-ui .ui-workspace>.panel{margin:0;min-width:0}
+.looku-ui .ui-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ui-space-4)}
+.looku-ui .ui-choice{display:grid;justify-content:stretch;justify-items:start;gap:var(--ui-space-2);padding:var(--ui-card-pad);color:var(--ink);background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);text-align:left;white-space:normal;transition:box-shadow .18s,transform .18s,border-color .18s}
+.looku-ui .ui-choice-title{font:600 var(--ui-card-size)/1.35 Arial,sans-serif}
+.looku-ui .ui-choice-description{font:400 14px/1.55 Arial,sans-serif;color:var(--ui-muted)}
+.looku-ui .ui-choice[aria-pressed=true]{border-color:var(--ui-accent);background:#f4ecf7;box-shadow:inset 0 0 0 1px var(--ui-accent),var(--ui-shadow)}
+.looku-ui .ui-empty h3{margin:0 0 var(--ui-space-2);font-size:16px;color:var(--ink)}
+.looku-ui .ui-empty h3+p{margin:0}
+@media(max-width:760px){.looku-ui .ui-workspace{grid-template-columns:1fr}}
+@media(max-width:480px){.looku-ui .ui-choice-grid{grid-template-columns:1fr}.looku-ui .ui-choice{grid-template-columns:1.7rem 1fr;gap:var(--ui-space-1) var(--ui-space-3)}.looku-ui .ui-choice .ui-eyebrow{grid-row:span 2;padding-top:4px}.looku-ui .ui-choice-description{grid-column:2}}
+@media(hover:hover) and (pointer:fine){.looku-ui .ui-choice:hover{transform:translateY(-2px);filter:none;box-shadow:var(--widget-active)}}
+@media(prefers-reduced-motion:reduce){.looku-ui .ui-choice{transition:none;transform:none!important}}
