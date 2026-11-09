@@ -41,6 +41,27 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
        const {bookingList}=await import('./bookings.js');
        await bookingList(view,(data,cursor)=>api(path+(cursor?'?cursor='+encodeURIComponent(cursor):''),data),true);return;
      }
+     if(path==='partner-programs'){
+       view.append(node('p','Research and application notes for potential partners. Review each program’s current terms before applying. Add customer shopping links in Affiliates once ready.'));
+       const catalog=await api(path);
+       if(!view.isConnected)return;
+       const searchLabel=node('label','Find a partner program'),search=node('input');
+       search.type='search';search.placeholder='Store or region';searchLabel.append(search);
+       const results=node('div');results.className='stack';view.append(searchLabel,results);
+       function draw(){
+         results.replaceChildren();
+         const query=search.value.trim().toLowerCase();
+         for(const program of catalog.items.filter(item=>[item.name,item.region,item.note].some(value=>value.toLowerCase().includes(query)))){
+           const card=node('article');card.className='panel';
+           card.append(node('h3',program.name),node('p',program.region),node('p',program.note));
+           if(program.application)card.append(node('p','Application · '+program.application),node('p',program.nextStep));
+           const application=link('Open program ↗',program.url);application.target='_blank';application.rel='noopener noreferrer';card.append(application);
+           results.append(card);
+         }
+         if(!results.children.length)results.append(node('p','No partner programs match your search.'));
+       }
+       search.oninput=draw;draw();return;
+     }
      if(path==='features'){
        const settings=await api(path);
        view.append(node('p','Turn features on or off for the shopper app. Changes take effect online without a deployment.'));
@@ -96,7 +117,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          const form=node('form');form.className='stack panel';
          const nameLabel=node('label','Partner name'),urlLabel=node('label','Referral link');
          const partner=node('input'),url=node('input');partner.required=url.required=true;partner.maxLength=80;url.type='url';url.placeholder='https://';url.maxLength=2000;
-         nameLabel.append(partner);urlLabel.append(url);const save=node('button','Add partner');form.append(nameLabel,urlLabel,save);view.insertBefore(form,rows);
+         nameLabel.append(partner);urlLabel.append(url);const save=node('button','Add partner');form.append(node('p','These links appear in customer Stores. Use a link to the shop or a product, including your referral code when available.'),nameLabel,urlLabel,save);view.insertBefore(form,rows);
          let editing;
          form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await api(path,{id:editing,name:partner.value,url:url.value,revision:page.revision});await refresh()}catch(err){status.textContent=err.message}finally{save.disabled=false}};
          for(const x of page.items){
@@ -121,7 +142,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}

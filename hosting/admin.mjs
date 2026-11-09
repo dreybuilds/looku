@@ -1,3 +1,4 @@
+import partnerPrograms from './partner-programs.json' with {type:'json'};
 import {reportPage} from './reports.mjs';
 import {adminSupport,dashboard} from './support.mjs';
 import {session} from './account.mjs';
@@ -39,6 +40,7 @@ export async function admin(req,env,recheckPayout){
    return await write(store,ownerKey,{id,address:user.address})?reply(201,{ok:true}):conflict();
  }
  if(!authorized)return error(403,'Sign in with the owner account and its linked wallet.');
+ if(path==='partner-programs'&&req.method==='GET')return reply(200,{items:partnerPrograms});
  if(path==='features')return featureControls(req,store,data);
  if(path==='bookings')return adminBookings(req,store,data);
  if(path==='reports'&&req.method==='GET')return reportPage(store,url.searchParams);

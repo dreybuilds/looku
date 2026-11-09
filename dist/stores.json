@@ -2,196 +2,50 @@
   {
     "name": "VaaBay",
     "region": "Kenya",
-    "url": "https://www.vaabay.co.ke/affiliate",
-    "note": "Footwear. Approved affiliates can generate referral links and track sales. The published rate is up to 5.5%.",
-    "shop": "https://www.vaabay.co.ke/",
-    "application": "Apply",
-    "nextStep": "Create a retailer account, then apply for footwear referral links."
+    "url": "https://www.vaabay.co.ke/",
+    "category": "Footwear",
+    "note": "Find shoes for everyday wear."
   },
   {
     "name": "Shana",
     "region": "Kenya",
-    "url": "https://shana.co.ke/faqs/",
-    "note": "The FAQ describes product links and payout by M-Pesa or bank. Its registration page timed out during this check.",
-    "shop": "https://shana.co.ke/",
-    "application": "Apply via FAQ",
-    "nextStep": "Use the Regular Affiliate route. Confirm the sign-up page opens and request product links."
+    "url": "https://shana.co.ke/",
+    "category": "Fashion",
+    "note": "Browse clothing and accessories."
   },
   {
     "name": "Savanna Galore",
     "region": "Kenya",
-    "url": "https://savannagalore.co.ke/become-an-affiliate/",
-    "note": "The store carries ladies’ fashion and describes sale referrals. Its public form displayed an unrendered registration shortcode.",
-    "shop": "https://savannagalore.co.ke/",
-    "application": "Request a working form",
-    "nextStep": "Ask the merchant for enrollment. The public registration form displays a shortcode."
+    "url": "https://savannagalore.co.ke/",
+    "category": "Womenswear",
+    "note": "Explore women’s clothing and accessories."
   },
   {
     "name": "Jumia",
     "region": "Africa · Kenya market",
-    "url": "https://group.jumia.com/business/marketplace",
-    "note": "The group describes unique tracking links and commission on delivered orders. Kenyan publisher intake still needs confirmation.",
-    "shop": "https://www.jumia.co.ke/",
-    "application": "Confirm Kenya intake",
-    "nextStep": "Ask for the Kenyan publisher enrollment route and permission to deep-link from a PWA."
-  },
-  {
-    "name": "The Afropolitan Shop",
-    "region": "Africa & diaspora",
-    "url": "https://theafropolitanshop.com/en-ke/pages/affiliate-marketing",
-    "note": "African boutique with Kenyan jewellery. The application link redirected to Refersion’s general portal."
-  },
-  {
-    "name": "Grass-fields",
-    "region": "Africa & diaspora",
-    "url": "https://grass-fields.co.uk/pages/affiliate",
-    "note": "African-led womenswear. Apply through UpPromote for tracked referrals. The introductory rate is time-limited."
-  },
-  {
-    "name": "AfricanFabs",
-    "region": "Africa & diaspora",
-    "url": "https://africanfabs.com/pages/earn-with-africanfabs-affiliates",
-    "note": "Print fabrics and accessories. Approved publishers receive a referral link and can request payouts on qualifying orders."
-  },
-  {
-    "name": "Kipfashion",
-    "region": "Africa & diaspora",
-    "url": "https://kipfashion.com/become-our-affiliate-today/",
-    "note": "African print clothing and accessories. The merchant publishes a 5% recurring commission on referred customers’ sales."
-  },
-  {
-    "name": "Wax & Wonder",
-    "region": "Africa & diaspora",
-    "url": "https://waxandwonder.com/pages/join-our-tribe2",
-    "note": "African fashion and accessories. The brand issues a link and code to approved ambassadors through Refersion."
-  },
-  {
-    "name": "Makeji",
-    "region": "Africa & diaspora",
-    "url": "https://shopmakeji.com/brand-ambassador-program/",
-    "note": "Handbags and accessories. Its ambassador program uses codes and asks participants to create social posts. Confirm platform fit."
-  },
-  {
-    "name": "FARFETCH",
-    "region": "International",
-    "url": "https://www.farfetch.com/uk/pag1987.aspx",
-    "note": "Designer boutiques. Fashion sites worldwide can submit their URL for review. Returns and cancellations are excluded."
-  },
-  {
-    "name": "SSENSE",
-    "region": "International",
-    "url": "https://www.ssense.com/en-us/affiliates",
-    "note": "Designer clothing and accessories. SSENSE invites established fashion sites and stylists from around the world."
-  },
-  {
-    "name": "Mytheresa",
-    "region": "International",
-    "url": "https://www.mytheresa.com/gb/en/affiliates",
-    "note": "Luxury clothing. CJ and Rakuten applications are available to publishers. Approved partners can access daily product feeds."
-  },
-  {
-    "name": "NET-A-PORTER",
-    "region": "UK program",
-    "url": "https://www.net-a-porter.com/en-gb/content/affiliates/",
-    "note": "Designer womenswear. Invitation-only program with a published contact route and product feed for approved sites."
-  },
-  {
-    "name": "MR PORTER",
-    "region": "UK program",
-    "url": "https://www.mrporter.com/en-gb/content/affiliates/",
-    "note": "Designer menswear. Fashion and lifestyle sites can request access to its publisher program."
-  },
-  {
-    "name": "Nordstrom",
-    "region": "US program",
-    "url": "https://www.nordstrom.com/browse/affiliate-program",
-    "note": "Department store. Choose the publisher route for a website. Nordstrom lists a separate creator route."
-  },
-  {
-    "name": "REVOLVE",
-    "region": "US program",
-    "url": "https://www.revolve.com/affiliate",
-    "note": "Fashion retailer. The site lists a CJ application, 5% commission and a seven-day tracking window."
-  },
-  {
-    "name": "adidas",
-    "region": "US program",
-    "url": "https://www.adidas.com/us/help/us-company-information/what-is-our-affiliate-program",
-    "note": "Sportswear. The US program routes publisher applications and referral tracking through Impact."
-  },
-  {
-    "name": "Nike",
-    "region": "US program",
-    "url": "https://www.nike.com/help/a/nike-affiliate-program",
-    "note": "Sportswear and trainers. Nike considers established fashion websites, shopping directories and other publishers."
-  },
-  {
-    "name": "Levi’s",
-    "region": "US program",
-    "url": "https://www.levi.com/US/en_US/features/affiliate-program",
-    "note": "Denim. Levi’s links to its affiliate application. Confirm the intended website or creator channel during review."
-  },
-  {
-    "name": "lululemon",
-    "region": "US program",
-    "url": "https://ui.awin.com/merchant-profile/30347?setLocale=en_GB",
-    "note": "Athletic apparel. Awin lists the US merchant program and its publisher terms."
-  },
-  {
-    "name": "The RealReal",
-    "region": "US program",
-    "url": "https://www.therealreal.com/affiliates",
-    "note": "Luxury resale. Apply through Impact for buyer referrals. Its consignor referral program is separate."
-  },
-  {
-    "name": "YOOX",
-    "region": "US program",
-    "url": "https://www.yoox.com/us/affiliation/program",
-    "note": "Designer clothing. The US program supplies links to approved publishers and pays on qualifying net sales."
-  },
-  {
-    "name": "Etsy",
-    "region": "International",
-    "url": "https://www.etsy.com/affiliates",
-    "note": "Handmade and vintage pieces. Website publishers can apply through the affiliate route. Eligibility rules apply."
-  },
-  {
-    "name": "eBay",
-    "region": "Multiple markets",
-    "url": "https://partnernetwork.ebay.com/",
-    "note": "Marketplace with resale and vintage fashion. eBay Partner Network offers publisher links and developer integrations."
-  },
-  {
-    "name": "Amazon Associates",
-    "region": "US program",
-    "url": "https://affiliate-program.amazon.com/",
-    "note": "Marketplace with a fashion catalogue. The US program reviews applicants and the channels where links appear."
+    "url": "https://www.jumia.co.ke/",
+    "category": "Marketplace",
+    "note": "Browse fashion alongside everyday essentials."
   },
   {
     "name": "Enda",
     "region": "Kenya",
-    "url": "https://www.endasportswear.com/pages/become-an-enda-affiliate",
-    "note": "Kenyan running shoes and apparel. Ask for the current advertiser ID before applying.",
-    "shop": "https://www.endasportswear.com/",
-    "application": "Confirm current network",
-    "nextStep": "Kenyan running shoes and apparel. Ask for the current advertiser ID before applying."
+    "url": "https://www.endasportswear.com/",
+    "category": "Sportswear",
+    "note": "Explore running shoes and activewear."
   },
   {
     "name": "SOKO",
     "region": "Kenya",
-    "url": "https://shopsoko.com/pages/affiliates",
-    "note": "Kenyan artisan jewellery. Ask the team for its current affiliate application.",
-    "shop": "https://shopsoko.com/",
-    "application": "Request application",
-    "nextStep": "Kenyan artisan jewellery. Ask the team for its current affiliate application."
+    "url": "https://shopsoko.com/",
+    "category": "Jewellery",
+    "note": "Browse jewellery made by Kenyan artisans."
   },
   {
     "name": "Oak Apparel",
     "region": "Kenya",
-    "url": "https://oakapparel.co.ke/partners",
-    "note": "Nairobi graphic tees. Apply for a branded storefront if looku will offer original designs. Ask separately about promo attribution for existing tees.",
-    "shop": "https://oakapparel.co.ke/",
-    "application": "Partner storefront",
-    "nextStep": "Nairobi graphic tees. Apply for a branded storefront if looku will offer original designs. Ask separately about promo attribution for existing tees."
+    "url": "https://oakapparel.co.ke/",
+    "category": "T-shirts",
+    "note": "Explore graphic tees."
   }
 ]

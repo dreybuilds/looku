@@ -234,12 +234,27 @@ async function render(){
  else if(section==='boutique/looku/cropped-jacket'){
    main.innerHTML=title('looku referral / Demo boutique','Cropped jacket','An optional layer to finish your look.')+`<section class="panel stack"><h2>${money()}</h2><p>Delivery included. The boutique pays looku ${money(.1)} for the referral. Practice order only.</p><button data-buy>Review purchase →</button></section>`;
  }
- else if(section==='shops'){main.innerHTML=title('Directory / Retail partners','Store directory','Explore fashion affiliate programs. These links lead to the retailer’s program. looku tracking links become available after approval.')+`<p><a class="button secondary" href="#wishlist">Wishlist · save a product link</a></p><section class="panel"><div class="eyebrow">Featured partner · Practice order</div><h2>Demo boutique</h2><p>Cropped jacket · ${money()} · Delivery included</p><a class="button" href="#boutique/looku/cropped-jacket">Shop the jacket</a></section>`+'<details class="panel"><summary>Kenya applications and next steps</summary><ul id="kenya-applications"></ul></details><div class="toolbar"><label>Find a program<input type="search" id="store-search" placeholder="Store, category or region"></label></div><div id="store-list" class="store-list"></div>';try{const catalog=await fetch('stores.json').then(r=>r.json());
- const partners=await fetch('/api/affiliates',{cache:'no-store'}).then(r=>r.json()).catch(()=>({}));if(id===renderId){
- stores=[...(partners.items||[]).map(p=>({name:p.name,region:'Affiliate partner',note:'Looku may earn a commission through this link.',url:p.url,referral:true})),...catalog];
- drawStores('');
- main.querySelector('#kenya-applications').innerHTML=stores.filter(s=>s.application).map(s=>`<li><b>${esc(s.name)}</b> · ${esc(s.application)}<p>${esc(s.nextStep)} <a href="${esc(s.url)}" target="_blank" rel="noopener">Official program ↗</a></p></li>`).join('');
- }}catch{if(id===renderId)main.querySelector('#store-list').textContent='Store directory is unavailable. Refresh to retry.'}}
+ else if(section==='shops'){
+   main.innerHTML=title('Looku Wear / Shopping','Find your next piece','Explore stores, choose something you love, and save its product link to your wishlist.')+
+     '<section class="panel"><h2>Keep your favourites together</h2><p>Save a product’s link, size or colour and target price so you can return to it later.</p><a class="button secondary" href="#wishlist">Open your wishlist</a></section>'+
+     '<div class="toolbar"><label>Find a store<input type="search" id="store-search" placeholder="Store, clothing, shoes or jewellery"></label></div>'+
+     '<p class="fine">Store links open the retailer’s website. Check delivery, prices and returns there. Looku may earn a commission on links marked Partner link.</p>'+
+     '<p role="status" id="store-status">Loading stores…</p><div id="store-list" class="store-list"></div>';
+   try{
+     const [catalog,partners]=await Promise.all([
+       fetch('stores.json').then(response=>{if(!response.ok)throw Error();return response.json()}),
+       fetch('/api/affiliates',{cache:'no-store'}).then(response=>{if(!response.ok)throw Error();return response.json()}).catch(()=>null)
+     ]);
+     if(id!==renderId)return;
+     const featured=(partners?.items||[]).map(partner=>({name:partner.name,region:'Partner link',category:'',note:'Shop this store through Looku.',url:partner.url,referral:true}));
+     const names=new Set(featured.map(store=>store.name.trim().toLowerCase()));
+     stores=[...featured,...catalog.filter(store=>!names.has(store.name.trim().toLowerCase()))];
+     drawStores(main.querySelector('#store-search').value);
+     if(!partners)main.querySelector('#store-status').textContent+=' Partner stores could not load. Refresh to try again.';
+   }catch{
+     if(id===renderId)main.querySelector('#store-status').textContent='Stores could not load. Refresh to try again.';
+   }
+ }
  else main.innerHTML=studio();
  if(section.split('/')[0]==='account')mountProfile(main.querySelector('#shopping-profile'));
  if (section === 'wardrobe' && sessionStorage.getItem('looku.show-saved')) {
@@ -247,7 +262,15 @@ async function render(){
    document.querySelector('#saved-heading')?.focus();
  }
 }
-function drawStores(q){const list=stores.filter(s=>[s.name,s.region,s.note].some(v=>v.toLowerCase().includes(q.toLowerCase())));document.querySelector('#store-list').innerHTML=list.map(s=>`<article class="store"><span class="eyebrow">${esc(s.region)}</span><h3>${esc(s.name)}</h3><p class="fine">${esc(s.note)}</p>${s.shop?`<a href="${esc(s.shop)}" target="_blank" rel="noopener noreferrer">Shop ${esc(s.name)} ↗</a>`:''}<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer sponsored">${s.referral?'Shop via referral':'Visit program'} ↗</a></article>`).join('')||'<p>No programs match your search.</p>'}
+function drawStores(query){
+ const search=query.trim().toLowerCase();
+ const list=stores.filter(store=>[store.name,store.region,store.category||'',store.note].some(value=>value.toLowerCase().includes(search)));
+ const count=document.querySelector('#store-status');
+ if(count)count.textContent=list.length+' '+(list.length===1?'store':'stores');
+ document.querySelector('#store-list').innerHTML=list.map(store=>
+   `<article class="store"><span class="eyebrow">${esc(store.category||store.region)}</span><h3>${esc(store.name)}</h3><p class="fine">${esc(store.note)}</p><a href="${esc(store.url)}" target="_blank" rel="noopener noreferrer${store.referral?' sponsored':''}">Shop ${esc(store.name)} ↗</a>${store.referral?'<small>Partner link</small>':''}</article>`
+ ).join('')||'<p>No stores match your search. Try another name or category.</p>';
+}
 const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';
 const purchaseStates={

@@ -28,7 +28,11 @@ test('owner switches control listings and booking requests while customers retai
   }
   try{
     const admin=await owner.newPage();await admin.goto('/owner.html');
-    await admin.getByRole('button',{name:'Manage bookings'}).click();
+    expect((await page.request.get('/api/admin/partner-programs')).status()).toBe(403);
+    await admin.getByRole('button',{name:'Partner programs',exact:true}).click();
+    await admin.getByLabel('Find a partner program').fill('VaaBay');
+    await expect(admin.getByRole('link',{name:'Open program'})).toHaveAttribute('href','https://www.vaabay.co.ke/affiliate');
+    await admin.getByRole('button',{name:'Bookings',exact:true}).click();
     await admin.getByRole('article').filter({has:admin.getByRole('heading',{name:'Makeup artist · Requested'})}).first().getByRole('button',{name:'Confirm booking'}).click();
     await page.reload();await expect(page.getByRole('heading',{name:'Makeup artist · Confirmed'})).toBeVisible();
     await admin.getByRole('button',{name:'App features',exact:true}).click();

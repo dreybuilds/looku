@@ -99,10 +99,10 @@ test('offline reload, navigation, store search, styling and 3D rotation',async({
  await expect(page.getByRole('slider')).toHaveAttribute('aria-valuetext','15 degrees');
  await page.getByRole('button',{name:'Style this palette'}).click();
  await expect(page.getByText('Colour #a77bb6')).toBeVisible();
- await nav(page,'Stores');await page.getByLabel('Find a program').fill('nonexistentzzz');
- await expect(page.getByText('No programs match your search.')).toBeVisible();
- await page.getByLabel('Find a program').fill('');
- expect(await page.locator('#store-list article').count()).toBeGreaterThan(20);
+ await nav(page,'Stores');await page.getByLabel('Find a store').fill('nonexistentzzz');
+ await expect(page.getByText('No stores match your search. Try another name or category.')).toBeVisible();
+ await page.getByLabel('Find a store').fill('');
+ await expect(page.locator('#store-list article')).toHaveCount(7);
 });
 test('native PWA metadata and install affordance',async({baseURL},testInfo)=>{
  const context=await chromium.launchPersistentContext(testInfo.outputPath('disposable-profile'),{channel:'chrome',viewport:testInfo.project.use.viewport});
@@ -147,7 +147,7 @@ test('accessible pages, dialog names and viewport fit',async({page})=>{
  }
  expect(failures).toEqual([]);
 });
-test('custom palette persistence, sample portraits and local retailer applications',async({page})=>{
+test('custom palette persistence, sample portraits and customer shopping links',async({page})=>{
  await page.goto('/app#studio');
  const images=page.locator('.sample-photo');await expect(images).toHaveCount(4);
  await images.evaluateAll(imgs=>Promise.all(imgs.map(image=>image.decode())));
@@ -159,8 +159,12 @@ test('custom palette persistence, sample portraits and local retailer applicatio
  await expect(page.getByText(/Colour match: Orchid weekend/)).toBeVisible();
  await page.reload();await expect(page.getByText(/Colour match: Orchid weekend/)).toBeVisible();
  await nav(page,'Stores');
- await page.getByText('Kenya applications and next steps').click();
- await expect(page.locator('#kenya-applications li')).toHaveCount(7);
+ await expect(page.getByText('Kenya applications and next steps')).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Visit program'})).toHaveCount(0);
+ await expect(page.getByText('Demo boutique',{exact:true})).toHaveCount(0);
+ await page.getByLabel('Find a store').fill('jewellery');
+ await expect(page.getByRole('heading',{name:'SOKO',exact:true})).toBeVisible();
+ await page.getByLabel('Find a store').fill('');
  await expect(page.getByRole('link',{name:'Shop VaaBay'})).toHaveAttribute('href','https://www.vaabay.co.ke/');
 });
 test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',async({page},info)=>{
