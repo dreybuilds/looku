@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>looku / Your personal wardrobe studio</title>
 <meta name="description" content="Photograph the clothes you own, style them into outfits, and save your favourite looks in your personal wardrobe studio.">
-<link rel="icon" href="/icon-192.png"><link rel="manifest" href="/app.webmanifest"><link rel="stylesheet" href="/landing.css">
+<link rel="icon" href="/icon-192.png"><link rel="manifest" href="/app.webmanifest"><link rel="stylesheet" href="/landing.css"><link rel="stylesheet" href="/ui.css">
 <script>
 function openStudioLink(){
  const oldRoute=/^#(studio|wardrobe|stylist|merchant|bookings|community|wallet|shops|support|account|admin|boutique)(\/|$)/;
@@ -14,7 +14,7 @@ openStudioLink();addEventListener('hashchange',openStudioLink);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </head>
-<body><a class="skip" href="#content">Skip to content</a>
+<body class="looku-editorial"><a class="skip" href="#content">Skip to content</a>
 <header><a href="/" aria-label="Looku home"><img class="logo" src="/looku-orchid.webp" alt="looku"></a><nav aria-label="Main"><a class="tour-link" href="#how">How it works</a><a class="pill" href="/app">Launch app <span aria-hidden="true">↗</span></a></nav></header>
 <main id="content">
 <section class="cover"><div class="copy"><p class="label"><span class="star" aria-hidden="true">✳</span> Personal wardrobe studio</p>

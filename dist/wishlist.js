@@ -1,3 +1,4 @@
+import {pageHeader} from './ui.js';
 import {mountStellarWallet,stellarBudgetPanel,releaseStellarBudget} from './stellar-wallet.js';
 import {emailHeaders} from './email-auth.js';
 import {productUrl,guessName,fetchProductPreview} from './shopping.js';
@@ -61,11 +62,10 @@ function makeBookmark(){
 }
 export async function mountWishlist(main){
   const seed=new URLSearchParams(location.hash.split('?').slice(1).join('?'));
-  main.innerHTML=`<div class="eyebrow">Your shopping list</div><h1 class="page-title">Wishlist</h1>
-  <p class="intro">Keep a piece you love, plan for its price and return to the exact store page when you’re ready.</p>
+  main.innerHTML=pageHeader({eyebrow:'Your shopping list',title:'Wishlist',description:'Save a piece, plan its budget and return to the store when you’re ready.'}).outerHTML+`
   <details class="panel" data-editor><summary>Save a product link</summary><form class="stack">
-  <label>Product link<input type="url" name="url" placeholder="https://…" maxlength="4096" required></label>
-  <p class="fine" data-preview-status role="status"></p><img data-preview width="120" alt="Product thumbnail" hidden>
+  <div class="ui-field"><label>Product link<input type="url" name="url" placeholder="https://…" maxlength="4096" required></label>
+  <p class="fine" data-preview-status role="status">Product details will appear here when available.</p><img data-preview width="120" alt="Product thumbnail" hidden></div>
   <label>Item name<input name="title" maxlength="120" placeholder="e.g. Ayla Knit Top in Plum"></label>
   <label>Size or colour note<input name="variant" maxlength="100" placeholder="What you selected at the store"></label>
   <div class="row"><label>Currency<select name="currency" aria-label="Wishlist currency"><option>KES</option><option>USD</option></select></label>
@@ -94,7 +94,7 @@ export async function mountWishlist(main){
   function clearPreview(){
     clearTimeout(timer);controller?.abort();previewUrl='';previewTask=null;
     for(const [key,value] of imported)if(f[key].value===value)f[key].value=key==='currency'?'KES':'';
-    imported.clear();preview.removeAttribute('src');preview.hidden=true;previewStatus.textContent='';
+    imported.clear();preview.removeAttribute('src');preview.hidden=true;previewStatus.textContent='Product details will appear here when available.';
   }
   function setImported(key,value){
     if(value&&!changed.has(key)&&(key==='currency'||!f[key].value)){

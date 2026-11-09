@@ -1,3 +1,4 @@
+import {pageHeader,sectionHeader} from './ui.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 
 const questions=[
@@ -52,23 +53,8 @@ export async function ticketList(root,api,isAdmin=false){
  return ()=>load(true);
 }
 export async function mountSupport(root){
- root.innerHTML=`<div class="help-cover">
-   <div class="help-cover-copy"><span class="eyebrow">Looku Wear / Help desk</span><h1>Support</h1>
-   <p>Find answers about your wardrobe, listings and wallet, or send us a private request.</p></div>
-   <svg class="help-pattern" viewBox="0 0 270 170" fill="none" aria-hidden="true" focusable="false">
-     <g stroke="currentColor" stroke-width="1" opacity=".48">
-       <path d="M12 143 246 29" stroke-dasharray="4 5"/>
-       <path d="M24 18v12m-6-6h12m210 118v12m-6-6h12"/>
-     </g>
-     <g transform="rotate(-19 135 85)" stroke="currentColor" stroke-linejoin="round">
-       <path d="M119 77Q164 62 239 64Q199 75 129 85L112 93Z" fill="#d6c8a7"/>
-       <path d="M118 83Q175 79 233 103Q185 98 115 92Z" fill="#ad96ac"/>
-       <path d="M124 83Q102 83 84 67C64 46 30 41 27 59C23 79 60 99 80 84Q97 78 118 92M119 84Q100 96 84 103C67 100 46 106 43 121C40 141 78 137 92 118Q103 103 125 92" stroke-width="5"/>
-       <circle cx="124" cy="86" r="4" fill="#342035"/>
-     </g>
-   </svg></div><div class="help-layout">
-   <section class="help-faq"><div class="eyebrow">Quick reference</div><h2>Frequently asked questions</h2></section>
-   <section class="help-contact" aria-label="Private support"></section></div>`;
+ root.innerHTML=pageHeader({eyebrow:'Help desk',title:'Support',description:'Find an answer or send us a private request.'}).outerHTML+
+   '<div class="help-layout"><section class="help-faq">'+sectionHeader({title:'Frequently asked questions'}).outerHTML+'</section><section class="help-contact ui-surface" aria-label="Private support"></section></div>';
  const faq=root.querySelector('.help-faq'),area=root.querySelector('.help-contact');
  for(const [topic,q,a] of questions){
    const item=node('details'),summary=node('summary'),label=node('span',topic),copy=node('span',q);
@@ -77,7 +63,7 @@ export async function mountSupport(root){
  async function start(){
    area.replaceChildren();const kicker=node('div','Private correspondence');kicker.className='eyebrow';area.append(kicker);const form=document.createElement('form');form.className='stack';form.dataset.newTicket='';
    form.innerHTML='<h2>New support request</h2><label>Topic<select name="category"><option>Account</option><option>Wardrobe</option><option>Listings</option><option>Payments</option><option>Other</option></select></label><label>Subject<input name="subject" maxlength="100" required></label><label>How can we help?<textarea name="message" maxlength="2000" required></textarea></label><p class="fine">Only you and Looku support can see this conversation. Keep passwords, recovery files and payment details private.</p><button>Submit request</button><p role="status"></p>';
-   const inbox=node('div');area.append(form,node('h2','My requests'),inbox);
+   const inbox=node('div');area.append(form,sectionHeader({title:'My requests'}),inbox);
    const submit=form.querySelector('button');submit.disabled=true;let refresh;
    try{refresh=await ticketList(inbox,userApi);submit.disabled=false}
    catch(e){

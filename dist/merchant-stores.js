@@ -91,7 +91,7 @@ export async function mountStorefront(root,slug){
 export async function mountMerchantManager(root,slug){
   root.classList.add('merchant-manager');
   root.replaceChildren(pageHeader({title:'Your stores',description:'Create your storefront. Publish products once your store is approved.'}));
-  const body=node('section');root.append(body);
+  const body=node('section');body.className='ui-manager-body';root.append(body);
   let stores;
   try{stores=await api('/mine')}catch(error){
     body.append(node('p',error.message));
@@ -110,10 +110,10 @@ export async function mountMerchantManager(root,slug){
       body.append(link('All your stores','#merchant'));
       renderStoreForm(body,store);
       if(store.status==='approved'){
-        body.append(node('h2','Your products'),node('p','Publish products directly. Mark a piece sold out or hide it when it is unavailable.'));
+        body.append(sectionHeader({title:'Your products',description:'Publish directly, then hide a piece or mark it sold out when it is unavailable.'}));
         const editor=node('details');editor.className='panel';editor.append(node('summary','Add a product'));
         const formHost=node('div');editor.append(formHost);body.append(editor);
-        const inventory=node('section');body.append(inventory);
+        const inventory=node('section');inventory.className='ui-inventory';body.append(inventory);
         productForm(formHost,store,null,()=>loadInventory(true));
         let cursor;
         async function loadInventory(reset){
@@ -141,7 +141,7 @@ export async function mountMerchantManager(root,slug){
     }catch(error){body.append(node('p',error.message))}
     return;
   }
-  const list=node('div');list.className='grid';body.append(list);
+  const list=node('div');list.className='ui-grid';body.append(list);
   function draw(page){
     for(const store of page.items){
       const card=node('article');card.className='panel';
@@ -160,7 +160,7 @@ export async function mountMerchantManager(root,slug){
   else body.append(node('p','New merchant stores are currently paused.'));
 }
 function renderStoreForm(root,store){
-  const section=node('section');section.className='panel store-editor';
+  const section=node('section');section.className='panel store-editor ui-surface ui-form-panel merchant-details';
   section.append(node('h2',store?'Store details':'Create a store'));
   if(store){
     section.append(node('p','Store status · '+store.status));
@@ -174,7 +174,7 @@ function renderStoreForm(root,store){
     section.append(node('p','Subdomain address · '+store.slug+'.lookuwear.xyz'),node('small','Looku activates subdomain addresses through its domain settings.'));
     if(store.status==='suspended'){section.append(node('p','Contact Looku support about this suspension.'),link('Open support','#support'));root.append(section);return}
   }
-  const form=node('form');form.className='stack';
+  const form=node('form');form.className='stack ui-form';
   form.innerHTML='<label>Store name<input name="name" required maxlength="80" placeholder="Samaiah’s Closet"></label>'+
     (store?'':'<label>Store address<input name="slug" required minlength="3" maxlength="32" pattern="[a-z0-9](?:[a-z0-9]|-){1,30}[a-z0-9]" placeholder="samaiahs" autocapitalize="none" spellcheck="false"></label><small>Choose a unique address using lowercase letters, numbers and hyphens. Your address stays with this store.</small>')+
     '<label>About your store<textarea name="description" maxlength="800" placeholder="What do you sell, and where do you deliver?"></textarea></label>'+
@@ -247,7 +247,7 @@ function brandEditor(root,form,store,save){
   return ()=>{if(loading)throw Error('Wait for your logo to finish preparing.');return {logo,theme}};
 }
 function productForm(root,store,product,onSave){
-  const form=node('form');form.className='stack';
+  const form=node('form');form.className='stack ui-form';
   form.innerHTML='<label>Product name<input name="title" maxlength="100" required></label><label>Product photo<input name="photo" type="file" accept="image/*"></label>'+
     '<label>Price in KSh<input name="price" type="number" min="1" max="99999999" step="1" required></label>'+
     '<label>Description<textarea name="description" maxlength="1000" placeholder="Size, condition, colour and delivery details"></textarea></label>'+

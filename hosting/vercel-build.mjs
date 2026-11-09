@@ -34,7 +34,7 @@ const ownerRoutes=[
 ];
 // Merchant hosts serve a storefront and public store data. Management stays on the main site.
 const merchantHost=[{type:'host',value:'(?!admin\\.|www\\.)[a-z0-9-]+\\.lookuwear\\.xyz'}];
-const merchantAssets='ui\\.js|storefront\\.js|merchant-stores\\.js|store-branding\\.js|features\\.js|email-auth\\.js|style\\.css';
+const merchantAssets='ui\\.css|ui\\.js|storefront\\.js|merchant-stores\\.js|store-branding\\.js|features\\.js|email-auth\\.js|style\\.css';
 const merchantRoutes=[
   {src:'^/$',has:merchantHost,dest:'/storefront.html'},
   {src:'^/api/merchant-stores/[^?]*$',has:merchantHost,dest:'/studio'},

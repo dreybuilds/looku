@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 import handler from '../.vercel/output/functions/studio.func/index.cjs';
 
 const output = new URL('../.vercel/output/', import.meta.url);
@@ -30,7 +30,7 @@ assert.equal(explicitRoute('samaiahs.lookuwear.xyz','/api/merchant-stores/samaia
 for(const path of ['/app','/owner.html','/api/admin/access','/api/account','/api/features','/privy.js']){
   assert.equal(explicitRoute('samaiahs.lookuwear.xyz',path).status,404,'Tenant must block '+path);
 }
-for(const path of ['/ui.js','/storefront.js','/merchant-stores.js','/store-branding.js','/features.js','/email-auth.js','/style.css']){
+for(const path of ['/ui.css','/ui.js','/storefront.js','/merchant-stores.js','/store-branding.js','/features.js','/email-auth.js','/style.css']){
   assert.equal(explicitRoute('samaiahs.lookuwear.xyz',path),undefined,'Storefront asset must reach filesystem: '+path);
   assert.ok((await readFile(new URL('static'+path,output))).length);
 }
@@ -49,4 +49,8 @@ assert.equal(explicitRoute('admin.lookuwear.xyz','/ui.css'),undefined);
 for(const asset of ['/earnings.js','/ui.js']){
  assert.equal(explicitRoute('admin.lookuwear.xyz',asset),undefined);
  assert.ok((await readFile(new URL('static'+asset,output))).length);
+}
+assert.equal(explicitRoute('admin.lookuwear.xyz','/ui.js'),undefined);
+for(const file of (await readdir(new URL('static/',output))).filter(name=>name.endsWith('.html'))){
+  assert.match(await readFile(new URL('static/'+file,output),'utf8'),/href="\/ui.css"/,'Shared layout missing from '+file);
 }

@@ -124,9 +124,9 @@ function gallery(){
  return `<div class="grid">${subset.map((p,i)=>`<div>${card(p,i)}${samplePhoto(p)?'':`<div class="actions"><button class="secondary small" data-sale="${esc(p.id)}">Sell</button><button class="secondary small" data-donate="${esc(p.id)}">Donate</button></div>`}<button class="link small" data-remove="${esc(p.id)}">Remove</button></div>`).join('')||'<p class="empty">No pieces in this category yet.</p>'}</div>`
 }
 function studio() {
- return `<section class="hero campaign">
+ return title('Your personal wardrobe','Your studio','Style the pieces you own and explore your next look.')+`<section class="hero campaign">
    <div class="hero-copy"><div class="eyebrow"><span class="spark">✷</span> Lookbook &nbsp;/&nbsp; Vol. 01</div>
-   <h1>The Orchid<br><em>Edit.</em></h1><p>Lilac nylon, dark denim, a flash of pink. Find your own take with the pieces on your rail.</p>
+   <h2>The Orchid<br><em>Edit.</em></h2><p>Lilac nylon, dark denim, a flash of pink. Find your own take with the pieces on your rail.</p>
    <div class="actions"><button data-edit-palette>Style this palette ↗</button><button class="secondary" data-add>Add a piece</button></div></div>
    <div class="campaign-images"><img class="portrait" src="/orchid-portrait.webp" alt="Model in plum sunglasses and a lilac windbreaker with pink piping" fetchpriority="high"><img class="textile" src="/orchid-detail.webp" alt="Silver zipper, lilac nylon and indigo denim in detail"><span class="plate-caption">01 &nbsp;/&nbsp; ORCHID</span></div>
  </section>
@@ -191,6 +191,7 @@ async function render(){
  if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
  document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.hash==='#'+section.split('/')[0]);if(a.hash==='#'+section.split('/')[0])a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  document.body.classList.toggle('entry',section==='welcome');
+ main.dataset.page=section.split('/')[0];
  const communityKinds=['look','sale','donate'];
  const routeKind=section==='community'?communityKinds.find(enabled)||'look':section.split('/')[1];
  const feature=section==='shops'&&!enabled('storefronts')?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
@@ -213,7 +214,7 @@ async function render(){
    const {mountWelcome}=await import('./welcome.js');
    if(root.isConnected)await mountWelcome(root);
  }
- else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}<div class="sectionhead"><h2 id="saved-heading" tabindex="-1">Saved outfits</h2></div>${showSaved()}`;
+ else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}${sectionHeader({title:'Saved outfits'}).outerHTML.replace('<h2 ','<h2 id="saved-heading" tabindex="-1" ')}${showSaved()}`;
  else if(section==='community'||section.startsWith('community/')){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));

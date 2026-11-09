@@ -1,3 +1,4 @@
+import {sectionHeader,metricCard} from './ui.js';
 import {ticketList} from './support.js';
 import {emailHeaders,emailAccount} from './email-auth.js';
 const node=(tag,text)=>{const n=document.createElement(tag);if(text)n.textContent=text;return n};
@@ -29,10 +30,13 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      return;
    }
-   const tabs=node('div');tabs.className='actions';const content=node('div');body.append(tabs,content);
+   body.className='ui-workspace';
+   const tabs=node('nav');tabs.className='ui-workspace-nav';tabs.setAttribute('aria-label','Workspace sections');
+   const content=node('div');content.className='ui-workspace-content';body.append(tabs,content);
    async function section(name,path,address){
      const view=node('section');content.replaceChildren(view);status.textContent='';
-     const heading=node('h2',name);view.append(heading);
+     view.className='ui-workspace-view';view.dataset.section=path;view.append(sectionHeader({title:name}));
+     for(const tab of tabs.children){if(tab.dataset.path===path)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current')}
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
      if(path==='earnings'){
@@ -48,7 +52,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          const page=await api('merchant-stores'+(cursor?'?cursor='+encodeURIComponent(cursor):''));
          if(!view.isConnected)return;
          for(const store of page.items){
-           const card=node('article');card.className='panel';
+           const card=node('article');card.className='panel ui-surface';
            const storefront=link('View storefront','https://lookuwear.xyz/store/'+store.slug);storefront.target='_blank';storefront.rel='noopener noreferrer';
            card.append(node('h3',store.name),node('p',store.slug+'.lookuwear.xyz · '+store.status),node('p',store.description),node('p','Public contact · '+store.contact));
            if(store.status==='approved')card.append(storefront);
@@ -82,7 +86,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          results.replaceChildren();
          const query=search.value.trim().toLowerCase();
          for(const program of catalog.items.filter(item=>[item.name,item.region,item.note].some(value=>value.toLowerCase().includes(query)))){
-           const card=node('article');card.className='panel';
+           const card=node('article');card.className='panel ui-surface';
            card.append(node('h3',program.name),node('p',program.region),node('p',program.note));
            if(program.application)card.append(node('p','Application · '+program.application),node('p',program.nextStep));
            const application=link('Open program ↗',program.url);application.target='_blank';application.rel='noopener noreferrer';card.append(application);
@@ -95,9 +99,9 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      if(path==='features'){
        const settings=await api(path);
        view.append(node('p','Turn features on or off for the shopper app. Changes take effect online without a deployment.'));
-       const controls=node('div');controls.className='grid';view.append(controls);
+       const controls=node('div');controls.className='ui-grid ui-feature-grid';view.append(controls);
        for(const [id,label] of Object.entries(settings.labels)){
-         const card=node('article');card.className='panel';
+         const card=node('article');card.className='panel ui-surface';
          const on=settings.enabled[id];
          const toggle=button(label,async()=>{
            await api(path,{id,enabled:!on,revision:settings.revision});await refresh();
@@ -118,7 +122,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
            for(const [state,n] of Object.entries(page.counts))counts[state]=(counts[state]||0)+n;
            cursor=page.next;
          }while(cursor);
-         const card=node('article');card.className='panel';
+         const card=node('article');card.className='panel ui-surface';
          const total=Object.values(counts).reduce((a,b)=>a+b,0);
          card.append(node('h3',title),node('p',total+' total · '+metric+' '+(total?Math.round(100*counts[positive]/total)+'%':'—')));
          for(const [state,n] of Object.entries(counts))card.append(node('p',state+' · '+n));
@@ -130,10 +134,9 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      if(path==='dashboard'){
        const counts=await api(path);
-       const cards=node('div');cards.className='ui-grid admin-metrics';
+       const cards=node('div');cards.className='ui-grid';
        for(const [label,key,target] of [['Support requests','support','support'],['Closet sales','sales','review/sale'],['Donations','donations','review/donate'],['Wallet accounts','accounts','accounts']]){
-         const card=node('article');card.className='ui-card';
-         card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
+         cards.append(metricCard({title:label,value:counts[key],action:button('View '+label.toLowerCase(),()=>section(label,target))}));
        }
        const actions=node('div');actions.className='ui-actions';actions.append(button('View earnings and profit',()=>section('Earnings & profit','earnings')),button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));view.append(cards,actions);return;
      }
@@ -151,10 +154,10 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          let editing;
          form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await api(path,{id:editing,name:partner.value,url:url.value,revision:page.revision});await refresh()}catch(err){status.textContent=err.message}finally{save.disabled=false}};
          for(const x of page.items){
-           const card=node('article');card.className='panel';card.append(node('h3',x.name),node('p',x.url),button('Edit',()=>{editing=x.id;partner.value=x.name;url.value=x.url;save.textContent='Save partner';partner.focus()}),button('Remove',async()=>{if(confirm('Remove this referral link from Shops?')){await api(path,{id:x.id,remove:true,revision:page.revision});await refresh()}}));rows.append(card);
+           const card=node('article');card.className='panel ui-surface';card.append(node('h3',x.name),node('p',x.url),button('Edit',()=>{editing=x.id;partner.value=x.name;url.value=x.url;save.textContent='Save partner';partner.focus()}),button('Remove',async()=>{if(confirm('Remove this referral link from Shops?')){await api(path,{id:x.id,remove:true,revision:page.revision});await refresh()}}));rows.append(card);
          }
        }else for(const x of page.items||page.receipts){
-         const card=node('article');card.className='panel';rows.append(card);
+         const card=node('article');card.className='panel ui-surface';rows.append(card);
          if(path==='accounts'){
            card.append(node('code',x.address),node('p',(x.self?'Owner':x.suspended?'Suspended':'Active')+' · Joined '+x.createdAt.slice(0,10)),button('Linked payments',()=>section('Linked payments','receipts?address='+encodeURIComponent(x.address),x.address)));
            if(!x.self)card.append(button(x.suspended?'Restore account':'Suspend account',async()=>{if(confirm(x.suspended?'Restore wallet access?':'Suspend sign-in and new purchases for this wallet?')){await api(path,{address:x.address,suspended:!x.suspended,revision:x.revision});await refresh()}}));
@@ -172,7 +175,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['Earnings & profit','earnings'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Merchant stores','merchant-stores'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['Earnings & profit','earnings'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Merchant stores','merchant-stores'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']]){const tab=button(name,()=>section(name,path));tab.dataset.path=path;tabs.append(tab)}
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}

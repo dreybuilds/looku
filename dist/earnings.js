@@ -72,7 +72,7 @@ export async function mountEarnings(root, api) {
         for (const [title, amount] of [['Recorded income', income], ['Recorded expenses', expense], ['Recorded profit', income - expense]]) {
           grid.append(contentCard({title: currency + ' ' + money(amount), label: currency + ' · ' + title}));
         }
-        moneySection.append(grid, node('p', currency + ' totals use your active entries. Voided entries are excluded.'));
+        const note = node('p', currency + ' totals use your active entries. Voided entries are excluded.');note.className = 'ui-meta';moneySection.append(grid, note);
       }
       results.append(moneySection);
       recordForm();
@@ -121,7 +121,7 @@ export async function mountEarnings(root, api) {
   function recordForm() {
     const section = node('section');section.className = 'ui-section';
     section.append(sectionHeader({title: 'Record income or expense', description: 'Enter amounts that have been received or paid. Record fees and refunds as expenses.'}));
-    const form = node('form');form.className = 'stack panel';
+    const form = node('form');form.className = 'stack panel ui-form-panel';
     const field = (label, input) => {const wrapper = node('label', label);wrapper.append(input);form.append(wrapper);return input};
     const select = (label, options) => {
       const input = node('select');

@@ -50,3 +50,9 @@ export function selectionCard({label,title,description,selected=false}){
   if(description)card.append(element('span','ui-choice-description',description));
   return card;
 }
+
+export function metricCard({title,value,action}){
+  const card=element('article','ui-card ui-metric');
+  card.append(element('h3','ui-card-title',title),element('p','ui-metric-value',String(value)));
+  if(action)card.append(action);return card;
+}

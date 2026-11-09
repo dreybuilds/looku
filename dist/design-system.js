@@ -1,4 +1,4 @@
-import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard,metricCard} from './ui.js';
 const main=document.querySelector('main');
 main.append(pageHeader({eyebrow:'Looku / Interface library',title:'A little more room to browse',description:'The same components, spacing and hierarchy used by the app. These examples update with the shared source.',actions:[{label:'Open your wishlist',href:'/app#wishlist'},{label:'Create a store',href:'/app#merchant'}]}));
 const gallery=document.createElement('div');gallery.className='ui-gallery';main.append(gallery);
@@ -23,8 +23,12 @@ for(const [index,title] of ['Fashion stylist','Makeup artist','Hair stylist'].en
 }
 choices.append(choiceGrid);gallery.append(choices);
 const workspace=document.createElement('section');workspace.append(sectionHeader({title:'Task and history',description:'A focused task beside its supporting details, stacked on a phone.'}));
-const pair=document.createElement('div');pair.className='ui-workspace';
+const pair=document.createElement('div');pair.className='ui-two-column';
 for(const [title,message] of [['Your next step','Keep the primary action in this panel.'],['Your activity','An empty state explains what will appear here.']]){
  const panel=document.createElement('section');panel.className='panel';panel.append(sectionHeader({title}),emptyState(message));pair.append(panel);
 }
 workspace.append(pair);gallery.append(workspace);
+
+const metrics=document.createElement('section');metrics.append(sectionHeader({title:'Workspace metrics',description:'Admin summaries use the same cards and spacing.'}));
+const metricGrid=document.createElement('div');metricGrid.className='ui-grid';
+metricGrid.append(metricCard({title:'Example requests',value:12}),metricCard({title:'Example stores',value:4}));metrics.append(metricGrid);gallery.append(metrics);

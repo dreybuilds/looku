@@ -63,7 +63,18 @@ test('merchants own stores, approved stores publish immediately, and suspension 
       await directory.reload();await expect(directory.getByRole('heading',{name:'Feature paused'})).toBeVisible();
       await directory.close();
     }finally{await setFeature('shops',true);await setFeature('storefronts',true)}
-    await page.reload();await page.getByText('Add a product',{exact:true}).click();
+    await page.reload();
+    await expect(page.getByRole('heading',{name:'Store details',exact:true})).toBeVisible();
+    const editorLayout=await page.locator('.merchant-details').evaluate(node=>({
+      width:node.getBoundingClientRect().width,
+      headingSize:parseFloat(getComputedStyle(node.querySelector('h2')).fontSize),
+      formGap:node.querySelector('form').getBoundingClientRect().top-node.querySelector('small').getBoundingClientRect().bottom
+    }));
+    expect(editorLayout.width).toBeLessThanOrEqual(768);
+    expect(editorLayout.headingSize).toBeLessThanOrEqual(28);
+    expect(editorLayout.formGap).toBeGreaterThanOrEqual(12);
+    await page.screenshot({path:'/private/tmp/looku-layout/'+info.project.name+'/merchant-editor.png',fullPage:true});
+    await page.getByText('Add a product',{exact:true}).click();
     await page.getByLabel('Product name').fill('Lilac occasion jacket');
     await page.getByLabel('Product photo').setInputFiles('../dist/orchid-detail.webp');
     await page.getByLabel('Price in KSh').fill('2500');

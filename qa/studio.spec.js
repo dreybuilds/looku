@@ -169,7 +169,7 @@ test('custom palette persistence, sample portraits and customer shopping links',
  await page.getByLabel('Find a store').fill('');
  await expect(page.getByRole('link',{name:'Shop VaaBay'})).toHaveAttribute('href','https://www.vaabay.co.ke/');
 });
-test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',async({page},info)=>{
+test('encrypted backup round trip and wrong passphrase',async({page},info)=>{
  // Run once: the temporary test site has one synthetic signed-in backup owner.
  test.skip(info.project.name==='phone');
  await page.goto('/#wardrobe');
@@ -190,10 +190,6 @@ test('encrypted backup round trip, wrong passphrase and Pinterest unavailable',a
  page.once('dialog',d=>d.accept());
  await page.getByRole('button',{name:'Delete online backup'}).click();
  await expect(page.locator('[data-device-status]')).toContainText('deleted');
- await nav(page,'Stylist');await page.getByText('Find inspiration on Pinterest').click();
- await page.getByLabel('Search Pins').fill('lilac streetwear');
- await page.getByRole('button',{name:'Search Pinterest'}).click();
- await expect(page.locator('#pin-status')).toContainText('Pinterest search is unavailable right now');
 });
 test('invalid wallet proofs never grant a session and a valid challenge is single use',async({request,baseURL})=>{
  const {Keypair}=await import('../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js');

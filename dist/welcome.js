@@ -1,11 +1,11 @@
+import {pageHeader} from './ui.js';
 import {emailAccount, emailHeaders, bindAccountDialog} from './email-auth.js';
 import {accountCall, mountAccount, walletRecord} from './local-wallet.js';
 
 export async function mountWelcome(root) {
   const enter = () => { if (root.isConnected) location.replace('#studio'); };
   root.innerHTML = `<section class="entry-card"><div class="entry-photo" aria-hidden="true"></div>
-    <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a><h1>Enter your studio.</h1>
-    <p>Sign in to publish looks and take part in the Community closet.</p>
+    <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a>${pageHeader({title:'Enter your studio.',description:'Sign in to save your account details and take part in the Community closet.'}).outerHTML}
     <div data-email></div><div data-wallet-entry><button type="button" class="secondary account-trigger" data-open-account aria-haspopup="dialog">Use a Stellar wallet</button><dialog aria-label="Use a Stellar wallet"><button type="button" class="close" aria-label="Close wallet sign-in">×</button><h2>Wallet sign-in</h2>
     <p>Approve a sign-in message in Varial. Signing in has no fee and moves no funds.</p>
     <button data-connect>Continue with Varial</button><p data-status role="status"></p>

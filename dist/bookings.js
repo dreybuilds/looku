@@ -13,7 +13,7 @@ export async function bookingList(root,api,admin=false){
       const page=await api(null,cursor);
       if(!cursor)list.replaceChildren();
       for(const row of page.items){
-        const card=node('article','');card.className='panel booking-card';
+        const card=node('article','');card.className='panel booking-card ui-surface';
         card.append(node('h3',row.service+' · '+row.status),node('p',new Date(row.when).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'long'})),node('p',row.contact));
         if(row.brief)card.append(node('p',row.brief));
         if(admin&&row.status==='Requested'){
@@ -36,7 +36,7 @@ export async function bookingList(root,api,admin=false){
   await load();return ()=>load();
 }
 export async function mountBookings(root,enabled){
-  root.innerHTML=pageHeader({eyebrow:'Looku Wear / Appointments',title:'Book a stylist',description:'Choose your service and request a time that works for you.'}).outerHTML+'<div class="ui-choice-grid service-choices" role="group" aria-label="Choose a styling service"></div><div class="ui-workspace"><section class="panel booking-request" data-request></section><aside class="panel booking-history">'+sectionHeader({title:'My bookings',description:'Your requests and confirmed appointments.'}).outerHTML+'<section data-history></section><ol class="booking-steps"><li><strong>Choose your service</strong><span>Fashion, makeup or hair, tailored to your plans.</span></li><li><strong>Request a time</strong><span>Tell us when and what you have in mind.</span></li><li><strong>Check your confirmation</strong><span>Your booking is agreed when it says Confirmed.</span></li></ol></aside></div>';
+  root.innerHTML=pageHeader({eyebrow:'Looku Wear / Appointments',title:'Book a stylist',description:'Choose your service and request a time that works for you.'}).outerHTML+'<div class="ui-choice-grid service-choices" role="group" aria-label="Choose a styling service"></div><div class="ui-two-column"><section class="panel booking-request ui-form-panel" data-request></section><aside class="panel booking-history">'+sectionHeader({title:'My bookings',description:'Your requests and confirmed appointments.'}).outerHTML+'<section data-history></section><ol class="booking-steps"><li><strong>Choose your service</strong><span>Fashion, makeup or hair, tailored to your plans.</span></li><li><strong>Request a time</strong><span>Tell us when and what you have in mind.</span></li><li><strong>Check your confirmation</strong><span>Your booking is agreed when it says Confirmed.</span></li></ol></aside></div>';
   const choices=root.querySelector('.service-choices');
   for(const [index,[name,description]] of [['Fashion stylist','Build a wardrobe that feels like you.'],['Makeup artist','A considered finish for your occasion.'],['Hair stylist','Find a fresh shape or your event style.']].entries()){
     const choice=selectionCard({label:'0'+(index+1),title:name,description,selected:name===selectedService});
@@ -68,7 +68,7 @@ export async function mountBookings(root,enabled){
   }
   if(!enabled){request.textContent='New booking requests are paused. You can still view your bookings below.';return}
   const form=document.createElement('form');form.className='stack booking-form';
-  form.innerHTML='<h2>Request an appointment</h2><label for="booking-service">Service</label><select name="service" id="booking-service"><option>Fashion stylist</option><option>Makeup artist</option><option>Hair stylist</option></select><label>Preferred date and time<input name="when" type="datetime-local" required></label><small data-zone></small><label>Contact email<input name="contact" type="email" autocomplete="email" maxlength="160" required></label><label>What do you have in mind? (optional)<textarea name="brief" maxlength="600" placeholder="Occasion, city or online preference"></textarea></label><small>Only you and the Looku team can see your request. Your preferred time is confirmed when the status changes to Confirmed.</small><button>Request booking</button><p role="status"></p>';
+  form.innerHTML='<h2>Request an appointment</h2><div class="ui-field"><label for="booking-service">Service</label><select name="service" id="booking-service"><option>Fashion stylist</option><option>Makeup artist</option><option>Hair stylist</option></select></div><label>Preferred date and time<input name="when" type="datetime-local" required></label><small data-zone></small><label>Contact email<input name="contact" type="email" autocomplete="email" maxlength="160" required></label><label>What do you have in mind? (optional)<textarea name="brief" maxlength="600" placeholder="Occasion, city or online preference"></textarea></label><small>Only you and the Looku team can see your request. Your preferred time is confirmed when the status changes to Confirmed.</small><button>Request booking</button><p role="status"></p>';
   form.querySelector('[data-zone]').textContent='Your time zone · '+Intl.DateTimeFormat().resolvedOptions().timeZone;
   form.elements.service.value=selectedService;form.elements.service.onchange=()=>{selectedService=form.elements.service.value;for(const button of choices.children)button.setAttribute('aria-pressed',String(button.querySelector('strong').textContent===selectedService))};
   request.append(form);let id=crypto.randomUUID();
