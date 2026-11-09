@@ -66,3 +66,60 @@ main:focus{outline:none}label,.panel,.toolbar>*{min-width:0}input,select{min-wid
 #admin-workspace code,#admin-workspace .panel p{overflow-wrap:anywhere}#admin-workspace .panel button{margin:.25rem .4rem .25rem 0}#admin-workspace section>code{display:block;margin-bottom:1rem}
 
 #shop-currency{max-width:6em} [data-order-fields]{margin-top:1rem} #dialog[open]{max-height:90dvh;overflow:auto}
+
+/* Colourful, tactile controls shared by every form in the studio. */
+:root{--field-tint:#f6e8fc;--field-border:#c596d7;--field-accent:#77358d}
+label:nth-of-type(3n+2){--field-tint:#fff0f5;--field-border:#df9db6;--field-accent:#9a345d}
+label:nth-of-type(3n){--field-tint:#e9f7f3;--field-border:#82bcb0;--field-accent:#246d60}
+input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea{
+ background:var(--field-tint);border:1.5px solid var(--field-border);border-radius:16px;
+ color:var(--ink);min-height:46px;padding:12px 14px;font:inherit;font-size:16px;
+ max-width:100%;min-width:0;box-shadow:0 2px 0 #55246508;
+ transition:background-color .16s,border-color .16s,box-shadow .16s;
+}
+textarea{resize:vertical;line-height:1.5}
+input::placeholder,textarea::placeholder{color:#746078;opacity:1}
+input:not([type=range]):not([type=checkbox]):not([type=radio]):hover,select:hover,textarea:hover{border-color:var(--field-accent)}
+input:focus-visible,select:focus-visible,textarea:focus-visible{
+ outline:3px solid var(--field-accent)!important;outline-offset:3px;
+ border-color:var(--field-accent);box-shadow:0 0 0 6px #ac61bd18;
+}
+input:disabled,select:disabled,textarea:disabled{opacity:.65;cursor:not-allowed}
+input[readonly]{border-style:dashed}
+input:user-invalid,select:user-invalid,textarea:user-invalid{border-color:#b52853;background:#fff0f4}
+input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--field-accent)}
+input[type=checkbox],input[type=radio]{width:20px;height:20px}
+input[type=range]{min-height:32px;cursor:pointer}
+input[type=file]{padding:7px;font-size:14px}
+input[type=file]::file-selector-button{
+ border:0;border-radius:11px;background:#77358d;color:white;padding:10px 13px;
+ margin-right:10px;font:600 13px Arial;cursor:pointer;
+}
+input[type=color]{padding:5px!important;min-width:70px;cursor:pointer}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:10px}
+input[type=color]::-moz-color-swatch{border:0;border-radius:10px}
+#shop-currency{--field-tint:#f6e8fc;max-width:6.5em;border-radius:99px;padding:9px 12px}
+dialog{
+ border:1px solid #d6acdF;border-radius:28px;padding:32px;
+ background:linear-gradient(145deg,#f6e2fc 0%,#fff9fc 45%,#eaf8f3 100%);
+ box-shadow:0 24px 80px #3e12434d,0 5px 18px #753b7324;
+ max-height:90dvh;overflow:auto;
+}
+dialog::backdrop{background:#30133b80;backdrop-filter:blur(5px)}
+dialog .eyebrow{color:#77358d;padding-right:30px}
+dialog h2{color:#61216c;margin-right:30px}
+dialog .close{
+ width:40px;height:40px;right:12px;top:12px;border-radius:50%;
+ border:1px solid #dfb5d6;background:#f9dcec;color:#61216c;
+}
+dialog .actions{gap:10px}dialog .actions>button{min-height:44px}
+dialog .panel{background:#ffffffb3;border-color:#dec5e5;border-radius:20px}
+#toast:not(:empty){
+ background:linear-gradient(110deg,#61216c,#95345f);border:1px solid #d9afd9;
+ border-radius:18px;padding:14px 22px;box-shadow:0 10px 30px #48204d33;
+ bottom:max(18px,env(safe-area-inset-bottom));line-height:1.45;
+}
+@media(max-width:760px){dialog{padding:24px 20px;border-radius:24px}dialog .row>label{flex:1 1 140px}dialog .actions>button{flex:1 1 auto}}
+@media(prefers-reduced-motion:no-preference){dialog[open]{animation:popup-arrive .18s ease-out}@keyframes popup-arrive{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}}
+@media(prefers-reduced-motion:reduce){input,select,textarea{transition:none}}
