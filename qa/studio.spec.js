@@ -19,7 +19,7 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await page.getByRole('button',{name:/Orchid Hour/}).click();
  await expect(page.getByLabel('Describe your look')).toHaveValue(prompt);
  await page.getByRole('button',{name:'Build my look'}).click();
- await expect(page.getByRole('heading',{name:'Weekend edit'})).toBeFocused();
+ await expect(page.getByRole('heading',{name:'Brunch edit'})).toBeFocused();
  await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toBeVisible();
  await expect(page.getByRole('article').filter({hasText:'Slip dress'})).toHaveCount(0);
  await page.getByRole('button',{name:'Save outfit'}).click();
@@ -30,9 +30,11 @@ test('upload, prompt, save, reload, filter and remove',async({page})=>{
  await page.getByText('View outfit pieces',{exact:true}).click();
  await expect(page.locator('details[open] img[alt="Lilac linen shirt"]')).toBeVisible();
  await page.getByText('View outfit pieces',{exact:true}).click();
- await page.getByLabel('Category').selectOption('jacket');
+ await page.getByRole('button',{name:'Clothing type: All pieces',exact:true}).click();
+ await page.getByRole('button',{name:'Jacket / layer',exact:true}).click();
  await expect(page.getByText('No pieces in this category yet.')).toBeVisible();
- await page.getByLabel('Category').selectOption('shirt');
+ await page.getByRole('button',{name:'Clothing type: Jacket / layer',exact:true}).click();
+ await page.getByRole('button',{name:'Top / shirt',exact:true}).click();
  page.once('dialog',d=>d.accept());
  await page.getByRole('article').filter({hasText:'Lilac linen shirt'}).locator('..').getByRole('button',{name:'Remove',exact:true}).click();
  await expect(page.getByRole('article').filter({hasText:'Lilac linen shirt'})).toHaveCount(0);

@@ -1,3 +1,4 @@
+import {clothingSlot} from './style-options.js';
 // Original vector pattern studies used for the sample wardrobe.
 const patterns = {
   shirt: ['M70 47 94 38 108 52 122 38 146 47 177 105 152 121 137 96 139 198 Q108 204 77 198 L79 96 64 121 39 105Z','M94 38 88 63 101 73 108 52 116 73 129 62 122 38 M108 54V199 M79 96 70 47 M137 96 146 47 M119 82h17v20q-9 8-17-1Z M44 99l24 15 M148 114l24-15'],
@@ -7,6 +8,6 @@ const patterns = {
   dress: ['M84 38 95 37q11 23 25 0l12 1 4 46-13 20q13 40 42 84-54 19-111 0 30-48 41-84L81 83Z','M96 103q13 5 28 0 M97 111l-22 72 M116 111l21 72 M107 115v69 M57 182q52 16 105 0'],
 };
 export function garment(type, color, id='piece'){
- const [shape,seams]=patterns[type]||patterns.shirt;
+ const [shape,seams]=patterns[type]||patterns[clothingSlot(type)]||patterns.shirt;
  return '<svg viewBox="0 0 215 235" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="weave-'+id+'" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 0h4M0 0v4" stroke="#473e34" opacity=".12" stroke-width=".65"/></pattern></defs><path d="'+shape+'" fill="'+color+'" stroke="#36382e" stroke-width="2" stroke-linejoin="round"/><path d="'+shape+'" fill="url(#weave-'+id+')"/><path d="'+seams+'" fill="none" stroke="#39382e" opacity=".67" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 }

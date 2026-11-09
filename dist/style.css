@@ -302,3 +302,68 @@ main :is(a,button,summary,input,textarea,select):focus-visible {outline:2px soli
 .wish-card>small {display:block;color:var(--muted)}
 /* Reserve preview feedback space so blur validation cannot shift the Save button mid-click. */
 [data-editor] [data-preview-status] {display:block;min-height:1.55em}
+
+/* Clothing and occasion choices remain comfortably tappable on small screens. */
+.choice-trigger {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:48px;
+  width:100%;
+  padding:.8rem 1rem;
+  border:1px solid #bea4c5;
+  border-radius:16px;
+  background:#f0e2f5;
+  color:#351f3e;
+  text-align:left;
+  line-height:1.4;
+}
+.choice-dialog {
+  width:min(38rem,calc(100% - 1.5rem));
+  max-height:calc(100dvh - 1.5rem);
+  padding:0;
+  scrollbar-gutter:stable;
+}
+.choice-heading {
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:1.5rem 1.5rem 1rem;
+  background:#fffbff;
+  border-bottom:1px solid #e6d9e9;
+}
+.choice-heading h2 { font-size:clamp(1.4rem,4vw,1.85rem); margin:0 0 .7rem; }
+.choice-heading p { text-align:center; margin:0 0 1rem; color:var(--muted); line-height:1.5; }
+.choice-content { padding:0 1.5rem 1.5rem; }
+.choice-section h3 { margin:1.25rem 0 .7rem; font:600 .9rem/1.5 Arial,sans-serif; color:#66536e; }
+.choice-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+.choice-tile {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  width:100%;
+  min-height:60px;
+  padding:.85rem;
+  border:2px solid transparent;
+  border-radius:18px;
+  color:#302338;
+  text-align:left;
+  font-size:.95rem;
+  line-height:1.4;
+  box-shadow:0 2px 5px #34243d08;
+}
+.choice-tile[data-tone=rose] { background:#f8dfe9; }
+.choice-tile[data-tone=blue] { background:#dfeafa; }
+.choice-tile[data-tone=lilac] { background:#eadff7; }
+.choice-tile[data-tone=peach] { background:#f9e4d4; }
+.choice-tile[data-tone=mint] { background:#deefe5; }
+.choice-tile[aria-pressed=true] { border-color:#61216c; box-shadow:inset 0 0 0 1px #61216c; }
+.choice-mark { flex:none; font-size:1.1rem; }
+.choice-tile:focus-visible { outline:3px solid #61216c; outline-offset:2px; }
+.choice-empty { margin:1.5rem; line-height:1.6; }
+@media(max-width:420px) {
+  .choice-heading { padding:1.4rem 1rem .9rem; }
+  .choice-content { padding:0 1rem 1rem; }
+  .choice-tile { padding:.7rem; font-size:.88rem; }
+}

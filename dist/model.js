@@ -1,6 +1,6 @@
 import {garmentWords} from './look-prompt.js';
-export const categories={shirt:'Top',trousers:'Bottom',shoe:'Shoes',jacket:'Layer',dress:'Dress'};
-export const occasions=['Everyday','Office','Evening','Weekend'];
+import {clothingSlot} from './style-options.js';
+export {categories,occasions} from './style-options.js';
 export const sample=[
  {id:'sample1',name:'Cotton camp shirt',type:'shirt',color:'#d7d1ad',occasion:'Everyday',bg:'#e9e5da'},
  {id:'sample2',name:'Straight-leg denim',type:'trousers',color:'#71869a',occasion:'Weekend',bg:'#e1e6e6'},
@@ -12,10 +12,10 @@ export function styleLook(items,occasion,palette,variation=0,request=null){
  const matches = item => item && request ? request.terms.filter(term=>garmentWords(item).has(term)).length : 0;
  const colors = Array.isArray(palette) ? palette : palette ? [palette] : [];
  const rank=item=>4*matches(item)+(item.occasion===occasion?2:0)+(colors.length?(442-Math.min(...colors.map(color=>distance(item.color,color))))/442:0)+(item.id.startsWith('sample')?0:.35);
- const pick=type=>{const candidates=items.filter(i=>i.type===type).sort((a,b)=>rank(b)-rank(a));return candidates.length?candidates[variation%candidates.length]:null};
+ const pick=type=>{const candidates=items.filter(i=>clothingSlot(i.type)===type).sort((a,b)=>rank(b)-rank(a));return candidates.length?candidates[variation%candidates.length]:null};
  const dress=pick('dress'),top=pick('shirt'),bottom=pick('trousers');
  const dressPreference = matches(dress) - matches(top) - matches(bottom);
- const occasionDress = (occasion==='Evening'||variation%2===1) && dress?.occasion===occasion;
+ const occasionDress = (['Evening','Wedding','Formal event','Date night','Graduation'].includes(occasion)||variation%2===1) && dress?.occasion===occasion;
  const useDress = dress && (!top || !bottom || dressPreference>0 || (dressPreference===0 && occasionDress));
  const base=useDress?[dress]:[top,bottom];
  const pieces=[...base,pick('shoe'),pick('jacket')].filter(Boolean);

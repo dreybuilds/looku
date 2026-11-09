@@ -1,3 +1,4 @@
+import {categories,occasions} from '../dist/style-options.js';
 import {walletReceipts} from './wallet-receipts.mjs';
 import {Keypair,StrKey} from '@stellar/stellar-sdk';
 const reply=(status,data,cookie)=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
@@ -27,8 +28,7 @@ async function takeQuota(store){
  }
  return false;
 }
-const wardrobeTypes=['shirt','trousers','shoe','jacket','dress'];
-const occasions=['Everyday','Office','Evening','Weekend'];
+const wardrobeTypes=Object.keys(categories);
 export async function account(req,env){
  const url=new URL(req.url),route=url.pathname,store=env.ORDERS;
  if(route==='/api/account/receipts'&&req.method==='GET'){

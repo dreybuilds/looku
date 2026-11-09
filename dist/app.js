@@ -1,3 +1,4 @@
+import {mountChoicePickers} from './choice-picker.js';
 import {enabled,refreshFeatures} from './features.js';
 import {mountWishlist,receiveSharedLink} from './wishlist.js';
 import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
@@ -69,6 +70,7 @@ document.querySelector('#install-looku').onclick = async () => {
  if (message) modal('<h2>Install looku</h2><p>'+esc(message)+'</p>');
 };
 function addPiece(){modal(`<div class="eyebrow">Wardrobe / New piece</div><h2>Add a piece</h2><form id="add-form" class="stack"><label>Clothing photo<input required type="file" name="photo" accept="image/*"></label><label>Piece name<input required maxlength="60" name="name" placeholder="e.g. Olive linen shirt"></label><div class="row"><label>Category<select name="type">${options(Object.entries(categories),'shirt')}</select></label><label>Works best for<select name="occasion">${optOcc(occasion)}</select></label></div><small>Photos stay on this device until you publish them or choose encrypted backup. We sample a colour from each image for styling.</small><div class="actions"><button>Add to wardrobe</button><button type="submit" value="style" class="secondary">Add and style</button></div><p role="status"></p></form>`);
+ mountChoicePickers(body);
  const form=body.querySelector('form');
  form.onsubmit=async event=>{
    event.preventDefault();
@@ -256,6 +258,7 @@ async function render(){
    }
  }
  else main.innerHTML=studio();
+ mountChoicePickers(main);
  if(section.split('/')[0]==='account')mountProfile(main.querySelector('#shopping-profile'));
  if (section === 'wardrobe' && sessionStorage.getItem('looku.show-saved')) {
    sessionStorage.removeItem('looku.show-saved');
