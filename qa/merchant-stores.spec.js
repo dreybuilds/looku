@@ -14,6 +14,45 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   await expect(page.getByRole('img',{name:name+' logo'})).toBeVisible();
   await page.getByLabel('Store banner',{exact:true}).setInputFiles('../dist/orchid-detail.webp');
   await expect(page.getByRole('img',{name:name+' banner'})).toBeVisible();
+  const cropPanel=page.locator('.banner-crop-editor');
+  const setCrop=async(label,value)=>page.getByRole('slider',{name:label,exact:true}).evaluate((input,value)=>{input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}))},value);
+  await expect(cropPanel).toBeVisible();
+  await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('100');
+  await setCrop('Zoom',150);
+  await page.getByRole('slider',{name:'Horizontal position'}).focus();
+  await page.getByRole('slider',{name:'Horizontal position'}).press('Home');
+  await page.getByRole('slider',{name:'Horizontal position'}).press('ArrowRight');
+  await expect(page.getByRole('slider',{name:'Horizontal position'})).toHaveValue('1');
+  await setCrop('Horizontal position',25);await setCrop('Vertical position',30);
+  await page.getByRole('button',{name:'Mobile crop',exact:true}).click();
+  await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('100');
+  await setCrop('Zoom',200);
+  const stage=page.locator('.banner-crop-stage');await stage.scrollIntoViewIfNeeded();
+  const box=await stage.boundingBox();
+  const start={x:box.x+box.width/2,y:box.y+box.height/2};
+  if(info.project.name==='phone'){
+    const cdp=await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x-20,y:start.y-15}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
+  }else{
+    await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(start.x-20,start.y-15,{steps:5});await page.mouse.up();
+  }
+  expect(Number(await page.getByRole('slider',{name:'Horizontal position'}).inputValue())).toBeGreaterThan(50);
+  expect(Number(await page.getByRole('slider',{name:'Vertical position'}).inputValue())).toBeGreaterThan(50);
+  await page.getByRole('button',{name:'Reset this crop'}).click();
+  await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('100');
+  await setCrop('Zoom',200);await setCrop('Horizontal position',75);await setCrop('Vertical position',65);
+  await page.getByRole('button',{name:'Desktop crop',exact:true}).click();
+  await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('150');
+  await expect(page.getByRole('slider',{name:'Horizontal position'})).toHaveValue('25');
+  const crops={desktop:{x:25,y:30,zoom:1.5},mobile:{x:75,y:65,zoom:2}};
+  for(const [device,ratio] of [['Desktop',3],['Mobile',16/9]]){
+    await page.getByRole('button',{name:device+' crop',exact:true}).click();
+    const preview=await stage.evaluate(n=>({ratio:n.clientWidth/n.clientHeight,position:getComputedStyle(n.querySelector('img')).objectPosition}));
+    expect(preview.ratio).toBeCloseTo(ratio,1);expect(preview.position).toBe(device==='Desktop'?'25% 30%':'75% 65%');
+  }
+  await cropPanel.screenshot({path:'/private/tmp/looku-banner-crop-'+info.project.name+'.png'});
   await page.getByLabel('Store background',{exact:true}).setInputFiles('../dist/sample1.webp');
   await expect(page.getByText('Background ready. Save your store to apply it.')).toBeVisible();
   await expect(page.getByLabel('Store branding preview')).toHaveClass(/has-store-background/);
@@ -30,13 +69,14 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   try{
     expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
     const original=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();
+    expect(original.bannerCrop).toEqual(crops);
     expect(original.banner).toMatch(/^data:image\/webp;base64,/);expect(original.background).toMatch(/^data:image\/webp;base64,/);
     expect(original.theme).toEqual(colours);expect(original.logo).toMatch(/^data:image\/webp;base64,/);
-    for(const invalid of [{banner:'https://example.org/image.png'},{background:'data:image/svg+xml,<svg/>'},{banner:'data:image/webp;base64,'+'a'.repeat(160001)},{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
+    for(const invalid of [{bannerCrop:null},{bannerCrop:{desktop:crops.desktop}},{bannerCrop:{...crops,mobile:{x:101,y:50,zoom:1}}},{bannerCrop:{...crops,mobile:{x:50,y:50,zoom:0.5}}},{bannerCrop:{...crops,mobile:{x:'50',y:50,zoom:1}}},{banner:'https://example.org/image.png'},{background:'data:image/svg+xml,<svg/>'},{banner:'data:image/webp;base64,'+'a'.repeat(160001)},{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
       expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{...original,...invalid}})).status()).toBe(400);
     }
     expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{name:original.name,description:original.description,contact:original.contact,revision:original.revision}})).status()).toBe(200);
-    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.banner).toBe(original.banner);expect(kept.background).toBe(original.background);expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
+    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.bannerCrop).toEqual(crops);expect(kept.banner).toBe(original.banner);expect(kept.background).toBe(original.background);expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
     expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:original})).status()).toBe(409);
     const otherToken=await (await other.request.get('/qa-privy-token')).text();
     const otherHeaders={...ownHeaders,Authorization:'Bearer '+otherToken};
@@ -71,6 +111,9 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     }finally{await setFeature('shops',true);await setFeature('storefronts',true)}
     await page.reload();
     await expect(page.getByRole('heading',{name:'Store details',exact:true})).toBeVisible();
+    await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('150');
+    await page.getByRole('button',{name:'Mobile crop',exact:true}).click();
+    await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('200');
     const editorLayout=await page.locator('.merchant-details').evaluate(node=>({
       width:node.getBoundingClientRect().width,
       headingSize:parseFloat(getComputedStyle(node.querySelector('h2')).fontSize),
@@ -93,6 +136,14 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     await expect(customer.getByRole('img',{name:name+' logo'})).toBeVisible();
     await expect(customer.getByRole('img',{name:name+' banner'})).toBeVisible();
     await expect(customer.locator('body')).toHaveClass(/has-store-background/);
+    for(const [width,device,ratio] of [[1280,'desktop',3],[360,'mobile',16/9]]){
+      await customer.setViewportSize({width,height:800});
+      const rendered=await customer.locator('.merchant-banner-frame').evaluate(n=>({ratio:n.clientWidth/n.clientHeight,position:getComputedStyle(n.querySelector('img')).objectPosition,transform:getComputedStyle(n.querySelector('img')).transform}));
+      expect(rendered.ratio).toBeCloseTo(ratio,1);
+      expect(rendered.position).toBe(crops[device].x+'% '+crops[device].y+'%');
+      expect(rendered.transform).toBe('matrix('+crops[device].zoom+', 0, 0, '+crops[device].zoom+', 0, 0)');
+    }
+    await customer.setViewportSize(info.project.use.viewport);
     expect(await customer.locator('body').evaluate(n=>getComputedStyle(n).backgroundImage)).toContain('data:image/webp');
     expect(await customer.locator('h1').evaluate(n=>getComputedStyle(n).fontFamily)).toContain('monospace');
     await expect(customer.locator('body')).toHaveCSS('background-color','rgb(252, 248, 242)');
@@ -109,15 +160,17 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     await customer.screenshot({path:'/private/tmp/looku-merchant-store-'+info.project.name+'.png',fullPage:true});
     await page.getByLabel('Store banner',{exact:true}).setInputFiles('../dist/sample2.webp');
     await expect(page.getByText('Banner ready. Save your store to apply it.')).toBeVisible();
+    await expect(page.getByRole('slider',{name:'Zoom',exact:true})).toHaveValue('100');
     await page.getByLabel('Store background',{exact:true}).setInputFiles('../dist/sample3.webp');
     await expect(page.getByText('Background ready. Save your store to apply it.')).toBeVisible();
     await page.getByLabel('Store logo',{exact:true}).setInputFiles('../dist/sample1.webp');
     await expect(page.getByText('Logo ready. Save your store to apply it.')).toBeVisible();
     await page.getByRole('button',{name:'Save store details'}).click();
     await expect(page.getByLabel('Store logo',{exact:true})).toHaveValue('');
-    const replacement=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(replacement.logo).not.toBe(original.logo);expect(replacement.banner).not.toBe(original.banner);expect(replacement.background).not.toBe(original.background);
+    const replacement=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(replacement.logo).not.toBe(original.logo);expect(replacement.banner).not.toBe(original.banner);expect(replacement.bannerCrop).toEqual({desktop:{x:50,y:50,zoom:1},mobile:{x:50,y:50,zoom:1}});expect(replacement.background).not.toBe(original.background);
     await customer.reload();await expect(customer.getByRole('img',{name:name+' banner'})).toHaveAttribute('src',replacement.banner);
     await page.getByRole('button',{name:'Remove banner',exact:true}).click();
+    await expect(page.locator('.banner-crop-editor')).toBeHidden();
     await page.getByRole('button',{name:'Remove background',exact:true}).click();
     await page.getByRole('button',{name:'Remove logo',exact:true}).click();
     await page.getByRole('button',{name:'Reset colours',exact:true}).click();

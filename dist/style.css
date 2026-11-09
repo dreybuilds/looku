@@ -512,3 +512,21 @@ body.storefront.has-store-background,.store-brand-preview.has-store-background{
 .looku-ui .stellar-account>.ui-section-header,.looku-ui .support-contact>.ui-section-header{margin-bottom:0}
 .looku-ui .wallet-receipts>details.ui-disclosure{margin-top:24px}
 .wallet-workspace>.stellar-account{margin:0}
+
+/* One crop model drives the editor preview and responsive public banner. */
+.merchant-banner-frame{--banner-x:var(--banner-desktop-x,50%);--banner-y:var(--banner-desktop-y,50%);--banner-zoom:var(--banner-desktop-zoom,1);position:relative;width:100%;aspect-ratio:3/1;overflow:hidden}
+.merchant-banner-frame .merchant-banner{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;max-width:none;object-fit:cover;object-position:var(--banner-x) var(--banner-y);transform:scale(var(--banner-zoom));transform-origin:var(--banner-x) var(--banner-y)}
+@media(max-width:600px){.storefront .merchant-banner-frame{--banner-x:var(--banner-mobile-x,50%);--banner-y:var(--banner-mobile-y,50%);--banner-zoom:var(--banner-mobile-zoom,1);aspect-ratio:16/9}}
+.merchant-banner-frame[data-banner-device=mobile]{--banner-x:var(--banner-mobile-x,50%);--banner-y:var(--banner-mobile-y,50%);--banner-zoom:var(--banner-mobile-zoom,1);aspect-ratio:16/9}
+.banner-crop-editor{display:grid;gap:16px;padding:16px;border:1px solid var(--line);border-radius:12px;min-width:0;background:var(--ui-surface,#fff)}
+.banner-crop-editor[hidden]{display:none}
+.banner-crop-editor p{font-size:13px}
+.banner-crop-editor .row{gap:8px}
+.banner-crop-editor [aria-pressed=true]{background:var(--ui-accent,#61216c);border-color:var(--ui-accent,#61216c);color:white}
+.banner-crop-stage{touch-action:none;cursor:grab;border-radius:6px;background:#eee;user-select:none}
+.banner-crop-stage.is-dragging{cursor:grabbing}
+.banner-crop-controls{display:grid;gap:12px}
+.banner-crop-controls label>span{display:flex;justify-content:space-between;gap:8px}
+.banner-crop-controls output{font-weight:400}
+.banner-crop-controls input[type=range]{width:100%;min-width:0;padding:0;accent-color:var(--ui-accent,#61216c)}
+.banner-crop-editor>.link{justify-self:start}

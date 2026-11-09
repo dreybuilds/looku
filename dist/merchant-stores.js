@@ -1,5 +1,5 @@
 import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
-import {defaultStoreTheme,storeTheme,applyStoreTheme,applyStoreBackground} from './store-branding.js';
+import {defaultStoreTheme,storeTheme,applyStoreTheme,applyStoreBackground,bannerCrop,applyBannerCrop} from './store-branding.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 import {enabled} from './features.js';
 
@@ -55,7 +55,7 @@ export async function mountStorefront(root,slug){
     const monogram=brandMark(store);
     const intro=node('div');intro.append(node('span','Welcome to'),node('h1',store.name),node('p',store.description));
     const identity=node('div');identity.className='merchant-cover-identity';identity.append(monogram,intro);
-    if(store.banner)hero.append(bannerImage(store.banner,store.name));
+    if(store.banner)hero.append(bannerImage(store.banner,store.name,store.bannerCrop));
     hero.append(identity);root.replaceChildren(hero);
     if(store.mine){
       root.append(node('p','Store status · '+store.status),link('Manage this store','/app#merchant/'+store.slug));
@@ -206,8 +206,57 @@ function brandMark(store){
   if(store.logo){const image=node('img');image.className='merchant-logo';image.src=store.logo;image.alt=store.name+' logo';return image}
   const mark=node('div',(store.name||'Your store').slice(0,1).toUpperCase());mark.className='merchant-monogram';mark.setAttribute('aria-hidden','true');return mark;
 }
-function bannerImage(photo,name){
-  const image=node('img');image.className='merchant-banner';image.src=photo;image.alt=name+' banner';return image;
+function bannerImage(photo,name,crop,device){
+  const frame=node('div');frame.className='merchant-banner-frame';applyBannerCrop(frame,crop);
+  if(device)frame.dataset.bannerDevice=device;
+  const image=node('img');image.className='merchant-banner';if(photo)image.src=photo;image.alt=name+' banner';frame.append(image);return frame;
+}
+function bannerCropEditor(root,state,onChange){
+  root.className='banner-crop-editor';
+  const title=node('h3','Fit your banner'),help=node('p','Choose a screen size, then drag the image or use the sliders. Each crop is saved separately.');
+  const modes=node('div');modes.className='row';modes.setAttribute('role','group');modes.setAttribute('aria-label','Banner preview size');
+  const frame=bannerImage('', 'Crop preview');frame.classList.add('banner-crop-stage');
+  const image=frame.querySelector('img');image.draggable=false;
+  const controls=node('div');controls.className='banner-crop-controls';
+  const sliders={},outputs={},buttons={};let device='desktop',drag=null;
+  for(const value of ['desktop','mobile']){
+    const button=action(value==='desktop'?'Desktop crop':'Mobile crop',()=>{device=value;onChange(false)});
+    button.className='secondary small';buttons[value]=button;modes.append(button);
+  }
+  for(const [key,label,min,max,step] of [['x','Horizontal position',0,100,1],['y','Vertical position',0,100,1],['zoom','Zoom',100,300,5]]){
+    const field=node('label'),caption=node('span',label),output=node('output'),input=node('input');
+    input.type='range';input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',label);
+    caption.append(output);field.append(caption,input);controls.append(field);sliders[key]=input;outputs[key]=output;
+    input.oninput=()=>{state().crops[device][key]=Number(input.value)/(key==='zoom'?100:1);onChange(true)};
+  }
+  const reset=action('Reset this crop',()=>{state().crops[device]={x:50,y:50,zoom:1};onChange(true)});reset.className='link';
+  root.append(title,help,modes,frame,controls,reset);
+  frame.onpointerdown=event=>{
+    if(event.button!==0||!image.naturalWidth)return;
+    const box=frame.getBoundingClientRect(),crop={...state().crops[device]};
+    const scale=Math.max(box.width/image.naturalWidth,box.height/image.naturalHeight)*crop.zoom;
+    drag={id:event.pointerId,device,x:event.clientX,y:event.clientY,crop,width:image.naturalWidth*scale-box.width,height:image.naturalHeight*scale-box.height};
+    frame.setPointerCapture(event.pointerId);frame.classList.add('is-dragging');event.preventDefault();
+  };
+  frame.onpointermove=event=>{
+    if(!drag||event.pointerId!==drag.id)return;
+    const crop=state().crops[drag.device],clamp=value=>Math.round(Math.max(0,Math.min(100,value))*100)/100;
+    if(drag.width>1)crop.x=clamp(drag.crop.x-(event.clientX-drag.x)/drag.width*100);
+    if(drag.height>1)crop.y=clamp(drag.crop.y-(event.clientY-drag.y)/drag.height*100);
+    onChange(true);
+  };
+  const end=()=>{drag=null;frame.classList.remove('is-dragging')};
+  frame.onpointerup=frame.onpointercancel=frame.onlostpointercapture=end;
+  return {
+    get device(){return device},
+    sync(){
+      const {photo,crops}=state();root.hidden=!photo;if(!photo)return;
+      if(image.getAttribute('src')!==photo)image.src=photo;
+      image.alt=(device==='desktop'?'Desktop':'Mobile')+' banner crop preview';frame.dataset.bannerDevice=device;applyBannerCrop(frame,crops);
+      for(const value in buttons)buttons[value].setAttribute('aria-pressed',String(value===device));
+      for(const key in sliders){const value=crops[device][key]*(key==='zoom'?100:1);sliders[key].value=String(value);outputs[key].value=Math.round(value)+'%'}
+    }
+  };
 }
 async function brandPhoto(file,kind){
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('Choose a PNG, JPEG or WebP image smaller than 8 MB.');
@@ -226,24 +275,24 @@ async function brandPhoto(file,kind){
   }finally{URL.revokeObjectURL(url)}
 }
 function brandEditor(root,form,store,save){
-  root.className='brand-editor';let theme=storeTheme(store?.theme);
+  root.className='brand-editor';let theme=storeTheme(store?.theme),crops=bannerCrop(store?.bannerCrop);
   const artwork={logo:store?.logo||null,banner:store?.banner||null,background:store?.background||null};
   const pending=new Set(),revisions={},removals={};
   const fields=node('fieldset');fields.className='brand-fields';fields.innerHTML='<legend>Store identity</legend><p class="fine">Choose images and colours that tell your store’s story. Preview changes before saving.</p>';
-  const note=statusNode();
+  const note=statusNode(),cropHost=node('section');
   for(const [kind,label,help] of [
     ['logo','Store logo','Transparent logos stay transparent.'],
-    ['banner','Store banner','Wide images work best. The preview shows the centre crop above your store name.'],
+    ['banner','Store banner','Wide images work best. Adjust the desktop and mobile crops below.'],
     ['background','Store background','Your image blends with the page colour for a coordinated background. Content stays on solid surfaces for readability.']
   ]){
     const field=node('label',label),input=node('input');input.name=kind+'File';input.type='file';input.accept='image/png,image/jpeg,image/webp';field.append(input);
     const hint=node('small',help+' PNG, JPEG or WebP · up to 8 MB.');hint.id='store-'+kind+'-hint';input.setAttribute('aria-describedby',hint.id);
-    const remove=action('Remove '+kind,()=>{revisions[kind]=(revisions[kind]||0)+1;artwork[kind]=null;input.value='';pending.delete(kind);save.disabled=pending.size>0;note.textContent=label+' removed from this draft. Save to apply.';draw()});
-    remove.className='secondary small';removals[kind]=remove;fields.append(field,hint,remove);
+    const remove=action('Remove '+kind,()=>{revisions[kind]=(revisions[kind]||0)+1;artwork[kind]=null;if(kind==='banner')crops=bannerCrop();input.value='';pending.delete(kind);save.disabled=pending.size>0;note.textContent=label+' removed from this draft. Save to apply.';draw()});
+    remove.className='secondary small';removals[kind]=remove;fields.append(field,hint,remove);if(kind==='banner')fields.append(cropHost);
     input.onchange=async()=>{
       const file=input.files[0];if(!file)return;const current=revisions[kind]=(revisions[kind]||0)+1;
       pending.add(kind);save.disabled=true;note.textContent='Preparing your '+kind+'…';
-      try{const photo=await brandPhoto(file,kind);if(current!==revisions[kind])return;artwork[kind]=photo;note.textContent=kind[0].toUpperCase()+kind.slice(1)+' ready. Save your store to apply it.';draw()}
+      try{const photo=await brandPhoto(file,kind);if(current!==revisions[kind])return;artwork[kind]=photo;if(kind==='banner')crops=bannerCrop();note.textContent=kind[0].toUpperCase()+kind.slice(1)+' ready. Save your store to apply it.';draw()}
       catch(error){if(current===revisions[kind]){note.textContent=error.message;input.value=''}}
       finally{if(current===revisions[kind]){pending.delete(kind);save.disabled=pending.size>0}}
     };
@@ -260,14 +309,16 @@ function brandEditor(root,form,store,save){
   const content=node('div');content.className='brand-preview-cover';
   const cta=node('span','Shop the collection');cta.className='brand-preview-button';
   fields.append(note);preview.append(previewLabel,content,cta);root.append(fields,preview);
+  const cropEditor=bannerCropEditor(cropHost,()=>({photo:artwork.banner,crops}),changed=>{if(changed)note.textContent='Banner crop updated. Save your store to apply it.';draw()});
   function draw(){
+    cropEditor.sync();
     const name=form.elements.name.value.trim()||'Your store name';applyStoreTheme(preview,theme);applyStoreBackground(preview,artwork.background);
     const identity=node('div');identity.className='brand-preview-identity';identity.append(brandMark({name,logo:artwork.logo}),node('h3',name),node('p',form.elements.description.value.trim()||'A little introduction to your collection.'));
-    content.replaceChildren();if(artwork.banner)content.append(bannerImage(artwork.banner,name));content.append(identity);
+    content.replaceChildren();if(artwork.banner)content.append(bannerImage(artwork.banner,name,crops,cropEditor.device));content.append(identity);
     for(const kind in removals)removals[kind].hidden=!artwork[kind]&&!pending.has(kind);
   }
   form.elements.name.addEventListener('input',draw);form.elements.description.addEventListener('input',draw);draw();
-  return ()=>{if(pending.size)throw Error('Wait for your images to finish preparing.');return {...artwork,theme}};
+  return ()=>{if(pending.size)throw Error('Wait for your images to finish preparing.');return {...artwork,theme,bannerCrop:crops}};
 }
 function productForm(root,store,product,onSave){
   const form=node('form');form.className='stack ui-form';

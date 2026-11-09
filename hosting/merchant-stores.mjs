@@ -1,4 +1,4 @@
-import {storeTheme,validStoreLogo,validStoreImage} from '../dist/store-branding.js';
+import {storeTheme,validStoreLogo,validStoreImage,bannerCrop} from '../dist/store-branding.js';
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 import {paused,pausedReply} from './features.mjs';
@@ -16,7 +16,7 @@ export function tenantSlug(hostname){
   return match&&!['www','admin'].includes(match[1])?match[1]:null;
 }
 function publicStore(row,artwork=false){
-  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status,logo:row.logo||null,...(artwork?{banner:row.banner||null,background:row.background||null}:{}),theme:storeTheme(row.theme)};
+  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status,logo:row.logo||null,...(artwork?{banner:row.banner||null,background:row.background||null,bannerCrop:bannerCrop(row.bannerCrop)}:{}),theme:storeTheme(row.theme)};
 }
 async function identity(req,store){
   return await privySubject(req)||(await session(req,store))?.address;
@@ -105,9 +105,12 @@ async function saveStore(store,owner,data,row,record){
     artwork[kind]=Object.hasOwn(data,kind)?data[kind]:row?.[kind]||null;
     if(!validStoreImage(artwork[kind]))return error(400,'Choose a PNG, JPEG or WebP '+kind+' and upload it through the store editor.');
   }
-  let theme;try{theme=storeTheme(Object.hasOwn(data,'theme')?data.theme:row?.theme)}catch(e){return error(400,e.message)}
+  let theme,crop;try{
+    theme=storeTheme(Object.hasOwn(data,'theme')?data.theme:row?.theme);
+    crop=bannerCrop(Object.hasOwn(data,'bannerCrop')?data.bannerCrop:row?.bannerCrop);
+  }catch(e){return error(400,e.message)}
   const slug=row?.slug||data.slug;
-  const next={slug,owner,logo,...artwork,theme,name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
+  const next={slug,owner,logo,...artwork,theme,bannerCrop:artwork.banner?crop:bannerCrop(),name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
   const saved=await store.put(prefix+slug,JSON.stringify(next),{onlyIf:record?{etagMatches:record.etag}:{etagDoesNotMatch:'*'}});
   if(saved)return reply(record?200:201,{slug});
   // A retry after an uncertain create must not claim another merchant's address.

@@ -37,3 +37,25 @@ export function applyStoreBackground(element,value){
   if(photo)element.style.setProperty('--store-background-image','url("'+photo+'")');
   else element.style.removeProperty('--store-background-image');
 }
+
+export function bannerCrop(value){
+  if(value===undefined)return {desktop:{x:50,y:50,zoom:1},mobile:{x:50,y:50,zoom:1}};
+  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Choose valid banner crop settings.');
+  const result={};
+  for(const device of ['desktop','mobile']){
+    const crop=value[device];
+    if(!crop||typeof crop!=='object'||Array.isArray(crop))throw Error('Set both desktop and mobile banner crops.');
+    result[device]={};
+    for(const [key,min,max] of [['x',0,100],['y',0,100],['zoom',1,3]]){
+      if(typeof crop[key]!=='number'||!Number.isFinite(crop[key])||crop[key]<min||crop[key]>max)throw Error('Banner position must be 0–100% and zoom must be 100–300%.');
+      result[device][key]=Math.round(crop[key]*100)/100;
+    }
+  }
+  return result;
+}
+export function applyBannerCrop(element,value){
+  const crops=bannerCrop(value);
+  for(const device of ['desktop','mobile'])for(const key of ['x','y','zoom']){
+    element.style.setProperty('--banner-'+device+'-'+key,crops[device][key]+(key==='zoom'?'':'%'));
+  }
+}
