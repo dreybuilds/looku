@@ -11,7 +11,7 @@ test('landing opens email entry, verifies the code and remembers the session',as
  await page.goto('/');
  await expect(page.getByRole('heading',{level:1})).toContainText('already own');
  await page.getByRole('link',{name:'Launch app'}).first().click();
- await expect(page).toHaveURL(/\/app$/);
+ await expect(page).toHaveURL(/\/app(?:\?mode=personal)?$/);
  await page.getByText('Continue with email',{exact:true}).click();
  await page.getByLabel('Email address').fill('member@example.test');
  await page.getByRole('button',{name:'Send code'}).click();

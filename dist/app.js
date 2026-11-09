@@ -1,5 +1,6 @@
 import {emailHeaders} from './email-auth.js';
-import {pageHeader,sectionHeader,contentCard,emptyState,sectionNav} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,sectionNav,experienceSwitch} from './ui.js';
+import {experience,setExperience,homeRoute,routeExperience} from './experience.js';
 import {mountChoicePickers} from './choice-picker.js';
 import {openInspiration} from './inspiration.js';
 import {enabled,refreshFeatures} from './features.js';
@@ -61,6 +62,24 @@ async function setPaletteBook(next) { await write('palette-book',next);paletteBo
 const currentLook = () => styleLook(items,occasion,[lookRequest?.color,...(lookRequest?.gptColors||[]),...(activePalette()?.colors || []),inspo?.color].filter(Boolean),variation,lookRequest);
 const editName = () => lookRequest?.text || occasion+' edit';
 let occasion=occasions.includes(inspo?.occasion)?inspo.occasion:'Everyday',variation=0,filter='',section='',toastTimer,renderId=0,stores;
+const modeControl=experienceSwitch({value:experience(),onChange:mode=>{
+ setExperience(mode);
+ const url=new URL(location.href);url.searchParams.delete('mode');history.replaceState(null,'',url);
+ for(const popup of document.querySelectorAll('dialog[open]'))popup.close();
+ applyExperience();
+ if(section==='welcome')render();else location.hash=homeRoute();
+}});
+document.querySelector('[data-experience-switch]').append(modeControl);
+function applyExperience(){
+ const mode=experience();document.body.dataset.experience=mode;
+ document.title=mode==='business'?'looku / Business workspace':'looku / Wardrobe studio';
+ document.querySelector('footer span').textContent=mode==='business'?'YOUR BUSINESS ON LOOKU':'YOUR PERSONAL WARDROBE STUDIO';
+ for(const button of modeControl.children)button.setAttribute('aria-pressed',String(button.dataset.experience===mode));
+ for(const link of document.querySelectorAll('header nav [data-mode]'))link.hidden=link.dataset.mode!==mode;
+ if(!sessionStorage.getItem('looku.admin-navigation')){
+  const logo=document.querySelector('header .logo');logo.href=homeRoute();logo.setAttribute('aria-label',mode==='business'?'Looku business home':'looku studio');
+ }
+}
 const notice=t=>{const e=document.querySelector('#toast');e.textContent=t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{e.textContent=''},4200)};
 function modal(html) {
  body.innerHTML = html;
@@ -143,6 +162,17 @@ function studio() {
    <div class="object-controls"><label>Rotate the frames<input aria-label="Rotate the frames" id="turn-frame" type="range" min="0" max="23" value="0" aria-valuetext="0 degrees"></label><a href="/orchid-frames.glb" download="looku-orchid-frames.glb">3D file ↓</a></div></section>
  </div>`;
 }
+function business(){
+ const cards=[
+  {label:'01 / Your storefront',title:'Create and manage your stores',description:enabled('storefronts')?'Set up a store or open one you already own. New stores are reviewed before products can be published.':'New stores are currently paused. You can still manage an existing store.',action:{label:'Open your stores',href:'#merchant'}},
+  {label:'02 / Your identity',title:'Make your brand recognisable',description:'Edit your logo, colours, background and banner. Preview independent crops for desktop and phone screens.',action:{label:'Manage store branding',href:'#merchant'}},
+  {label:'03 / Your collection',title:'Keep your products up to date',description:'After store approval, add product photos, descriptions and KES prices. Hide a product or mark it sold out.',action:{label:'Manage your catalogue',href:'#merchant'}},
+  {label:'04 / Your customers',title:'Share your public storefront',description:'Open an approved store to copy its public link. Shoppers contact you to agree availability, delivery and payment.',action:{label:'Find your storefront link',href:'#merchant'}}
+ ];
+ return pageHeader({eyebrow:'Looku / Business',title:'Your business workspace',description:'Build your storefront, shape your brand and manage your collection.',actions:[{label:'Manage your stores',href:'#merchant',primary:true},{label:'Get support',href:'#support'}]}).outerHTML+
+  '<section class="ui-section">'+sectionHeader({title:'From setup to storefront',description:'Everything starts with a store you own.'}).outerHTML+'<div class="ui-grid business-grid">'+cards.map(card=>contentCard(card).outerHTML).join('')+'</div></section>'+
+  '<section class="panel ui-surface"><h2>One account. Two ways to use Looku.</h2><p>Business brings your store tools together. Switch to Personal for your wardrobe, wishlist, appointments and community. Your account stays the same.</p><div class="actions"><a class="button secondary" href="#account">Your account</a><a class="button secondary" href="#shops">Explore stores</a></div></section>';
+}
 function stylist(){
  const look=currentLook();
  return title('Studio / Outfit builder','Style an outfit','Choose where you’re going. Add a reference photo to match its colour with pieces on your rail.')+`<form id="look-prompt" class="panel prompt-panel"><label for="look-brief">Describe your look</label>
@@ -189,6 +219,8 @@ function accountHeader(active){
 }
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'welcome');
+ const mode=routeExperience(section);if(mode)setExperience(mode);
+ applyExperience();
  if(section==='wallet'||section.startsWith('wallet/')){section='account/'+section;history.replaceState(null,'',location.pathname+location.search+'#'+section)}
  if(['lookuwear.xyz','www.lookuwear.xyz'].includes(location.hostname)&&section==='admin'){location.replace('https://admin.lookuwear.xyz/');return}
  if(section==='admin')sessionStorage.setItem('looku.admin-navigation','1');
@@ -202,6 +234,7 @@ async function render(){
  if(feature&&!enabled(feature)){
    main.innerHTML='<h1>Feature paused</h1><p>This part of Looku is currently unavailable.</p><a href="#studio">Back to Studio</a>';return;
  }
+ if(section==='business'){main.innerHTML=business();return}
  if(section==='merchant'||section.startsWith('merchant/')){
    main.innerHTML='<section id="merchant-area"></section>';const panel=main.firstElementChild;
    const {mountMerchantManager}=await import('./merchant-stores.js');

@@ -252,3 +252,21 @@
 .looku-editorial figcaption i{font-family:var(--ui-font-display)}
 .looku-ui .wallet-body [data-public]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .looku-ui .brand-preview-cover h3{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* Shared Personal / Business control on the landing page and app. */
+.ui-experience-switch{display:inline-flex;gap:4px;padding:5px;background:#eee3f1;border:1px solid #d9c4e0;border-radius:99px;max-width:100%}
+.ui-experience-switch button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 20px;border:0;border-radius:99px;background:transparent;color:#5e4665;font:600 14px/1.25 'DM Sans',Arial,sans-serif;cursor:pointer;box-shadow:none}
+.ui-experience-switch button[aria-pressed=true]{background:#61216c;color:white;box-shadow:0 2px 5px #4b18532b}
+.ui-experience-switch button:hover{background:#e1cfe8;color:#48204f;filter:none}
+.ui-experience-switch button[aria-pressed=true]:hover{background:#75337e;color:white}
+.ui-experience-switch button:focus-visible{outline:3px solid #95267e;outline-offset:2px}
+.looku-ui header.app-header{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:'logo mode tools' 'nav nav nav';gap:16px 24px}
+.app-header>.logo{grid-area:logo}.app-header>[data-experience-switch]{grid-area:mode;justify-self:center}
+.app-header>.header-tools{grid-area:tools}.app-header>nav.nav{grid-area:nav;justify-content:center;flex-wrap:wrap;width:100%;gap:4px}
+.looku-ui .business-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+[hidden]{display:none!important}
+@media(max-width:760px){
+ .looku-ui header.app-header{grid-template-columns:1fr auto;grid-template-areas:'logo tools' 'mode mode' 'nav nav';gap:14px;padding-bottom:16px}
+ .app-header>nav.nav .nav-link{flex:1 0 27%;padding:10px 6px;font-size:13px}
+ .looku-ui .business-grid{grid-template-columns:1fr}
+}

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const appRoutes=['welcome','studio','wardrobe','stylist','bookings','community','community/sale','community/donate','wallet','wishlist','shops','support','account','account/wallet','account/device','merchant','boutique/looku/cropped-jacket'];
+const appRoutes=['business','welcome','studio','wardrobe','stylist','bookings','community','community/sale','community/donate','wallet','wishlist','shops','support','account','account/wallet','account/device','merchant','boutique/looku/cropped-jacket'];
 async function layout(page){
  await expect(page.locator('h1')).toHaveCount(1);
  await expect(page.locator('h1')).toBeVisible();

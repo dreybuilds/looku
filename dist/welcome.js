@@ -1,15 +1,17 @@
 import {pageHeader} from './ui.js';
+import {experience,homeRoute} from './experience.js';
 import {emailAccount, emailHeaders, bindAccountDialog} from './email-auth.js';
 import {accountCall, mountAccount, walletRecord} from './local-wallet.js';
 
 export async function mountWelcome(root) {
-  const enter = () => { if (root.isConnected) location.replace('#studio'); };
+  const business=experience()==='business';
+  const enter = () => { if (root.isConnected) location.replace(homeRoute()); };
   root.innerHTML = `<section class="entry-card"><div class="entry-photo" aria-hidden="true"></div>
-    <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a>${pageHeader({title:'Enter your studio.',description:'Sign in to save your account details and take part in the Community closet.'}).outerHTML}
+    <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a>${pageHeader({title:business?'Enter your business workspace.':'Enter your studio.',description:business?'Sign in to create your storefront and manage your brand and products.':'Sign in to save your account details and take part in the Community closet.'}).outerHTML}
     <div data-email></div><div data-wallet-entry><button type="button" class="secondary account-trigger" data-open-account aria-haspopup="dialog">Use a Stellar wallet</button><dialog aria-label="Use a Stellar wallet"><button type="button" class="close" aria-label="Close wallet sign-in">×</button><h2>Wallet sign-in</h2>
     <p>Approve a sign-in message in Varial. Signing in has no fee and moves no funds.</p>
     <button data-connect>Continue with Varial</button><p data-status role="status"></p>
-    <div data-device></div></dialog></div><a href="#studio">Explore the studio as a guest →</a></div></section>`;
+    <div data-device></div></dialog></div><a href="${homeRoute()}">${business?'Explore business tools':'Explore the studio'} as a guest →</a></div></section>`;
   const panel = root.querySelector('[data-email]');
   bindAccountDialog(root.querySelector('[data-wallet-entry]'));
   const renderEmail = () => emailAccount(panel, enter, 'Continue with email');

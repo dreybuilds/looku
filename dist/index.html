@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>looku / Your personal wardrobe studio</title>
-<meta name="description" content="Photograph the clothes you own, style them into outfits, and save your favourite looks in your personal wardrobe studio.">
+<meta name="description" content="Style your wardrobe, discover inspiration and independent stores, or create a branded storefront for your business on Looku.">
 <link rel="icon" href="/icon-192.png"><link rel="manifest" href="/app.webmanifest"><link rel="stylesheet" href="/landing.css"><link rel="stylesheet" href="/ui.css">
 <script>
 function openStudioLink(){
- const oldRoute=/^#(studio|wardrobe|stylist|merchant|bookings|community|wallet|shops|support|account|admin|boutique)(\/|$)/;
+ const oldRoute=/^#(studio|business|wardrobe|wishlist|stylist|merchant|bookings|community|wallet|shops|support|account|admin|boutique)(\/|$)/;
  if(oldRoute.test(location.hash)||location.hostname==='admin.lookuwear.xyz'||matchMedia('(display-mode: standalone)').matches||navigator.standalone)location.replace('/app'+location.search+location.hash);
 }
 openStudioLink();addEventListener('hashchange',openStudioLink);
@@ -15,16 +15,32 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 </script>
 </head>
 <body class="looku-editorial"><a class="skip" href="#content">Skip to content</a>
-<header><a href="/" aria-label="Looku home"><img class="logo" src="/looku-orchid.webp" alt="looku"></a><nav aria-label="Main"><a class="tour-link" href="#how">How it works</a><a class="pill" href="/app">Launch app <span aria-hidden="true">↗</span></a></nav></header>
+<header class="landing-header"><a href="/" aria-label="Looku home"><img class="logo" src="/looku-orchid.webp" alt="looku"></a><div data-experience-switch></div><nav aria-label="Main"><a class="tour-link" href="#how">How it works</a><a class="pill" data-launch href="/app">Launch app ↗</a></nav></header>
 <main id="content">
-<section class="cover"><div class="copy"><p class="label"><span class="star" aria-hidden="true">✳</span> Personal wardrobe studio</p>
+<section class="cover"><div class="copy"><p class="label"><span class="star" aria-hidden="true">✳</span> <span data-hero-label>Personal wardrobe studio</span></p>
 <h1>What can you wear with what you <em>already own?</em></h1>
-<p class="intro">Photograph your pieces, put a look together, and save it for the next time you need it.</p>
-<div class="actions"><a class="pill" href="/app">Launch app <span aria-hidden="true">↗</span></a><a href="#how">See how it works ↓</a></div></div>
-<figure class="cover-photo"><img src="/orchid-portrait.webp" alt="Model wearing plum sunglasses and a lilac jacket with pink piping" fetchpriority="high"><figcaption>Lookbook № 01 <i>The Orchid Edit</i></figcaption></figure></section>
-<section id="how"><p class="label">From the sample wardrobe &nbsp; / &nbsp; 001</p><h2>The everyday edit.</h2><p class="intro">Start with a piece you reach for. Here’s how a cotton shirt becomes a look you can wear again.</p>
-<div class="pieces"><figure><img loading="lazy" src="/sample1.webp" alt="Cotton camp shirt"><figcaption>01 &nbsp; Cotton camp shirt</figcaption></figure><figure><img loading="lazy" src="/sample2.webp" alt="Straight-leg denim"><figcaption>02 &nbsp; Straight-leg denim</figcaption></figure><figure><img loading="lazy" src="/sample3.webp" alt="Leather trainers"><figcaption>03 &nbsp; Leather trainers</figcaption></figure></div>
-<div class="steps"><p><b>Photograph a piece</b>Add your shirt to Wardrobe and tag it as a top.</p><p><b>Style the outfit</b>Choose Everyday in Stylist and pair the shirt with denim and trainers.</p><p><b>Save the look</b>Keep all three pieces together in Wardrobe for another morning.</p></div></section>
-<aside><div><p class="label">Community closet</p><h2>See what others are wearing.</h2></div><a href="/app#community">Browse the closet ↗</a></aside></main>
+<p class="intro" data-hero-intro>Build outfits from your wardrobe, find inspiration, save your next favourite piece, and connect with the Looku community.</p>
+<div class="actions"><a class="pill" data-launch href="/app">Launch app ↗</a><a href="#how">See how it works ↓</a></div><p class="experience-note" data-mode-note>Your wardrobe, inspiration and shopping in one place.</p></div>
+<figure class="cover-photo"><img src="/orchid-portrait.webp" alt="Model wearing plum sunglasses and a lilac jacket with pink piping" fetchpriority="high"><figcaption>Looku / In focus <i>The Orchid Edit</i></figcaption></figure></section>
+<section id="how" aria-labelledby="how-title"><p class="label">How it works</p><h2 id="how-title" data-how-title>Your wardrobe. More possibilities.</h2><p class="intro" data-how-intro>From the clothes you already own to the pieces and people you discover next.</p>
+<div data-mode-panel="personal">
+<div class="pieces"><figure><img loading="lazy" src="/sample1.webp" alt="Cotton camp shirt"><figcaption>Your pieces</figcaption></figure><figure><img loading="lazy" src="/sample2.webp" alt="Straight-leg denim"><figcaption>Your combinations</figcaption></figure><figure><img loading="lazy" src="/sample3.webp" alt="Leather trainers"><figcaption>Your next look</figcaption></figure></div>
+<ol class="how-grid">
+<li><span class="step-number">01 / Collect</span><h3>Build your wardrobe</h3><p>Photograph your clothes and tag their category and occasion. Your wardrobe stays on this device, ready to style again.</p><a href="/app?mode=personal#wardrobe">Add your pieces ↗</a></li>
+<li><span class="step-number">02 / Style</span><h3>Find a fresh combination</h3><p>Describe your look, choose a palette, or save Pinterest inspiration. Build outfits from your own clothes and sign in for online styling advice.</p><a href="/app?mode=personal#stylist">Style an outfit ↗</a></li>
+<li><span class="step-number">03 / Discover</span><h3>Plan your next purchase</h3><p>Browse independent stores and save product links with sizes, colour notes and target prices. Keep your wishlist and wallet tools together.</p><a href="/app?mode=personal#wishlist">Open your wishlist ↗</a></li>
+<li><span class="step-number">04 / Connect</span><h3>Share, sell or donate</h3><p>Save your outfits and publish a look to the community. List a piece for sale or donation; listings are reviewed before they appear publicly.</p><a href="/app?mode=personal#community">Explore the closet ↗</a></li>
+<li><span class="step-number">05 / Book</span><h3>Bring in a professional</h3><p>Request a fashion, makeup or hair appointment. Add your preferred time and brief, then check your booking for confirmation.</p><a href="/app?mode=personal#bookings">Book a stylist ↗</a></li>
+<li><span class="step-number">06 / Keep</span><h3>Make it your everyday companion</h3><p>Sign in to manage your profile and wallet, install Looku, and use an optional encrypted backup to protect the wardrobe on your device.</p><a href="/app?mode=personal#account">Open your account ↗</a></li>
+</ol></div>
+<div data-mode-panel="business" hidden>
+<ol class="how-grid business-steps">
+<li><span class="step-number">01 / Create</span><h3>Set up your store</h3><p>Sign in, choose your store name and address, and add a description and contact email. Submit your store for Looku’s review.</p><a href="/app?mode=business#merchant">Create a store ↗</a></li>
+<li><span class="step-number">02 / Make it yours</span><h3>Build your brand identity</h3><p>Add a logo, banner, background and colours. Adjust separate desktop and mobile banner crops and preview the result before saving.</p><a href="/app?mode=business#merchant">Manage your branding ↗</a></li>
+<li><span class="step-number">03 / Publish</span><h3>Put your collection on display</h3><p>Once approved, publish products with photos, descriptions and KES prices. Edit your catalogue, hide a piece or mark it sold out.</p><a href="/app?mode=business#merchant">Manage your products ↗</a></li>
+<li><span class="step-number">04 / Grow</span><h3>Share your storefront</h3><p>Share your public store link and appear in Looku’s store directory. Customers contact you to confirm availability, delivery and payment.</p><a href="/app?mode=business#shops">Explore Looku stores ↗</a></li>
+</ol><div class="business-explainer"><strong>Your store, your customer relationship.</strong><p>Store approval comes before publishing products. Your storefront provides your contact details so shoppers can arrange a purchase directly with you.</p></div></div>
+</section>
+<aside><div><p class="label" data-aside-label>Community closet</p><h2 data-aside-title>See what others are wearing.</h2></div><a data-aside-link href="/app?mode=personal#community">Browse the closet ↗</a></aside></main>
 <footer><img class="logo" src="/looku-orchid.webp" alt="looku"><a href="/privacy-policy">Privacy policy</a></footer>
-</body></html>
+<script type="module" src="/landing.js"></script></body></html>

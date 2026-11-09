@@ -74,3 +74,26 @@ export function disclosure({title,description,label,open=false}){
   if(description)card.append(element('p','ui-description',description));
   return card;
 }
+
+export function experienceSwitch({value='personal',onChange=()=>{}}={}){
+  const group=element('div','ui-experience-switch');
+  group.setAttribute('role','group');group.setAttribute('aria-label','Looku experience');
+  for(const mode of ['personal','business']){
+    const button=element('button','',mode==='personal'?'Personal':'Business');
+    button.type='button';button.dataset.experience=mode;
+    button.setAttribute('aria-pressed',String(mode===value));
+    button.onclick=()=>{
+      if(button.getAttribute('aria-pressed')==='true')return;
+      for(const option of group.children)option.setAttribute('aria-pressed',String(option===button));
+      onChange(mode);
+    };
+    button.onkeydown=event=>{
+      if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+      event.preventDefault();
+      const next=group.children[['ArrowLeft','Home'].includes(event.key)?0:1];
+      next.focus();next.click();
+    };
+    group.append(button);
+  }
+  return group;
+}

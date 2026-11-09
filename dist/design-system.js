@@ -1,7 +1,8 @@
-import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard,metricCard,sectionNav,disclosure} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard,metricCard,sectionNav,disclosure,experienceSwitch} from './ui.js';
 const main=document.querySelector('main');
 main.append(pageHeader({eyebrow:'Looku / Interface library',title:'A little more room to browse',description:'The same components, spacing and hierarchy used by the app. These examples update with the shared source.',actions:[{label:'Open your wishlist',href:'/app#wishlist'},{label:'Create a store',href:'/app#merchant'}]}));
 const gallery=document.createElement('div');gallery.className='ui-gallery';main.append(gallery);
+const modes=document.createElement('section');modes.append(sectionHeader({title:'Personal and Business',description:'A shared view switch with a visible selected state and keyboard controls. This changes navigation, not account permissions.'}),experienceSwitch());gallery.append(modes);
 const section=document.createElement('section');
 section.append(sectionHeader({title:'Collection cards',description:'One title, a short description and one clear next step.'}));
 const grid=document.createElement('div');grid.className='ui-grid';
