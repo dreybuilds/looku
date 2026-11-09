@@ -274,11 +274,12 @@ test('community publishes selective snapshots for visitors and enforces ownershi
  const admin=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
  const adminHeaders={Origin:baseURL,'X-Looku-Action':'admin'};
  try{
-   expect((await admin.request.get('/api/admin/accounts')).status()).toBe(403);
-   const owner=await signIn(admin.request,Keypair.fromRawEd25519Seed(Buffer.alloc(32,7)));
-   if((await (await admin.request.get('/api/admin/access')).json()).state==='enroll')await admin.request.post('/api/admin/enroll',{headers:adminHeaders,data:{address:owner}});
+   expect((await (await admin.request.get('/api/admin/access')).json()).state).toBe('admin');
+   expect((await (await admin.request.get('/api/account')).json()).address).toBeNull();
    expect((await admin.request.get('/api/admin/accounts')).status()).toBe(200);
-   expect((await page.request.get('/api/admin/accounts',{headers:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}})).status()).toBe(403);
+   expect((await page.request.get('/api/admin/accounts',{headers:{'oai-authenticated-user-email':'visitor@example.com'}})).status()).toBe(403);
+   expect((await guest.request.get('/api/admin/accounts')).status()).toBe(403);
+   expect((await admin.request.post('/api/admin/affiliates',{data:{name:'Blocked',url:'https://example.org'}})).status()).toBe(403);
    const ownerPage=await admin.newPage();await ownerPage.goto('/#admin');
    await expect(ownerPage.getByRole('button',{name:'Affiliates',exact:true})).toBeVisible();
    await ownerPage.getByRole('button',{name:'Affiliates',exact:true}).click();
