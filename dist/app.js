@@ -1,4 +1,5 @@
 import {emailHeaders} from './email-auth.js';
+import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
 import {mountChoicePickers} from './choice-picker.js';
 import {openInspiration} from './inspiration.js';
 import {enabled,refreshFeatures} from './features.js';
@@ -66,7 +67,7 @@ currencyPicker.onchange=()=>{localStorage.setItem('looku.currency',currencyPicke
 let checkoutDraft=null;
 const samplePhoto = piece => /^sample[1-4]$/.test(piece.id) ? '/'+piece.id+'.webp' : '';
 const card=(p,i=0)=>`<article class="card"><div class="visual" style="--bg:${esc(p.bg||'#e7e7dc')}"><span class="num">${String(i+1).padStart(2,'0')} / ${esc(categories[p.type])}</span>${(p.photo || samplePhoto(p))?`<img class="${p.photo?'upload-photo':'sample-photo'}" alt="${esc(p.name)}" src="${esc(p.photo || samplePhoto(p))}">`:garment(p.type,p.color,i)}</div><div class="meta"><h3>${esc(p.name)}</h3><small>${esc(p.occasion)}</small></div></article>`;
-const title=(label,heading,desc)=>`<div class="eyebrow">${label}</div><h1 class="page-title">${heading}</h1><p class="intro">${desc}</p>`;
+const title=(label,heading,desc)=>pageHeader({eyebrow:label,title:heading,description:desc}).outerHTML;
 document.querySelector('#install-looku').onclick = async () => {
  const message = await requestInstall();
  if (message) modal('<h2>Install looku</h2><p>'+esc(message)+'</p>');
@@ -245,14 +246,23 @@ async function render(){
    main.innerHTML=title('looku referral / Demo boutique','Cropped jacket','An optional layer to finish your look.')+`<section class="panel stack"><h2>${money()}</h2><p>Delivery included. The boutique pays looku ${money(.1)} for the referral. Practice order only.</p><button data-buy>Review purchase →</button></section>`;
  }
  else if(section==='shops'){
-   main.innerHTML=title('Looku Wear / Shopping','Find your next piece','Explore stores, choose something you love, and save its product link to your wishlist.')+
-     (enabled('storefronts')?'<section class="panel"><h2>Sell on Looku</h2><p>Open a storefront for your collection and manage your own products.</p><a class="button" href="#merchant">Create or manage your store</a></section><section id="looku-merchants"></section>':'')+
-     '<section class="panel"><h2>Keep your favourites together</h2><p>Save a product’s link, size or colour and target price so you can return to it later.</p><a class="button secondary" href="#wishlist">Open your wishlist</a></section>'+
-     (enabled('shops')?'<section id="retailer-stores"><h2>Shop retailer websites</h2><div class="toolbar"><label>Find a store<input type="search" id="store-search" placeholder="Store, clothing, shoes or jewellery"></label></div>'+
-     '<p class="fine">Store links open the retailer’s website. Check delivery, prices and returns there. Looku may earn a commission on links marked Partner link.</p>'+
-     '<p role="status" id="store-status">Loading stores…</p><div id="store-list" class="store-list"></div></section>':'');
+   main.replaceChildren(pageHeader({eyebrow:'Discover / Stores',title:'Find your next piece',description:'Independent collections and brands worth exploring.',actions:[
+     {label:'Open your wishlist',href:'#wishlist'},
+     ...(enabled('storefronts')?[{label:'Create or manage your store',href:'#merchant'}]:[])
+   ]}));
+   if(enabled('storefronts')){const area=document.createElement('section');area.id='looku-merchants';area.className='ui-section';main.append(area)}
+   if(enabled('shops')){
+     const retailers=document.createElement('section');retailers.id='retailer-stores';retailers.className='ui-section';
+     const search=document.createElement('label');search.className='ui-search';search.textContent='Find a store';
+     const input=document.createElement('input');input.type='search';input.id='store-search';input.placeholder='Name, clothing, shoes or jewellery';search.append(input);
+     retailers.append(sectionHeader({title:'Shop retailer websites',description:'Browse by store, then shop on their website.',control:search}));
+     const status=document.createElement('p');status.id='store-status';status.className='ui-meta';status.setAttribute('role','status');status.textContent='Loading stores…';
+     const list=document.createElement('div');list.id='store-list';list.className='ui-grid';
+     const disclosure=document.createElement('p');disclosure.className='ui-meta';disclosure.textContent='Check delivery and returns with each retailer. Looku may earn a commission on Partner links.';
+     retailers.append(status,list,disclosure);main.append(retailers);
+   }
    const merchants=main.querySelector('#looku-merchants');
-   if(enabled('storefronts'))import('./merchant-stores.js').then(({merchantDirectory})=>{if(merchants.isConnected)merchantDirectory(merchants)}).catch(()=>{merchants.textContent='Merchant stores could not load. Refresh to try again.'});
+   if(merchants)import('./merchant-stores.js').then(({merchantDirectory})=>{if(merchants.isConnected)merchantDirectory(merchants)}).catch(()=>{merchants.textContent='Merchant stores could not load. Refresh to try again.'});
    if(!enabled('shops'))return;
    try{
      const [catalog,partners]=await Promise.all([
@@ -282,9 +292,12 @@ function drawStores(query){
  const list=stores.filter(store=>[store.name,store.region,store.category||'',store.note].some(value=>value.toLowerCase().includes(search)));
  const count=document.querySelector('#store-status');
  if(count)count.textContent=list.length+' '+(list.length===1?'store':'stores');
- document.querySelector('#store-list').innerHTML=list.map(store=>
-   `<article class="store"><span class="eyebrow">${esc(store.category||store.region)}</span><h3>${esc(store.name)}</h3><p class="fine">${esc(store.note)}</p><a href="${esc(store.url)}" target="_blank" rel="noopener noreferrer${store.referral?' sponsored':''}">Shop ${esc(store.name)} ↗</a>${store.referral?'<small>Partner link</small>':''}</article>`
- ).join('')||'<p>No stores match your search. Try another name or category.</p>';
+ const cards=list.map(store=>{
+   const card=contentCard({title:store.name,label:[store.category||store.region,store.referral?'Partner link':''].filter(Boolean).join(' · '),description:store.note,
+     action:{label:'Shop '+store.name,href:store.url,external:true,sponsored:store.referral}});
+   card.classList.add('store');return card;
+ });
+ document.querySelector('#store-list').replaceChildren(...(cards.length?cards:[emptyState('No stores match your search. Try another name or category.')]));
 }
 const paymentAPI=()=>import('/api/payments/client.js');
 const txLink=(hash,label)=>/^[a-f0-9]{64}$/i.test(hash||'')?`<a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/${hash}">${label} ↗</a>`:'';

@@ -1,3 +1,4 @@
+import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 import {enabled} from './features.js';
 
@@ -20,21 +21,20 @@ function action(text,fn){
 function statusNode(){const note=node('p');note.setAttribute('role','status');return note}
 
 export async function merchantDirectory(root){
-  const list=node('div'),note=statusNode(),more=node('button','More Looku stores');
-  list.className='grid';more.hidden=true;
-  root.append(node('h2','Independent stores on Looku'),node('p','Discover pieces listed by merchants with their own Looku storefront.'),list,more,note);
+  const list=node('div'),note=emptyState('Loading independent stores…'),more=node('button','More Looku stores');
+  list.className='ui-grid';more.hidden=true;
+  root.append(sectionHeader({title:'Independent stores on Looku',description:'Collections from our merchant community.'}),list,more,note);
   let cursor;
   async function load(){
     more.disabled=true;
     try{
       const page=await api(cursor?'?cursor='+encodeURIComponent(cursor):'');
       for(const store of page.items){
-        const card=node('article');card.className='panel';
-        card.append(node('span','Looku store'),node('h3',store.name),node('p',store.description),link('Visit '+store.name,storefrontPath(store.slug)));
+        const card=contentCard({title:store.name,label:'Independent store',description:store.description,action:{label:'Visit '+store.name,href:storefrontPath(store.slug)}});
         list.append(card);
       }
       cursor=page.next;more.hidden=!cursor;
-      note.textContent=list.children.length?'':cursor?'More stores are available on the next page.':'New stores will appear here after approval.';
+      note.textContent=list.children.length?'':cursor?'More stores are available on the next page.':'New collections are on their way. Check back soon.';
     }catch(error){note.textContent=error.message}finally{more.disabled=false}
   }
   more.onclick=load;await load();
@@ -86,7 +86,7 @@ export async function mountStorefront(root,slug){
 }
 
 export async function mountMerchantManager(root,slug){
-  root.replaceChildren(node('h1','Your stores'),node('p','Create your own storefront, then publish products once Looku approves your store.'));
+  root.replaceChildren(pageHeader({title:'Your stores',description:'Create your storefront. Publish products once your store is approved.'}));
   const body=node('section');root.append(body);
   let stores;
   try{stores=await api('/mine')}catch(error){

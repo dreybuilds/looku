@@ -1,0 +1,51 @@
+/* Canonical app design tokens and primitives. Merchant sites keep their own brand. */
+.looku-ui{
+ --ui-space-1:4px;--ui-space-2:8px;--ui-space-3:12px;--ui-space-4:16px;
+ --ui-space-5:24px;--ui-space-6:32px;--ui-space-7:48px;
+ --ui-page-size:clamp(30px,3.2vw,42px);--ui-section-size:clamp(22px,2vw,28px);
+ --ui-card-size:18px;--ui-body-size:15px;--ui-caption-size:13px;
+ --ui-surface:#fffcff;--ui-border:#e4d8e8;--ui-muted:#6b5a70;--ui-accent:#61216c;
+ --ui-radius:16px;--ui-card-pad:24px;
+ font-size:var(--ui-body-size);line-height:1.55;
+}
+.looku-ui main{max-width:1240px;padding:var(--ui-space-6) clamp(20px,4vw,48px) var(--ui-space-7)}
+.looku-ui main h1{font-size:var(--ui-page-size);line-height:1.15;letter-spacing:-.035em}
+.looku-ui main h2{font-size:var(--ui-section-size);line-height:1.25;letter-spacing:-.025em}
+.looku-ui main h3{font-size:var(--ui-card-size);line-height:1.35;letter-spacing:-.01em}
+.looku-ui main :is(h1,h2,h3)+:is(p,form,button,a){margin-top:var(--ui-space-3)}
+.looku-ui :is(.panel,.toolbar){padding:var(--ui-card-pad);border-radius:var(--ui-radius);box-shadow:none}
+.looku-ui .stack{gap:var(--ui-space-4)}
+.looku-ui main p{line-height:1.6}
+.looku-ui .ui-page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ui-space-5);margin-bottom:var(--ui-space-7)}
+.looku-ui .ui-heading-copy{display:grid;gap:var(--ui-space-3);min-width:0;max-width:64ch}
+.looku-ui .ui-heading-copy>*{margin:0}
+.looku-ui .ui-eyebrow{font:600 11px/1.4 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ui-muted)}
+.looku-ui .ui-description{color:var(--ui-muted);font-size:var(--ui-body-size);max-width:60ch}
+.looku-ui .ui-actions{display:flex;gap:var(--ui-space-3);align-items:center;flex-wrap:wrap;flex-shrink:0}
+.looku-ui .ui-action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-surface);color:var(--ui-accent);font:600 14px/1.4 Arial,sans-serif;text-decoration:none;text-align:center;overflow-wrap:anywhere}
+.looku-ui .ui-action-primary{background:var(--ui-accent);border-color:var(--ui-accent);color:white}
+.looku-ui .ui-section{margin-block:var(--ui-space-7)}
+.looku-ui .ui-section-header{display:flex;justify-content:space-between;align-items:center;gap:var(--ui-space-5);margin-bottom:var(--ui-space-5)}
+.looku-ui .ui-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:var(--ui-space-5)}
+.looku-ui .ui-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--ui-space-3);padding:var(--ui-card-pad);background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);box-shadow:none;margin:0;min-width:0;overflow-wrap:anywhere}
+.looku-ui .ui-card>*{margin:0}
+.looku-ui .ui-card-label{font-size:var(--ui-caption-size);color:var(--ui-muted)}
+.looku-ui .ui-card-description{font-size:14px;color:var(--ui-muted)}
+.looku-ui .ui-card .ui-action{margin-top:auto;align-self:flex-start;background:transparent;border:0;padding:8px 0;min-height:44px;justify-content:flex-start}
+.looku-ui .ui-arrow{margin-left:8px}
+.looku-ui .ui-empty{margin:0;padding:var(--ui-space-4) var(--ui-space-5);border:1px dashed var(--ui-border);border-radius:var(--ui-radius);color:var(--ui-muted);font-size:14px}
+.looku-ui .ui-empty:empty,.looku-ui .ui-grid:empty{display:none}
+.looku-ui .ui-search{display:grid;gap:var(--ui-space-2);width:min(100%,300px);font-size:var(--ui-caption-size);flex-shrink:0}
+.looku-ui .ui-search input{width:100%;min-height:44px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-surface);padding:10px 12px;font-size:14px}
+.looku-ui .ui-meta{font-size:var(--ui-caption-size);color:var(--ui-muted);margin:var(--ui-space-4) 0}
+.looku-ui .ui-section>.ui-empty{margin-top:var(--ui-space-4)}
+.looku-ui .ui-section>button{margin-top:var(--ui-space-4)}
+.looku-ui .ui-gallery{display:grid;gap:var(--ui-space-7)}
+@media(max-width:760px){
+ .looku-ui{--ui-card-pad:20px;--ui-space-7:32px}
+ .looku-ui main{padding-top:var(--ui-space-5)}
+ .looku-ui .ui-page-header,.looku-ui .ui-section-header{flex-direction:column;align-items:stretch;gap:var(--ui-space-4)}
+ .looku-ui .ui-actions{flex-shrink:1}
+ .looku-ui .ui-search{width:100%}
+ .looku-ui .ui-grid{gap:var(--ui-space-4)}
+}

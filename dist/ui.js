@@ -1,0 +1,42 @@
+// Shared application layout. Keep content as text and compose layouts with these functions.
+const element=(tag,className,text)=>{
+  const node=document.createElement(tag);node.className=className;
+  if(text!=null)node.textContent=text;
+  return node;
+};
+export function actionLink({label,href,primary=false,external=false,sponsored=false}){
+  const url=new URL(href,location.href);
+  if(!['http:','https:'].includes(url.protocol))throw TypeError('Unsupported link destination');
+  const link=element('a','ui-action'+(primary?' ui-action-primary':''),label);link.href=href;
+  if(external){link.target='_blank';link.rel='noopener noreferrer'+(sponsored?' sponsored':'')}
+  return link;
+}
+export function pageHeader({eyebrow,title,description,actions=[]}){
+  const header=element('div','ui-page-header'),copy=element('div','ui-heading-copy');
+  if(eyebrow)copy.append(element('p','ui-eyebrow',eyebrow));
+  copy.append(element('h1','ui-page-title',title));
+  if(description)copy.append(element('p','ui-description',description));
+  header.append(copy);
+  if(actions.length){const group=element('div','ui-actions');group.append(...actions.map(actionLink));header.append(group)}
+  return header;
+}
+export function sectionHeader({title,description,control}){
+  const header=element('div','ui-section-header'),copy=element('div','ui-heading-copy');
+  copy.append(element('h2','ui-section-title',title));
+  if(description)copy.append(element('p','ui-description',description));
+  header.append(copy);if(control)header.append(control);return header;
+}
+export function contentCard({title,description,label,action}){
+  const card=element('article','ui-card');
+  if(label)card.append(element('span','ui-card-label',label));
+  card.append(element('h3','ui-card-title',title));
+  if(description)card.append(element('p','ui-card-description',description));
+  if(action){
+    const link=actionLink(action),arrow=element('span','ui-arrow','→');arrow.setAttribute('aria-hidden','true');
+    link.append(arrow);card.append(link);
+  }
+  return card;
+}
+export function emptyState(message){
+  const note=element('p','ui-empty',message);note.setAttribute('role','status');return note;
+}

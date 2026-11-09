@@ -25,7 +25,7 @@ await writeFile(path.join(fn, '.vc-config.json'), JSON.stringify({
 }));
 const adminHost=[{type:'host',value:'admin.lookuwear.xyz'}];
 // Match the host before Vercel serves any shopper files or API routes.
-const adminAssets='bookings\\.js|admin\\.js|support\\.js|email-auth\\.js|local-wallet\\.js|privy\\.js|style\\.css|api/payments/client\\.js';
+const adminAssets='ui\\.css|bookings\\.js|admin\\.js|support\\.js|email-auth\\.js|local-wallet\\.js|privy\\.js|style\\.css|api/payments/client\\.js';
 const adminApi='api/admin/[^?]*|api/account(?:/(?:verify|challenge|logout))?|api/community/session';
 const ownerRoutes=[
   {src:'^/(?:index\\.html|owner\\.html)?$',has:adminHost,dest:'/owner.html'},
@@ -34,7 +34,7 @@ const ownerRoutes=[
 ];
 // Merchant hosts serve a storefront and public store data. Management stays on the main site.
 const merchantHost=[{type:'host',value:'(?!admin\\.|www\\.)[a-z0-9-]+\\.lookuwear\\.xyz'}];
-const merchantAssets='storefront\\.js|merchant-stores\\.js|features\\.js|email-auth\\.js|style\\.css';
+const merchantAssets='ui\\.js|storefront\\.js|merchant-stores\\.js|features\\.js|email-auth\\.js|style\\.css';
 const merchantRoutes=[
   {src:'^/$',has:merchantHost,dest:'/storefront.html'},
   {src:'^/api/merchant-stores/[^?]*$',has:merchantHost,dest:'/studio'},
