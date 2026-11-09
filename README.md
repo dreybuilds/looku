@@ -55,7 +55,7 @@ git var GIT_AUTHOR_IDENT
 
 The owner workspace opens at [admin.lookuwear.xyz](https://admin.lookuwear.xyz).
 
-The `looku` Vercel project builds the static studio and Node API with `npm run build`. Production uses a private Vercel Blob store for orders, wallet sessions and encrypted backups. Set `LOOKU_MERCHANT_TEST_SECRET`, `LOOKU_FACILITATOR_TEST_SECRET`, `LOOKU_PLATFORM_ADDRESS` and `OPENROUTER_API_KEY` in the project. Online styling sends the signed-in shopper’s written brief through OpenRouter to `openai/gpt-4.1-mini`. On Vercel, backups are scoped to the signed-in wallet.
+The `looku` Vercel project builds the static studio and Node API with `npm run build`. Production uses a private Vercel Blob store for orders, wallet sessions and encrypted backups. Set `LOOKU_MERCHANT_TEST_SECRET`, `LOOKU_FACILITATOR_TEST_SECRET`, `LOOKU_PLATFORM_ADDRESS` and `OPENROUTER_API_KEY` in the project. Online styling sends the signed-in shopper’s written brief through OpenRouter to `openai/gpt-4.1-mini`. On Vercel, backups are scoped to the verified email account or signed-in wallet.
 
 ## Sites deployment
 The private Sites Worker serves the studio and Varial bundle from one origin. Build the browser signer in payments, then run `node hosting/build.mjs`. The Worker uses the same testnet chain code as the local service. Configure LOOKU_MERCHANT_TEST_SECRET, LOOKU_FACILITATOR_TEST_SECRET and LOOKU_PLATFORM_ADDRESS as runtime secrets. The test shopper key is used only for the local live check.
@@ -89,3 +89,5 @@ Wallet shows confirmed mainnet USDC or separately labelled testnet XLM, the rece
 Wishlist item budgets are saved per account and network against the shared confirmed balance; they do not create wallets or lock on-chain funds. Deleting a signed-in item releases its budgets. Existing MiniSend M-Pesa and Base x402 funding remain additional funding options; Base USDC is not automatically bridged into Stellar. Ordinary Stellar deposits update the wallet balance; the user assigns unlabelled deposits to item budgets.
 
 Validation: `npm run build` and `cd qa && npm test -- stellar-wallet.spec.js launch.spec.js wishlist.spec.js`. Unit tests use provider fixtures and real Stellar transaction signatures; they do not transfer real funds.
+
+Online styling and wardrobe backup requests send the member’s Privy access token and accept email authentication directly. General sign-in prompts point to Account and email sign-in; explicit demo wallet recovery and legacy purchase receipts still use their original wallet. `qa/email-features.spec.js` checks email-only styling and backup isolation.

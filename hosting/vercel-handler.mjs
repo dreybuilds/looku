@@ -57,13 +57,18 @@ export default async function handler(req, res) {
     }
   }
   if (url.pathname === '/api/wardrobe-backup' || url.pathname === '/api/pinterest/search') {
-    const user = await session(new Request(url, {headers}), orders);
+    let user;
+    try{
+      const request=new Request(url,{headers});
+      const address=await privySubject(request)||(await session(request,orders))?.address;
+      if(address)user={address};
+    }catch{response=Response.json({error:'Sign in with email in Account to continue.'},{status:401})}
     if (user) headers.set('oai-authenticated-user-id', user.address);
-    if (url.pathname === '/api/wardrobe-backup' && req.method === 'POST') {
+    if (!response && url.pathname === '/api/wardrobe-backup' && req.method === 'POST') {
       if (!user || headers.get('origin') !== url.origin || headers.get('x-looku-action') !== 'wardrobe-backup') {
         response = new Response(null, {status: user ? 403 : 401});
       } else if(await paused(orders,'backup')){response=pausedReply()} else {
-        const pathname = 'wardrobe-backups/' + user.address;
+        const pathname = 'wardrobe-backups/' + encodeURIComponent(user.address);
         const constraints = {maximumSizeInBytes: 12 * 1024 * 1024, allowedContentTypes: ['application/octet-stream']};
         const token = await issueSignedToken({pathname, operations: ['put'], validUntil: Date.now() + 60000, ...constraints});
         response = Response.json(await presignUrl(token, {operation: 'put', pathname, access: 'private', allowOverwrite: true, addRandomSuffix: false, ...constraints}));

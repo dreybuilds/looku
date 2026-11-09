@@ -18,15 +18,15 @@ export async function walletRecord(newWallet) {
   } finally { db.close(); }
 }
 
-export async function accountCall(path, data) {
- const response=await fetch(path,data?{method:'POST',headers:{'Content-Type':'application/json','X-Looku-Action':'wallet-account'},body:JSON.stringify(data)}:{cache:'no-store'});
+export async function accountCall(path, data, authHeaders={}) {
+ const response=await fetch(path,data?{method:'POST',headers:{...authHeaders,'Content-Type':'application/json','X-Looku-Action':'wallet-account'},body:JSON.stringify(data)}:{cache:'no-store',headers:authHeaders});
  let info;
  try {info=await response.json()} catch {throw Error('Check your connection and try signing in again.')}
  if(!response.ok)throw Error(info.error||'Account service unavailable.');
  return info;
 }
 export async function mountAccount(panel,wallet,onSignIn, owner=false) {
- panel.innerHTML='<h3>looku account</h3><p>Sign in with your demo wallet to get styling advice or manage your Community posts. Your first sign-in creates an account and lasts up to 12 hours. Community also offers email sign-in.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
+ panel.innerHTML='<h3>looku account</h3><p>Sign in with email in Account for a Stellar wallet and online features. Use this existing demo wallet to access its previous purchases and posts.</p><form><label>Sign-in passphrase<input type="password" required autocomplete="current-password" name="pass"></label><button>Sign in with this wallet</button></form><p role="status"></p>';
  const form=panel.querySelector('form'),note=panel.querySelector('[role=status]');
  if(owner)panel.querySelector('p').textContent='Unlock your linked wallet to verify owner access.';
  function signedIn(){

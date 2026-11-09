@@ -71,7 +71,7 @@ async function change(store,key,fn){
 }
 export async function stellarWallet(request,env,owner,services={}){
   try{
-    if(!owner)return reply(401,{error:'Sign in to use your account’s Stellar wallet.'});
+    if(!owner)return reply(401,{error:'Sign in with email to use your account’s Stellar wallet.'});
     const url=new URL(request.url),action=url.pathname.slice('/api/stellar-wallet'.length)||'/';
     if(!['GET','POST'].includes(request.method))throw fail(405,'Unsupported method.');
     if(request.method==='POST'&&(request.headers.get('origin')!==url.origin||request.headers.get('x-looku-action')!=='stellar-wallet'))throw fail(403,'Open your wallet in Lookuwear.');

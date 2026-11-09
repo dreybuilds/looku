@@ -4,7 +4,7 @@ const questions=[
  ['Wardrobe','How do I find my wardrobe on another device?','Your wardrobe lives in this browser. In Account, open “Install looku & manage storage” to save an encrypted backup. Sign in with the same account on the other device and restore it with your backup passphrase.'],
  ['Listings','Why is my sale or donation still pending?','Public listings go through review. Private sales and donations can be shared immediately with anyone who has the link. Open your post in Community to check its status. After approval, signed-in users can see the contact email to arrange a handoff.'],
  ['Payments','Where can I find a payment receipt?','Open Wallet and look under Purchase receipts. Sign in with the wallet you used for the purchase to see its linked purchases. Demo boutique purchases use Stellar testnet.'],
- ['Wallet','How do I restore my device wallet?','In Wallet, open “See or create wallet”. Use your encrypted recovery file and wallet passphrase. Keep both private.'],
+ ['Wallet','How do I restore my device wallet?','In Wallet, open “Device wallet · demo”. Use your encrypted recovery file and wallet passphrase. Keep both private.'],
  ['Requests','Where will I see a support reply?','Return to Support with the same email account or wallet you used to submit the request. Open it under My requests to read replies or add a follow-up.']
 ];
 function node(tag,text){const el=document.createElement(tag);if(text)el.textContent=text;return el}
@@ -83,8 +83,8 @@ export async function mountSupport(root){
    catch(e){
      area.replaceChildren(kicker,node('h2','Contact support'));
      if(e.status===401){
-       area.append(node('p','Sign in with email or your wallet to send a private request and read replies.'));
-       const auth=node('div');area.append(auth);emailAccount(auth,start);const wallet=node('a','Sign in with Wallet');wallet.href='#wallet/support';area.append(wallet);
+       area.append(node('p','Sign in with email to send a private request and read replies.'));
+       const auth=node('div');area.append(auth);emailAccount(auth,start);const wallet=node('a','Use an existing wallet instead');wallet.href='#wallet/support';area.append(wallet);
      }else area.append(node('p',e.message),button('Try again',start));
      return;
    }

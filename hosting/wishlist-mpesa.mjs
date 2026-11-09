@@ -6,7 +6,7 @@ export async function wishlistMpesa(req,env,owner){
   const url=new URL(req.url);
   if(url.pathname==='/api/wishlist-mpesa'&&req.method==='GET')return reply(200,{enabled:Boolean(env.MINISEND_API_KEY)&&!await paused(env.ORDERS,'mpesa')});
   if(!env.MINISEND_API_KEY)return reply(503,{error:'Tracked M-Pesa funding is unavailable.'});
-  if(!owner)return reply(401,{error:'Sign in through Account to fund an item with M-Pesa.'});
+  if(!owner)return reply(401,{error:'Sign in with email in Account to fund an item with M-Pesa.'});
   const id=url.pathname.slice('/api/wishlist-mpesa/'.length);
   if(!uuid.test(id))return reply(404,{error:'Unknown funding attempt.'});
   const key='mpesa-wishlist/'+id;

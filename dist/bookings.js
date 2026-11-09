@@ -49,7 +49,7 @@ export async function mountBookings(root,enabled){
   try{refresh=await bookingList(history,api)}
   catch(e){
     history.textContent=e.message;
-    if(e.status===401){emailAccount(request,()=>mountBookings(root,enabled),enabled?'Sign in to book':'Sign in to see bookings');const a=node('a','Sign in with Wallet');a.href='#wallet/bookings';request.append(a)}
+    if(e.status===401){emailAccount(request,()=>mountBookings(root,enabled),enabled?'Sign in with email to book':'Sign in with email to see bookings');const a=node('a','Use an existing wallet instead');a.href='#wallet/bookings';request.append(a)}
     return;
   }
   if(!enabled){request.textContent='New booking requests are paused. You can still view your bookings below.';return}

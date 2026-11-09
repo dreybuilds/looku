@@ -1,6 +1,8 @@
+import {privySubject} from './privy.mjs';
+import {session} from './account.mjs';
 export async function backup(request,env){
  const reply=(status,msg)=>new Response(msg,{status,headers:{'Cache-Control':'no-store'}});
- const account=request.headers.get('oai-authenticated-user-id');
+ const account=await privySubject(request)||(await session(request,env.ORDERS))?.address||request.headers.get('oai-authenticated-user-id');
  if(!account)return reply(401,'Sign in first');
  if(request.headers.get('X-Looku-Action')!=='wardrobe-backup'||(request.headers.has('Origin')&&request.headers.get('Origin')!==new URL(request.url).origin))return reply(403,'Invalid request');
  const key='wardrobe-backups/'+encodeURIComponent(account);

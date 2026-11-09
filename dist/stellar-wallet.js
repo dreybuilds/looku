@@ -107,7 +107,7 @@ export async function mountStellarWallet(root,compact=false){
       reviewPending=button('Review pending wallet request',async()=>{const payment=await stellarCall('/receipt/'+account.pending.id,undefined,account.pending.network);await approve(payment)});
     }else{const link=el('a','Manage Stellar wallet →');link.href='#wallet';root.append(link)}
     draw();watchStellar(networkLabel,refresh);
-  }catch(e){status.textContent=e.status===401?'Sign in to create your Stellar account wallet.':e.message;const link=el('a','Open account →');link.href='#account';root.append(link)}
+  }catch(e){status.textContent=e.status===401?'Sign in with email to create your Stellar account wallet.':e.message;const link=el('a',e.status===401?'Sign in with email →':'Open account →');link.href='#account';root.append(link)}
 }
 export async function stellarBudgetPanel(item){
   const root=el('section','');root.className='wish-funding stellar-budget';
@@ -126,7 +126,7 @@ export async function stellarBudgetPanel(item){
       const message=el('p','Budgets are saved to your account and share one wallet.');message.setAttribute('role','status');root.append(form,message);
       form.onsubmit=async event=>{event.preventDefault();save.disabled=true;try{await stellarCall('/budget',{item:key,amount:input.value.trim()},account.network);await load()}catch(e){message.textContent=e.message}finally{save.disabled=false}};
       const manage=el('a','Fund or manage Stellar wallet →');manage.href='#wallet';root.append(manage);
-    }catch(e){status.textContent=e.status===401?'Sign in to use the same Stellar wallet for every wishlist item.':e.message;root.replaceChildren(el('h3','Stellar · account wallet'),status)}
+    }catch(e){status.textContent=e.status===401?'Sign in with email to use one Stellar wallet for all your wishlist items.':e.message;root.replaceChildren(el('h3','Stellar · account wallet'),status)}
   }
   const events=new AbortController();window.addEventListener('looku-stellar-network',()=>{if(root.isConnected)void load();else events.abort()},{signal:events.signal});
   setTimeout(load,0);return root;

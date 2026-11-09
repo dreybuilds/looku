@@ -7,7 +7,9 @@ const publicKey={...await crypto.subtle.exportKey('jwk',testKeys.publicKey),alg:
 const appId='cmw1wdo5z03jo0glaw4lke860';
 const realFetch=globalThis.fetch;
 globalThis.fetch=(url,...args)=>String(url)==='https://auth.privy.io/api/v1/apps/'+appId+'/jwks.json'
- ? Promise.resolve(Response.json({keys:[publicKey]})):realFetch(url,...args);
+ ? Promise.resolve(Response.json({keys:[publicKey]}))
+ : String(url)==='https://openrouter.ai/api/v1/responses'
+ ? Promise.resolve(Response.json({output:[{content:[{type:'output_text',text:JSON.stringify({occasion:'Brunch',colors:['#a77bb6'],prefer:['shirt'],exclude:[],tip:'Pair lilac with relaxed denim.'})}]}]})):realFetch(url,...args);
 async function testToken(){
  const now=Math.floor(Date.now()/1000),encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
  const payload={iss:'privy.io',aud:appId,sub:'did:privy:'+crypto.randomUUID(),sid:crypto.randomUUID(),iat:now,exp:now+300};
@@ -42,7 +44,7 @@ http.createServer(async(req,res)=>{
    const bytes=[];for await(const chunk of req)bytes.push(chunk);
    const headers=new Headers(req.headers);
    headers.set('oai-authenticated-user-id','disposable-qa-viewer');
-   const result=await worker.fetch(new Request(host+req.url,{method:req.method,headers,body:bytes.length?Buffer.concat(bytes):undefined}),{ORDERS:bucket});
+   const result=await worker.fetch(new Request(host+req.url,{method:req.method,headers,body:bytes.length?Buffer.concat(bytes):undefined}),{ORDERS:bucket,OPENROUTER_API_KEY:'qa-styling-only'});
    res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));
  }catch{res.writeHead(500);res.end()}
 }).listen(port,'127.0.0.1');

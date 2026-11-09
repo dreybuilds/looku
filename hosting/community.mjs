@@ -44,7 +44,7 @@ export async function community(req,{ORDERS:store}){
    return row&&(visible(row,owner)||shared)?reply(200,publicPost(row,owner)):reply(404,{error:'This post is no longer available.'});
  }
  if(req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='community')return reply(403,{error:'Open Community in Looku Wear.'});
- if(!owner)return reply(401,{error:'Sign in with email or your Looku wallet to publish or withdraw a post.'});
+ if(!owner)return reply(401,{error:'Sign in with email to publish or withdraw a post.'});
  if(req.method==='DELETE'&&id){
    const row=await (await store.get(prefix+id))?.json();
    if(!row||row.owner!==owner)return reply(404,{error:'Post not found.'});

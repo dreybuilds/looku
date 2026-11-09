@@ -1,3 +1,4 @@
+import {privySubject} from './privy.mjs';
 import {categories,occasions} from '../dist/style-options.js';
 import {walletReceipts} from './wallet-receipts.mjs';
 import {Keypair,StrKey} from '@stellar/stellar-sdk';
@@ -47,8 +48,8 @@ export async function account(req,env){
  }
  let data;try{data=await req.json()}catch{return reply(400,{error:'Invalid request.'})}
  if(route==='/api/stylist/gpt'){
+   if(!await privySubject(req)&&!await session(req,store))return reply(401,{error:'Sign in with email in Account, then return here and choose Get styling advice.'});
    if(!env.OPENROUTER_API_KEY)return reply(503,{error:'Online styling advice is unavailable right now. Choose Build my look to put an outfit together on this device.'});
-   if(!await session(req,store))return reply(401,{error:'Sign in on the Wallet tab, then return here and choose Get styling advice.'});
    if(typeof data.prompt!=='string'||!data.prompt.trim()||data.prompt.length>180)return reply(400,{error:'Describe a look in 1–180 characters.'});
    if(!await takeQuota(store))return reply(429,{error:'Online advice has reached its daily limit. Choose Build my look for now, or try again tomorrow.'});
    const string={type:'string'}, array={type:'array',items:string};
