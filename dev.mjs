@@ -8,7 +8,7 @@ import { spawn } from 'node:child_process';
 const root=fileURLToPath(new URL('./dist/',import.meta.url));
 const port=Number(process.env.PORT||4173), apiPort=Number(process.env.PAYMENT_PORT||4174);
 const service=spawn(process.execPath,['--env-file-if-exists=.env','server.mjs'],{cwd:fileURLToPath(new URL('./payments/',import.meta.url)),env:{...process.env,PORT:String(apiPort),LOOKU_API_ORIGIN:'http://127.0.0.1:'+port},stdio:'inherit'});
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary'};
+const mime={'.ttf':'font/ttf','.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.png':'image/png','.webp':'image/webp','.glb':'model/gltf-binary'};
 const server=http.createServer(async(req,res)=>{
  try{
  const pathname=new URL(req.url,'http://localhost').pathname;

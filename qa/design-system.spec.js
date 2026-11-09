@@ -1,5 +1,19 @@
 import {test,expect} from '@playwright/test';
 
+test('Looku fonts load from the app and remain available offline',async({page,context})=>{
+ await page.goto('/app#shops');
+ const faces=[['400 16px "DM Sans"','dm-sans-400-normal.ttf'],['600 16px "DM Sans"','dm-sans-600-normal.ttf'],['400 36px "DM Serif Display"','dm-serif-display-400-normal.ttf'],['italic 400 36px "DM Serif Display"','dm-serif-display-400-italic.ttf']];
+ for(const [font,file] of faces){
+  const response=await page.request.get('/fonts/'+file);
+  expect(response.headers()['content-type']).toContain('font/ttf');
+  expect((await response.body()).readUInt32BE(0)).toBe(0x00010000);
+  expect(await page.evaluate(async font=>(await document.fonts.load(font)).length,font)).toBeGreaterThan(0);
+ }
+ await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}))});
+ await context.setOffline(true);await page.reload();
+ for(const [font] of faces)expect(await page.evaluate(async font=>(await document.fonts.load(font)).length,font)).toBeGreaterThan(0);
+});
+
 test('Stores prioritises browsing with shared hierarchy and usable actions',async({page},info)=>{
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto('/app#shops');

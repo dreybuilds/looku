@@ -42,6 +42,15 @@ assert.equal(explicitRoute('lookuwear.xyz','/app').dest,'/studio.html');
 assert.equal(explicitRoute('lookuwear.xyz','/store/samaiahs').dest,'/storefront.html');
 console.log('Verified merchant subdomains, storefront assets and admin host isolation.');
 
+for(const file of (await readdir(new URL('static/fonts/',output))).filter(name=>name.endsWith('.ttf'))){
+ const path='/fonts/'+file;
+ assert.equal(explicitRoute('admin.lookuwear.xyz',path),undefined,'Admin font must reach filesystem: '+path);
+ const bytes=await readFile(new URL('static'+path,output));
+ assert.equal(bytes.readUInt32BE(0),0x00010000,'Font must retain its TrueType binary header: '+path);
+}
+assert.equal(explicitRoute('admin.lookuwear.xyz','/fonts/private.json').status,404);
+console.log('Verified locally hosted fonts and the admin font allowlist.');
+
 assert.match(studio,/href="\/ui.css"/);
 assert.ok((await readFile(new URL('static/ui.css',output))).length);
 assert.equal(explicitRoute('admin.lookuwear.xyz','/ui.css'),undefined);

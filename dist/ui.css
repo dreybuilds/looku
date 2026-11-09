@@ -1,3 +1,10 @@
+/* Locally hosted DM family; licenses are included in /fonts/. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-sans-400-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/dm-sans-500-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/dm-sans-600-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/dm-sans-700-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-serif-display-400-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Serif Display';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/dm-serif-display-400-italic.ttf') format('truetype')}
 /* Canonical app design tokens and primitives. Merchant sites keep their own brand. */
 :where(.looku-ui,.looku-editorial,.storefront,.looku-embed){
  --ui-font:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
@@ -236,3 +243,12 @@
 .looku-ui .ui-grid-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
 .looku-ui .wishlist-collection [data-preview-status][role=status]{display:block;min-height:3.2em;margin:0}
 @media(max-width:600px){.looku-ui .ui-grid-pair{grid-template-columns:1fr}}
+
+/* Looku typography; merchant storefronts retain their independent identity. */
+:is(.looku-ui,.looku-editorial,.looku-embed){--ui-font:'DM Sans',Arial,Helvetica,sans-serif;--ui-font-display:'DM Serif Display',Georgia,serif;font-family:var(--ui-font)}
+:is(.looku-ui,.looku-editorial,.looku-embed) :is(button,.button,input,select,textarea,.network,.eyebrow,.num,.chip,.label,footer,figcaption,.plate-caption,.shortcut-list a,.shortcut-list button){font-family:var(--ui-font)}
+:is(.looku-ui,.looku-editorial,.looku-embed) input[type=file]::file-selector-button{font-family:var(--ui-font)}
+:is(.looku-ui,.looku-editorial,.looku-embed) :is(h1,h2,.serif){font-family:var(--ui-font-display);font-weight:400;letter-spacing:-.025em}
+.looku-editorial figcaption i{font-family:var(--ui-font-display)}
+.looku-ui .wallet-body [data-public]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.looku-ui .brand-preview-cover h3{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}

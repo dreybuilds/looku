@@ -25,7 +25,8 @@ await writeFile(path.join(fn, '.vc-config.json'), JSON.stringify({
 }));
 const adminHost=[{type:'host',value:'admin.lookuwear.xyz'}];
 // Match the host before Vercel serves any shopper files or API routes.
-const adminAssets='earnings\\.js|ui\\.js|ui\\.css|bookings\\.js|admin\\.js|support\\.js|email-auth\\.js|local-wallet\\.js|privy\\.js|style\\.css|api/payments/client\\.js';
+const fontAssets='fonts/(?:dm-sans-(?:400|500|600|700)-normal|dm-serif-display-400-(?:normal|italic))\\.ttf';
+const adminAssets=fontAssets+'|earnings\\.js|ui\\.js|ui\\.css|bookings\\.js|admin\\.js|support\\.js|email-auth\\.js|local-wallet\\.js|privy\\.js|style\\.css|api/payments/client\\.js';
 const adminApi='api/admin/[^?]*|api/account(?:/(?:verify|challenge|logout))?|api/community/session';
 const ownerRoutes=[
   {src:'^/(?:index\\.html|owner\\.html)?$',has:adminHost,dest:'/owner.html'},
