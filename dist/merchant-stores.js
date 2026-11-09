@@ -1,4 +1,5 @@
 import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
+import {defaultStoreTheme,storeTheme,applyStoreTheme} from './store-branding.js';
 import {emailAccount,emailHeaders} from './email-auth.js';
 import {enabled} from './features.js';
 
@@ -31,6 +32,7 @@ export async function merchantDirectory(root){
       const page=await api(cursor?'?cursor='+encodeURIComponent(cursor):'');
       for(const store of page.items){
         const card=contentCard({title:store.name,label:'Independent store',description:store.description,action:{label:'Visit '+store.name,href:storefrontPath(store.slug)}});
+        card.classList.add('store-directory-card');card.prepend(brandMark(store));
         list.append(card);
       }
       cursor=page.next;more.hidden=!cursor;
@@ -45,10 +47,11 @@ export async function mountStorefront(root,slug){
   try{
     const store=await api('/'+encodeURIComponent(slug));
     document.title=store.name;
-    const brand=document.querySelector('[data-store-brand]');if(brand)brand.textContent=store.name;
+    applyStoreTheme(document.body,store.theme);
+    const brand=document.querySelector('[data-store-brand]');if(brand){brand.replaceChildren();if(store.logo){const image=node('img');image.src=store.logo;image.alt='';brand.append(image)}brand.append(node('span',store.name))}
     const navigation=document.querySelector('[data-store-nav]');if(navigation)navigation.hidden=false;
     const hero=node('section');hero.className='merchant-cover';
-    const monogram=node('div',store.name.slice(0,1).toUpperCase());monogram.className='merchant-monogram';monogram.setAttribute('aria-hidden','true');
+    const monogram=brandMark(store);
     const intro=node('div');intro.append(node('span','Welcome to'),node('h1',store.name),node('p',store.description));
     hero.append(monogram,intro);root.replaceChildren(hero);
     if(store.mine){
@@ -86,6 +89,7 @@ export async function mountStorefront(root,slug){
 }
 
 export async function mountMerchantManager(root,slug){
+  root.classList.add('merchant-manager');
   root.replaceChildren(pageHeader({title:'Your stores',description:'Create your storefront. Publish products once your store is approved.'}));
   const body=node('section');root.append(body);
   let stores;
@@ -156,7 +160,7 @@ export async function mountMerchantManager(root,slug){
   else body.append(node('p','New merchant stores are currently paused.'));
 }
 function renderStoreForm(root,store){
-  const section=node('section');section.className='panel';
+  const section=node('section');section.className='panel store-editor';
   section.append(node('h2',store?'Store details':'Create a store'));
   if(store){
     section.append(node('p','Store status · '+store.status));
@@ -175,13 +179,16 @@ function renderStoreForm(root,store){
     (store?'':'<label>Store address<input name="slug" required minlength="3" maxlength="32" pattern="[a-z0-9](?:[a-z0-9]|-){1,30}[a-z0-9]" placeholder="samaiahs" autocapitalize="none" spellcheck="false"></label><small>Choose a unique address using lowercase letters, numbers and hyphens. Your address stays with this store.</small>')+
     '<label>About your store<textarea name="description" maxlength="800" placeholder="What do you sell, and where do you deliver?"></textarea></label>'+
     '<label>Public contact email<input name="contact" type="email" maxlength="160" required></label>'+
-    '<small>Your store name, description, products and contact email will be visible to visitors once your store is approved.</small><button></button><p role="status"></p>';
+    '<div data-branding></div><small>Your store name, logo, colours, description, products and contact email will be visible to visitors once your store is approved.</small><button></button><p role="status"></p>';
   if(store)for(const key of ['name','description','contact'])form.elements[key].value=store[key];
-  const save=form.querySelector('button');save.textContent=store?'Save store details':'Submit store for approval';
+  const save=form.querySelector('button');
+  const branding=brandEditor(form.querySelector('[data-branding]'),form,store,save);
+  save.textContent=store?'Save store details':'Submit store for approval';
   form.onsubmit=async event=>{
-    event.preventDefault();save.disabled=true;const note=form.querySelector('[role=status]');
+    event.preventDefault();save.disabled=true;const note=form.querySelector(':scope > [role=status]');
     try{
-      const data=Object.fromEntries(new FormData(form));
+      const data={...Object.fromEntries(new FormData(form)),...branding()};
+      delete data.logoFile;
       if(store)data.revision=store.revision;
       const result=await api(store?'/'+store.slug:'',data);
       location.hash='merchant/'+result.slug;
@@ -190,6 +197,54 @@ function renderStoreForm(root,store){
     }catch(error){note.textContent=error.message}finally{save.disabled=false}
   };
   section.append(form);root.append(section);
+}
+function brandMark(store){
+  if(store.logo){const image=node('img');image.className='merchant-logo';image.src=store.logo;image.alt=store.name+' logo';return image}
+  const mark=node('div',(store.name||'Your store').slice(0,1).toUpperCase());mark.className='merchant-monogram';mark.setAttribute('aria-hidden','true');return mark;
+}
+async function logoPhoto(file){
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024)throw Error('Choose a PNG, JPEG or WebP logo smaller than 8 MB.');
+  const url=URL.createObjectURL(file),image=new Image();
+  try{
+    image.src=url;await image.decode();
+    const scale=Math.min(1,256/Math.max(image.width,image.height)),canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+    const photo=canvas.toDataURL('image/webp',.85);
+    if(photo.length>80000)throw Error('This logo is too detailed. Try a smaller image.');
+    return photo;
+  }finally{URL.revokeObjectURL(url)}
+}
+function brandEditor(root,form,store,save){
+  root.className='brand-editor';let logo=store?.logo||null,theme=storeTheme(store?.theme),loading=false,revision=0;
+  const fields=node('fieldset');fields.className='brand-fields';fields.innerHTML='<legend>Store identity</legend><p class="fine">Add your logo and choose colours. Preview changes before saving.</p><label>Store logo<input name="logoFile" type="file" accept="image/png,image/jpeg,image/webp"></label><small>PNG, JPEG or WebP · up to 8 MB. Transparent logos stay transparent.</small>';
+  const remove=action('Remove logo',()=>{revision++;logo=null;input.value='';loading=false;save.disabled=false;note.textContent='Logo removed from this draft. Save to apply.';draw()});remove.className='secondary small';fields.append(remove);
+  const colours=node('div');colours.className='theme-colours';fields.append(colours);
+  const inputs={};
+  for(const [key,label] of [['primary','Brand colour'],['background','Page background'],['surface','Feature background']]){
+    const field=node('label',label),input=node('input');input.type='color';input.value=theme[key];field.append(input);colours.append(field);inputs[key]=input;
+    input.oninput=()=>{theme[key]=input.value;draw()};
+  }
+  const reset=action('Reset colours',()=>{theme={...defaultStoreTheme};for(const key in inputs)inputs[key].value=theme[key];draw()});reset.className='link';fields.append(reset);
+  const preview=node('aside');preview.className='store-brand-preview';preview.setAttribute('aria-label','Store branding preview');
+  const previewLabel=node('span','Live preview');previewLabel.className='eyebrow';
+  const content=node('div');content.className='brand-preview-cover';
+  const cta=node('span','Shop the collection');cta.className='brand-preview-button';
+  const note=statusNode();fields.append(note);preview.append(previewLabel,content,cta);root.append(fields,preview);
+  const input=fields.querySelector('input[type=file]');
+  function draw(){
+    const name=form.elements.name.value.trim()||'Your store name';applyStoreTheme(preview,theme);
+    content.replaceChildren(brandMark({name,logo}),node('h3',name),node('p',form.elements.description.value.trim()||'A little introduction to your collection.'));
+    remove.hidden=!logo;
+  }
+  input.onchange=async()=>{
+    const file=input.files[0];if(!file)return;const current=++revision;loading=true;save.disabled=true;note.textContent='Preparing your logo…';
+    try{const photo=await logoPhoto(file);if(current!==revision)return;logo=photo;note.textContent='Logo ready. Save your store to apply it.';draw()}
+    catch(error){if(current===revision){note.textContent=error.message;input.value=''}}
+    finally{if(current===revision){loading=false;save.disabled=false}}
+  };
+  form.elements.name.addEventListener('input',draw);form.elements.description.addEventListener('input',draw);draw();
+  return ()=>{if(loading)throw Error('Wait for your logo to finish preparing.');return {logo,theme}};
 }
 function productForm(root,store,product,onSave){
   const form=node('form');form.className='stack';

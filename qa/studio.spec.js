@@ -130,7 +130,7 @@ test('native PWA metadata and install affordance',async({baseURL},testInfo)=>{
 test('accessible pages, dialog names and viewport fit',async({page})=>{
  const failures=[];
  page.on('pageerror',e=>failures.push(e.message));
- for(const route of ['studio','wardrobe','stylist','community','wallet','shops']){
+ for(const route of ['studio','wardrobe','stylist','community','wallet','shops','bookings','account','support','wishlist','merchant']){
    await page.goto('/#'+route);
    const heading=page.getByRole('heading',{level:1});await expect(heading).toBeVisible();
    if(route==='wallet'){

@@ -30,7 +30,7 @@ assert.equal(explicitRoute('samaiahs.lookuwear.xyz','/api/merchant-stores/samaia
 for(const path of ['/app','/owner.html','/api/admin/access','/api/account','/api/features','/privy.js']){
   assert.equal(explicitRoute('samaiahs.lookuwear.xyz',path).status,404,'Tenant must block '+path);
 }
-for(const path of ['/ui.js','/storefront.js','/merchant-stores.js','/features.js','/email-auth.js','/style.css']){
+for(const path of ['/ui.js','/storefront.js','/merchant-stores.js','/store-branding.js','/features.js','/email-auth.js','/style.css']){
   assert.equal(explicitRoute('samaiahs.lookuwear.xyz',path),undefined,'Storefront asset must reach filesystem: '+path);
   assert.ok((await readFile(new URL('static'+path,output))).length);
 }

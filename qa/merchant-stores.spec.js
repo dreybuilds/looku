@@ -10,6 +10,11 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   await page.getByLabel('Store address',{exact:true}).fill(slug);
   await page.getByLabel('About your store').fill('Thoughtful finds and gently worn favourites.');
   await page.getByLabel('Public contact email').fill('merchant@example.org');
+  await page.getByLabel('Store logo',{exact:true}).setInputFiles('../dist/icon-192.png');
+  await expect(page.getByRole('img',{name:name+' logo'})).toBeVisible();
+  const colours={primary:'#00334f',background:'#fcf8f2',surface:'#e6eef2'};
+  for(const [label,value] of [['Brand colour',colours.primary],['Page background',colours.background],['Feature background',colours.surface]])await page.getByLabel(label,{exact:true}).evaluate((input,value)=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}))},value);
+  await page.screenshot({path:'/private/tmp/looku-store-editor-'+info.project.name+'.png',fullPage:true});
   await page.getByRole('button',{name:'Submit store for approval'}).click();
   await expect(page).toHaveURL(new RegExp('#merchant/'+slug+'$'));
   await expect(page.getByText('Store status · pending',{exact:true})).toBeVisible();
@@ -19,6 +24,14 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   const ownHeaders={Authorization:'Bearer '+token,Origin:baseURL,'X-Looku-Action':'merchant-store'};
   try{
     expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
+    const original=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();
+    expect(original.theme).toEqual(colours);expect(original.logo).toMatch(/^data:image\/webp;base64,/);
+    for(const invalid of [{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
+      expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{...original,...invalid}})).status()).toBe(400);
+    }
+    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{name:original.name,description:original.description,contact:original.contact,revision:original.revision}})).status()).toBe(200);
+    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
+    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:original})).status()).toBe(409);
     const otherToken=await (await other.request.get('/qa-privy-token')).text();
     const otherHeaders={...ownHeaders,Authorization:'Bearer '+otherToken};
     const draft={slug,name:'Copy',description:'',contact:'other@example.org'};
@@ -46,6 +59,14 @@ test('merchants own stores, approved stores publish immediately, and suspension 
       await expect(directory.getByRole('heading',{name:'Shop retailer websites'})).toHaveCount(0);
       await setFeature('storefronts',false);
       expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
+    const original=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();
+    expect(original.theme).toEqual(colours);expect(original.logo).toMatch(/^data:image\/webp;base64,/);
+    for(const invalid of [{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
+      expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{...original,...invalid}})).status()).toBe(400);
+    }
+    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{name:original.name,description:original.description,contact:original.contact,revision:original.revision}})).status()).toBe(200);
+    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
+    expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:original})).status()).toBe(409);
       expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{}})).status()).toBe(403);
       await directory.reload();await expect(directory.getByRole('heading',{name:'Feature paused'})).toBeVisible();
       await directory.close();
@@ -60,6 +81,9 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     const customer=await guest.newPage();await customer.goto('/store/'+slug);
     await expect(customer.getByRole('heading',{name,exact:true})).toBeVisible();
     await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toBeVisible();
+    await expect(customer.getByRole('img',{name:name+' logo'})).toBeVisible();
+    await expect(customer.locator('body')).toHaveCSS('background-color','rgb(252, 248, 242)');
+    await expect(customer.getByRole('link',{name:'Ask about this piece'})).toHaveCSS('background-color','rgb(0, 51, 79)');
     await expect(customer.locator('header .merchant-brand')).toHaveText(name);
     await expect(customer.locator('header').getByRole('link',{name:'Create your store'})).toHaveCount(0);
     await expect(customer.locator('header').getByRole('link',{name:'Shop the collection'})).toHaveAttribute('href','#collection');
@@ -70,6 +94,18 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     const accessibility=await customer.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
     expect(accessibility.violations.map(item=>item.id)).toEqual([]);
     await customer.screenshot({path:'/private/tmp/looku-merchant-store-'+info.project.name+'.png',fullPage:true});
+    await page.getByLabel('Store logo',{exact:true}).setInputFiles('../dist/sample1.webp');
+    await expect(page.getByText('Logo ready. Save your store to apply it.')).toBeVisible();
+    await page.getByRole('button',{name:'Save store details'}).click();
+    await expect(page.getByLabel('Store logo',{exact:true})).toHaveValue('');
+    const replacement=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(replacement.logo).not.toBe(original.logo);
+    await page.getByRole('button',{name:'Remove logo',exact:true}).click();
+    await page.getByRole('button',{name:'Reset colours',exact:true}).click();
+    const saved=page.waitForResponse(r=>r.url().endsWith('/api/merchant-stores/'+slug)&&r.request().method()==='POST');
+    await page.getByRole('button',{name:'Save store details'}).click();expect((await saved).status()).toBe(200);
+    await expect(page.getByRole('button',{name:'Remove logo',exact:true})).toBeHidden();
+    await customer.reload();await expect(customer.getByRole('img',{name:name+' logo'})).toHaveCount(0);
+    await expect(customer.locator('body')).toHaveCSS('background-color','rgb(255, 254, 251)');
     const publicStore=await (await guest.request.get('/api/merchant-stores/'+slug)).json();
     expect(publicStore).not.toHaveProperty('owner');expect(publicStore).not.toHaveProperty('revision');
     const products=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items;
@@ -85,6 +121,7 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     await customer.reload();await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toHaveCount(0);
     const updated=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items[0];
     expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{...updated,status:'available'}})).status()).toBe(200);
+    await ownerPage.reload();await ownerPage.getByRole('button',{name:'Manage merchant stores'}).click();
     await card.getByRole('button',{name:'Suspend store'}).click();await expect(card).toContainText('suspended');
     expect((await guest.request.get('/api/merchant-stores/'+slug+'/products')).status()).toBe(404);
     const latest=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items[0];

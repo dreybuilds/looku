@@ -43,3 +43,15 @@ test('owner switches control listings and booking requests while customers retai
     await page.reload();await expect(page.getByRole('link',{name:'Donations',exact:true})).toBeVisible();
   }finally{await owner.close()}
 });
+
+
+test('booking service cards and email entry fit desktop and mobile',async({page},info)=>{
+  await page.goto('/app#bookings');
+  await expect(page.getByRole('button',{name:'Sign in with email to book',exact:true})).toBeVisible();
+  const choice=page.getByRole('button',{name:/Makeup artist A considered/});await choice.click();await expect(choice).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('heading',{name:'Your appointments, together'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'/private/tmp/looku-booking-layout-'+info.project.name+'.png',fullPage:true});
+  await page.getByRole('button',{name:'Sign in with email to book',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Email address')).toBeVisible();
+});

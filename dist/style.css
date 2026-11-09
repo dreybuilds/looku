@@ -408,3 +408,50 @@ body.storefront{--ink:#252521;--muted:#63635b;--line:#e2dfd6;color:var(--ink);ba
 .stellar-account .actions { margin:0; }
 .stellar-budget { display:grid; gap:.65rem; }
 .stellar-budget > :is(p,h3) { margin:0; }
+
+/* Shared page, form and empty-state components. Collections keep their wider canvas. */
+.page-intro {display:grid;gap:.8rem;margin: .6rem 0 2rem;max-width:64ch}
+.page-intro h1,.page-intro .page-title {font-size:clamp(2.6rem,5vw,4rem);line-height:1.04;margin:0;letter-spacing:-.055em}
+.page-intro p {color:var(--muted);max-width:62ch;font-size:1rem}
+.surface-heading {display:grid;gap:.5rem;margin-bottom:1.2rem}
+.surface-heading h2, .panel > h2, .panel form > h2, #wallet-panel > h2 {font-size:clamp(1.6rem,2.8vw,2.2rem);line-height:1.12;letter-spacing:-.04em}
+.empty-state {display:grid;gap:.65rem;padding:1.5rem;border:1px dashed var(--line);border-radius:16px;background:#f8f3fa;color:var(--muted);line-height:1.6}
+.empty-state h3 {color:var(--ink);font-size:1rem}
+.workspace-grid {display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:1.5rem;align-items:start}
+.workspace-grid > .panel {margin:0;min-width:0}
+main:has(#booking-area,#merchant-area) {max-width:76rem}
+.service-choices {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-bottom:1.5rem}
+.service-card {display:grid;justify-content:stretch;justify-items:start;gap:.6rem;padding:1.4rem;text-align:left;white-space:normal;color:var(--ink);background:#fffbff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--widget-rest);transition:box-shadow .18s,border-color .18s,transform .18s}
+.service-card strong {font:normal 1.5rem/1.15 Georgia,serif;letter-spacing:-.03em}
+.service-card > span:last-child {font-size:.875rem;font-weight:400;line-height:1.5;color:var(--muted)}
+.service-card[aria-pressed=true] {border-color:#9751a0;background:#f2e8f5;box-shadow:inset 0 0 0 1px #9751a0,var(--widget-rest)}
+.booking-request {display:grid;gap:1.1rem;background:linear-gradient(135deg,#fffaff,#faf3ed)}
+.booking-request .surface-heading {margin:0}.booking-auth .account-trigger {background:#61216c;color:white;border-color:#61216c}
+.quiet-disclosure {font-size:.875rem;color:var(--muted)}.quiet-disclosure summary {cursor:pointer;padding:.3rem 0}.quiet-disclosure[open] a {display:inline-block;margin-top:.7rem}
+.booking-steps {list-style:none;counter-reset:steps;margin:1.7rem 0 0;padding:0;display:grid;gap:1.2rem}
+.booking-steps li {counter-increment:steps;display:grid;grid-template-columns:1.8rem 1fr;gap:.25rem .65rem;font-size:.85rem;line-height:1.5}
+.booking-steps li::before {content:counter(steps);grid-row:span 2;display:grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:#eee2f0;color:#61216c;font-weight:bold}
+.booking-steps span {grid-column:2;color:var(--muted)}.booking-card {display:grid;gap:.5rem;margin:0;background:#fffaff}.booking-card h3 {line-height:1.4}
+.booking-form > h2 {margin-bottom:.5rem}.booking-form textarea {min-height:7rem;resize:vertical}
+.merchant-manager > section {display:grid;gap:1.25rem}.merchant-manager > section > .panel {margin:0}
+.store-editor > h2 {margin-bottom:1.2rem}.store-editor > p {margin-bottom:.75rem}
+.store-editor > form {margin-top:1rem}.store-editor textarea {min-height:6rem;resize:vertical}
+.brand-editor {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:1.5rem;margin:.8rem 0;padding-top:1.5rem;border-top:1px solid var(--line)}
+.brand-fields {display:grid;gap:.9rem;min-width:0;border:0;padding:0;margin:0}.brand-fields legend {font-weight:bold;margin-bottom:.7rem}.brand-fields > button {justify-self:start}
+.theme-colours {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}.theme-colours label {font-size:.8rem;align-content:start}.theme-colours input[type=color] {width:100%;height:44px;min-width:0;cursor:pointer}
+.store-brand-preview {align-self:start;border:1px solid var(--line);border-radius:18px;background:var(--store-background);color:var(--store-background-text);padding:1.1rem;display:grid;gap:1rem;overflow:hidden}
+.brand-preview-cover {padding:1.4rem;background:var(--store-surface);color:var(--store-surface-text);border-radius:10px;display:grid;gap:.8rem;overflow-wrap:anywhere}.brand-preview-cover h3 {font:normal 1.65rem/1.1 Georgia,serif}.brand-preview-cover p {font-size:.875rem}
+.brand-preview-button {justify-self:start;background:var(--store-primary);color:var(--store-primary-text);padding:.7rem 1rem;border-radius:8px;font-size:.8rem;font-weight:bold}
+.merchant-logo {width:110px;height:90px;max-width:100%;object-fit:contain;object-position:left center;flex-shrink:0}
+.store-directory-card {display:grid;gap:.8rem;align-content:start}.store-directory-card .merchant-logo {width:76px;height:60px}.store-directory-card .merchant-monogram {width:56px;height:56px;font-size:1.75rem}
+body.storefront {background:var(--store-background,#fffefb);--ink:var(--store-background-text,#252521);--muted:var(--store-background-text,#63635b);--line:color-mix(in srgb,var(--store-background-text,#252521) 25%,var(--store-background,#fffefb));color:var(--ink)}
+.storefront header {background:var(--store-background,#fffefb)}
+.storefront .merchant-brand {display:flex;align-items:center;gap:.8rem}.storefront .merchant-brand img {width:64px;height:44px;object-fit:contain}
+.storefront .merchant-cover,.storefront footer {background:var(--store-surface,#f4f0e8);color:var(--store-surface-text,#252521)}
+.storefront .merchant-monogram,.store-brand-preview .merchant-monogram {background:var(--store-primary,#393c31);color:var(--store-primary-text,#fff)}
+.storefront .merchant-product .button {background:var(--store-primary,#393c31);border-color:var(--store-primary,#393c31);color:var(--store-primary-text,#fff)}
+.storefront main :is(a,button):focus-visible {outline-color:var(--store-background-text)}
+@media(hover:hover) and (pointer:fine){.service-card:hover{transform:translateY(-2px);box-shadow:var(--widget-active);filter:none}}
+@media(max-width:760px){.workspace-grid,.brand-editor{grid-template-columns:1fr}.service-choices{gap:.65rem}.service-card{padding:1rem}.service-card strong{font-size:1.15rem}.service-card>span:last-child{font-size:.8rem}}
+@media(max-width:480px){.service-choices{grid-template-columns:1fr}.service-card{grid-template-columns:1.7rem 1fr;gap:.35rem .6rem}.service-card .eyebrow{grid-row:span 2;padding-top:.15rem}.service-card>span:last-child{grid-column:2}.theme-colours{gap:.5rem}.page-intro{margin-bottom:1.4rem}.merchant-logo{width:90px;height:75px}}
+@media(prefers-reduced-motion:reduce){.service-card{transition:none!important;transform:none!important}}

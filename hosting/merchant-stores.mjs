@@ -1,3 +1,4 @@
+import {storeTheme,validStoreLogo} from '../dist/store-branding.js';
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 import {paused,pausedReply} from './features.mjs';
@@ -15,7 +16,7 @@ export function tenantSlug(hostname){
   return match&&!['www','admin'].includes(match[1])?match[1]:null;
 }
 function publicStore(row){
-  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status};
+  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status,logo:row.logo||null,theme:storeTheme(row.theme)};
 }
 async function identity(req,store){
   return await privySubject(req)||(await session(req,store))?.address;
@@ -97,8 +98,11 @@ export async function merchantStores(req,{ORDERS:store}){
 async function saveStore(store,owner,data,row,record){
   if(!fits(data.name,80)||typeof data.description!=='string'||data.description.length>800||!fits(data.contact,160)||!/^[^\s@?<>&#]+@[^\s@?<>&#]+\.[^\s@?<>&#]+$/.test(data.contact))return error(400,'Enter a store name, description and public contact email.');
   if(row&&data.revision!==record.etag)return error(409,'Your store changed. Refresh before saving.');
+  const logo=Object.hasOwn(data,'logo')?data.logo:row?.logo||null;
+  if(!validStoreLogo(logo))return error(400,'Choose a PNG, JPEG or WebP logo and upload it through the store editor.');
+  let theme;try{theme=storeTheme(Object.hasOwn(data,'theme')?data.theme:row?.theme)}catch(e){return error(400,e.message)}
   const slug=row?.slug||data.slug;
-  const next={slug,owner,name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
+  const next={slug,owner,logo,theme,name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
   const saved=await store.put(prefix+slug,JSON.stringify(next),{onlyIf:record?{etagMatches:record.etag}:{etagDoesNotMatch:'*'}});
   if(saved)return reply(record?200:201,{slug});
   // A retry after an uncertain create must not claim another merchant's address.
