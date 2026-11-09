@@ -1,4 +1,4 @@
-import {storeTheme,validStoreLogo} from '../dist/store-branding.js';
+import {storeTheme,validStoreLogo,validStoreImage} from '../dist/store-branding.js';
 import {privySubject} from './privy.mjs';
 import {session} from './account.mjs';
 import {paused,pausedReply} from './features.mjs';
@@ -15,18 +15,18 @@ export function tenantSlug(hostname){
   const match=hostname.match(/^([a-z0-9-]+)\.lookuwear\.xyz$/);
   return match&&!['www','admin'].includes(match[1])?match[1]:null;
 }
-function publicStore(row){
-  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status,logo:row.logo||null,theme:storeTheme(row.theme)};
+function publicStore(row,artwork=false){
+  return {slug:row.slug,name:row.name,description:row.description,contact:row.contact,status:row.status,logo:row.logo||null,...(artwork?{banner:row.banner||null,background:row.background||null}:{}),theme:storeTheme(row.theme)};
 }
 async function identity(req,store){
   return await privySubject(req)||(await session(req,store))?.address;
 }
-async function body(req){
-  if(!req.body||Number(req.headers.get('content-length'))>100000)throw Error('Request too large.');
+async function body(req,maxLength){
+  if(!req.body||Number(req.headers.get('content-length'))>maxLength)throw Error('Request too large.');
   const reader=req.body.getReader();let size=0;const chunks=[];
   for(;;){
     const {done,value}=await reader.read();if(done)break;
-    size+=value.length;if(size>100000){await reader.cancel();throw Error('Request too large.')}
+    size+=value.length;if(size>maxLength){await reader.cancel();throw Error('Request too large.')}
     chunks.push(value);
   }
   return JSON.parse(await new Blob(chunks).text());
@@ -59,7 +59,7 @@ export async function merchantStores(req,{ORDERS:store}){
   const row=record?await record.json():null,mine=!!owner&&row?.owner===owner;
   if(req.method==='GET'){
     if(!row||!mine&&(row.status!=='approved'||await paused(store,'storefronts')))return error(404,'This store is not available.');
-    if(!resource)return reply(200,{...publicStore(row),mine,...(mine?{revision:record.etag}:{})});
+    if(!resource)return reply(200,{...publicStore(row,true),mine,...(mine?{revision:record.etag}:{})});
     const page=await store.list({prefix:'merchant-products/'+slug+'/',limit:12,cursor:url.searchParams.get('cursor')||undefined});
     const products=await Promise.all(page.objects.map(async ({key})=>{
       const entry=await store.get(key);if(!entry)return null;
@@ -71,7 +71,7 @@ export async function merchantStores(req,{ORDERS:store}){
   }
   if(!owner)return error(401,'Sign in to create or manage your store.');
   if(req.method!=='POST'||req.headers.get('origin')!==url.origin||req.headers.get('x-looku-action')!=='merchant-store')return error(403,'Make changes from your Looku store manager.');
-  let data;try{data=await body(req)}catch{return error(400,'Invalid store request.')}
+  let data;try{data=await body(req,resource?100000:420000)}catch{return error(400,'Invalid store request.')}
   if(!data||typeof data!=='object')return error(400,'Invalid store request.');
   if(!slug){
     if(await paused(store,'storefronts'))return pausedReply();
@@ -100,9 +100,14 @@ async function saveStore(store,owner,data,row,record){
   if(row&&data.revision!==record.etag)return error(409,'Your store changed. Refresh before saving.');
   const logo=Object.hasOwn(data,'logo')?data.logo:row?.logo||null;
   if(!validStoreLogo(logo))return error(400,'Choose a PNG, JPEG or WebP logo and upload it through the store editor.');
+  const artwork={};
+  for(const kind of ['banner','background']){
+    artwork[kind]=Object.hasOwn(data,kind)?data[kind]:row?.[kind]||null;
+    if(!validStoreImage(artwork[kind]))return error(400,'Choose a PNG, JPEG or WebP '+kind+' and upload it through the store editor.');
+  }
   let theme;try{theme=storeTheme(Object.hasOwn(data,'theme')?data.theme:row?.theme)}catch(e){return error(400,e.message)}
   const slug=row?.slug||data.slug;
-  const next={slug,owner,logo,theme,name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
+  const next={slug,owner,logo,...artwork,theme,name:data.name.trim(),description:data.description.trim(),contact:data.contact.trim(),status:row?.status==='approved'?'approved':'pending'};
   const saved=await store.put(prefix+slug,JSON.stringify(next),{onlyIf:record?{etagMatches:record.etag}:{etagDoesNotMatch:'*'}});
   if(saved)return reply(record?200:201,{slug});
   // A retry after an uncertain create must not claim another merchant's address.

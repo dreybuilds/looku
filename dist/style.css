@@ -461,3 +461,20 @@ body.storefront {background:var(--store-background,#fffefb);--ink:var(--store-ba
 .inspiration-paste form{margin-top:var(--ui-space-3,12px)}
 .inspiration-dialog .inspiration-card button{margin-top:auto}
 @media(max-width:600px){.inspiration-match{grid-template-columns:1fr}.inspiration-match .inspiration-frame{height:320px;max-height:42dvh}.inspiration-match form{padding-bottom:var(--ui-space-4,16px)}}
+
+/* Store artwork uses the same crop and solid content surfaces in the editor and shop. */
+.storefront .merchant-cover{display:block;padding:0;overflow:hidden}
+.merchant-cover-identity{display:flex;align-items:center;gap:2rem;padding:clamp(24px,5vw,64px)}
+.merchant-cover-identity>div{min-width:0}
+.merchant-banner{display:block;width:100%;aspect-ratio:3/1;object-fit:cover;object-position:center}
+.brand-preview-cover{display:block;padding:0;overflow:hidden}
+.brand-preview-identity{display:grid;gap:.8rem;padding:1.4rem}
+.brand-preview-cover .merchant-banner{width:100%;max-width:none}
+body.storefront.has-store-background,.store-brand-preview.has-store-background{
+ background-image:linear-gradient(color-mix(in srgb,var(--store-background) 84%,transparent),color-mix(in srgb,var(--store-background) 84%,transparent)),var(--store-background-image);
+ background-size:auto,cover;background-position:center;background-repeat:no-repeat;
+}
+.storefront.has-store-background :is(.merchant-collection,.merchant-contact){background:var(--store-background);padding:clamp(20px,3vw,40px);border-radius:4px}
+.storefront.has-store-background .merchant-product{background:var(--store-background)}
+.store-brand-preview.has-store-background>.eyebrow{background:var(--store-background);padding:4px 8px;justify-self:start}
+@media(max-width:600px){.merchant-cover-identity{flex-direction:column;align-items:flex-start;gap:20px}}

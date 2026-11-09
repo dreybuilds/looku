@@ -12,6 +12,11 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   await page.getByLabel('Public contact email').fill('merchant@example.org');
   await page.getByLabel('Store logo',{exact:true}).setInputFiles('../dist/icon-192.png');
   await expect(page.getByRole('img',{name:name+' logo'})).toBeVisible();
+  await page.getByLabel('Store banner',{exact:true}).setInputFiles('../dist/orchid-detail.webp');
+  await expect(page.getByRole('img',{name:name+' banner'})).toBeVisible();
+  await page.getByLabel('Store background',{exact:true}).setInputFiles('../dist/sample1.webp');
+  await expect(page.getByText('Background ready. Save your store to apply it.')).toBeVisible();
+  await expect(page.getByLabel('Store branding preview')).toHaveClass(/has-store-background/);
   const colours={primary:'#00334f',background:'#fcf8f2',surface:'#e6eef2'};
   for(const [label,value] of [['Brand colour',colours.primary],['Page background',colours.background],['Feature background',colours.surface]])await page.getByLabel(label,{exact:true}).evaluate((input,value)=>{input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}))},value);
   await page.screenshot({path:'/private/tmp/looku-store-editor-'+info.project.name+'.png',fullPage:true});
@@ -25,12 +30,13 @@ test('merchants own stores, approved stores publish immediately, and suspension 
   try{
     expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
     const original=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();
+    expect(original.banner).toMatch(/^data:image\/webp;base64,/);expect(original.background).toMatch(/^data:image\/webp;base64,/);
     expect(original.theme).toEqual(colours);expect(original.logo).toMatch(/^data:image\/webp;base64,/);
-    for(const invalid of [{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
+    for(const invalid of [{banner:'https://example.org/image.png'},{background:'data:image/svg+xml,<svg/>'},{banner:'data:image/webp;base64,'+'a'.repeat(160001)},{theme:{...colours,primary:'red;display:none'}},{logo:'data:image/svg+xml,<svg onload="alert(1)"/>'},{logo:'data:image/webp;base64,'+'a'.repeat(80001)}]){
       expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{...original,...invalid}})).status()).toBe(400);
     }
     expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:{name:original.name,description:original.description,contact:original.contact,revision:original.revision}})).status()).toBe(200);
-    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
+    const kept=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(kept.banner).toBe(original.banner);expect(kept.background).toBe(original.background);expect(kept.logo).toBe(original.logo);expect(kept.theme).toEqual(colours);
     expect((await page.request.post('/api/merchant-stores/'+slug,{headers:ownHeaders,data:original})).status()).toBe(409);
     const otherToken=await (await other.request.get('/qa-privy-token')).text();
     const otherHeaders={...ownHeaders,Authorization:'Bearer '+otherToken};
@@ -85,6 +91,10 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     await expect(customer.getByRole('heading',{name,exact:true})).toBeVisible();
     await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toBeVisible();
     await expect(customer.getByRole('img',{name:name+' logo'})).toBeVisible();
+    await expect(customer.getByRole('img',{name:name+' banner'})).toBeVisible();
+    await expect(customer.locator('body')).toHaveClass(/has-store-background/);
+    expect(await customer.locator('body').evaluate(n=>getComputedStyle(n).backgroundImage)).toContain('data:image/webp');
+    expect(await customer.locator('h1').evaluate(n=>getComputedStyle(n).fontFamily)).toContain('monospace');
     await expect(customer.locator('body')).toHaveCSS('background-color','rgb(252, 248, 242)');
     await expect(customer.getByRole('link',{name:'Ask about this piece'})).toHaveCSS('background-color','rgb(0, 51, 79)');
     await expect(customer.locator('header .merchant-brand')).toHaveText(name);
@@ -97,17 +107,26 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     const accessibility=await customer.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
     expect(accessibility.violations.map(item=>item.id)).toEqual([]);
     await customer.screenshot({path:'/private/tmp/looku-merchant-store-'+info.project.name+'.png',fullPage:true});
+    await page.getByLabel('Store banner',{exact:true}).setInputFiles('../dist/sample2.webp');
+    await expect(page.getByText('Banner ready. Save your store to apply it.')).toBeVisible();
+    await page.getByLabel('Store background',{exact:true}).setInputFiles('../dist/sample3.webp');
+    await expect(page.getByText('Background ready. Save your store to apply it.')).toBeVisible();
     await page.getByLabel('Store logo',{exact:true}).setInputFiles('../dist/sample1.webp');
     await expect(page.getByText('Logo ready. Save your store to apply it.')).toBeVisible();
     await page.getByRole('button',{name:'Save store details'}).click();
     await expect(page.getByLabel('Store logo',{exact:true})).toHaveValue('');
-    const replacement=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(replacement.logo).not.toBe(original.logo);
+    const replacement=await (await page.request.get('/api/merchant-stores/'+slug,{headers:ownHeaders})).json();expect(replacement.logo).not.toBe(original.logo);expect(replacement.banner).not.toBe(original.banner);expect(replacement.background).not.toBe(original.background);
+    await customer.reload();await expect(customer.getByRole('img',{name:name+' banner'})).toHaveAttribute('src',replacement.banner);
+    await page.getByRole('button',{name:'Remove banner',exact:true}).click();
+    await page.getByRole('button',{name:'Remove background',exact:true}).click();
     await page.getByRole('button',{name:'Remove logo',exact:true}).click();
     await page.getByRole('button',{name:'Reset colours',exact:true}).click();
     const saved=page.waitForResponse(r=>r.url().endsWith('/api/merchant-stores/'+slug)&&r.request().method()==='POST');
     await page.getByRole('button',{name:'Save store details'}).click();expect((await saved).status()).toBe(200);
     await expect(page.getByRole('button',{name:'Remove logo',exact:true})).toBeHidden();
     await customer.reload();await expect(customer.getByRole('img',{name:name+' logo'})).toHaveCount(0);
+    await expect(customer.getByRole('img',{name:name+' banner'})).toHaveCount(0);
+    await expect(customer.locator('body')).not.toHaveClass(/has-store-background/);
     await expect(customer.locator('body')).toHaveCSS('background-color','rgb(255, 254, 251)');
     const publicStore=await (await guest.request.get('/api/merchant-stores/'+slug)).json();
     expect(publicStore).not.toHaveProperty('owner');expect(publicStore).not.toHaveProperty('revision');

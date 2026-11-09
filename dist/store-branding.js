@@ -21,10 +21,19 @@ export function applyStoreTheme(element,value){
     element.style.setProperty('--store-'+key+'-text',readableText(colour));
   }
 }
-export function validStoreLogo(value){
+export function validStoreLogo(value){return validStoreImage(value,80000)}
+export function validStoreImage(value,maxLength=160000){
   if(value===null)return true;
-  if(typeof value!=='string'||value.length>80000||!/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))return false;
+  if(typeof value!=='string'||value.length>maxLength||!/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/.test(value))return false;
   const encoded=value.slice(value.indexOf(',')+1);
   if(encoded.length%4)return false;
   try{const head=atob(encoded.slice(0,16));return head.slice(0,4)==='RIFF'&&head.slice(8,12)==='WEBP'}catch{return false}
+}
+
+export function applyStoreBackground(element,value){
+  // Only locally encoded, validated raster images can become CSS backgrounds.
+  const photo=value&&validStoreImage(value)?value:null;
+  element.classList.toggle('has-store-background',!!photo);
+  if(photo)element.style.setProperty('--store-background-image','url("'+photo+'")');
+  else element.style.removeProperty('--store-background-image');
 }

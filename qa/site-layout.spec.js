@@ -6,10 +6,12 @@ async function layout(page){
  await expect(page.locator('h1')).toBeVisible();
  const sizes=await page.evaluate(()=>({
   overflow:document.documentElement.scrollWidth>innerWidth,
+  fonts:[document.body,...document.querySelectorAll('h1,h2,button,input,textarea')].map(n=>getComputedStyle(n).fontFamily),
   title:parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
   headings:[...document.querySelectorAll('main h2')].map(n=>parseFloat(getComputedStyle(n).fontSize)),
   fields:[...document.querySelectorAll('input:not([type=hidden]),select,textarea')].filter(n=>n.getBoundingClientRect().height&& !n.closest('dialog:not([open])')).map(n=>({width:n.getBoundingClientRect().width,left:n.getBoundingClientRect().left,right:n.getBoundingClientRect().right}))
  }));
+ for(const font of sizes.fonts)expect(font).toContain('monospace');
  expect(sizes.overflow).toBe(false);expect(sizes.title).toBeLessThanOrEqual(48);
  for(const size of sizes.headings)expect(size).toBeLessThanOrEqual(42);
  for(const field of sizes.fields){expect(field.left).toBeGreaterThanOrEqual(0);expect(field.right).toBeLessThanOrEqual(page.viewportSize().width+1)}

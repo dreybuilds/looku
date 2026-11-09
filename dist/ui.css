@@ -1,5 +1,6 @@
 /* Canonical app design tokens and primitives. Merchant sites keep their own brand. */
 :where(.looku-ui,.looku-editorial,.storefront,.looku-embed){
+ --ui-font:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
  --ui-space-1:4px;--ui-space-2:8px;--ui-space-3:12px;--ui-space-4:16px;
  --ui-space-5:24px;--ui-space-6:32px;--ui-space-7:48px;
  --ui-page-size:clamp(30px,3.2vw,42px);--ui-section-size:clamp(22px,2vw,28px);
@@ -19,10 +20,10 @@
 .looku-ui .ui-page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--ui-space-5);margin-bottom:var(--ui-space-7)}
 .looku-ui .ui-heading-copy{display:grid;gap:var(--ui-space-3);min-width:0;max-width:64ch}
 .looku-ui .ui-heading-copy>*{margin:0}
-.looku-ui .ui-eyebrow{font:600 11px/1.4 Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ui-muted)}
+.looku-ui .ui-eyebrow{font:600 11px/1.4 var(--ui-font);letter-spacing:.12em;text-transform:uppercase;color:var(--ui-muted)}
 .looku-ui .ui-description{color:var(--ui-muted);font-size:var(--ui-body-size);max-width:60ch}
 .looku-ui .ui-actions{display:flex;gap:var(--ui-space-3);align-items:center;flex-wrap:wrap;flex-shrink:0}
-.looku-ui .ui-action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-surface);color:var(--ui-accent);font:600 14px/1.4 Arial,sans-serif;text-decoration:none;text-align:center;overflow-wrap:anywhere}
+.looku-ui .ui-action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--ui-border);border-radius:10px;background:var(--ui-surface);color:var(--ui-accent);font:600 14px/1.4 var(--ui-font);text-decoration:none;text-align:center;overflow-wrap:anywhere}
 .looku-ui .ui-action-primary{background:var(--ui-accent);border-color:var(--ui-accent);color:white}
 .looku-ui .ui-section{margin-block:var(--ui-space-7)}
 .looku-ui .ui-section-header{display:flex;justify-content:space-between;align-items:center;gap:var(--ui-space-5);margin-bottom:var(--ui-space-5)}
@@ -52,8 +53,8 @@
 
 .looku-ui .ui-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ui-space-4)}
 .looku-ui .ui-choice{display:grid;justify-content:stretch;justify-items:start;gap:var(--ui-space-2);padding:var(--ui-card-pad);color:var(--ink);background:var(--ui-surface);border:1px solid var(--ui-border);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);text-align:left;white-space:normal;transition:box-shadow .18s,transform .18s,border-color .18s}
-.looku-ui .ui-choice-title{font:600 var(--ui-card-size)/1.35 Arial,sans-serif}
-.looku-ui .ui-choice-description{font:400 14px/1.55 Arial,sans-serif;color:var(--ui-muted)}
+.looku-ui .ui-choice-title{font:600 var(--ui-card-size)/1.35 var(--ui-font)}
+.looku-ui .ui-choice-description{font:400 14px/1.55 var(--ui-font);color:var(--ui-muted)}
 .looku-ui .ui-choice[aria-pressed=true]{border-color:var(--ui-accent);background:#f4ecf7;box-shadow:inset 0 0 0 1px var(--ui-accent),var(--ui-shadow)}
 .looku-ui .ui-empty h3{margin:0 0 var(--ui-space-2);font-size:16px;color:var(--ink)}
 .looku-ui .ui-empty h3+p{margin:0}
@@ -199,3 +200,11 @@
 }
 
 .looku-ui .theme-colours label{grid-template-rows:minmax(2.9em,auto) 44px}
+
+/* Monospace typography keeps the existing heading and body scale. */
+.looku-ui,.storefront{font-family:var(--ui-font)}
+:is(.looku-ui,.storefront) :is(h1,h2,h3,h4,h5,h6,button,.button,input,select,textarea,.serif,.merchant-brand,.merchant-monogram,.network,.eyebrow,.num,.chip,.label,footer){font-family:var(--ui-font)}
+:is(.looku-ui,.storefront) :is(h1,h2,h3){letter-spacing:-.035em;overflow-wrap:anywhere}
+.looku-ui .brand-preview-cover h3{font-family:var(--ui-font)}
+.looku-ui .ui-page-header>*{min-width:0}
+.looku-ui .ui-actions{flex-shrink:1}
