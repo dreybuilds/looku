@@ -1,5 +1,5 @@
-const CACHE='looku-shell-admin-email-v1';
-const SHELL=['/','/index.html','/style.css','/vendor/bootstrap-components.css','/app.js','/shopping.js','/community.js','/admin.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
+const CACHE='looku-shell-dm-typography-v1';
+const SHELL=['/typography.css', '/fonts/dm-sans-400-normal.ttf', '/fonts/dm-sans-500-normal.ttf', '/fonts/dm-sans-600-normal.ttf', '/fonts/dm-sans-700-normal.ttf', '/fonts/dm-serif-display-400-italic.ttf', '/fonts/dm-serif-display-400-normal.ttf'].concat(['/','/index.html','/style.css','/vendor/bootstrap-components.css','/app.js','/shopping.js','/community.js','/admin.js','/device.js','/wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb']);
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  await Promise.all(SHELL.map(async path=>{

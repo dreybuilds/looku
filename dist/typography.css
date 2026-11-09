@@ -1,0 +1,24 @@
+/* Locally hosted DM family; licenses are included in /fonts/. */
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-sans-400-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/dm-sans-500-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/dm-sans-600-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Sans';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/dm-sans-700-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-serif-display-400-normal.ttf') format('truetype')}
+@font-face{font-family:'DM Serif Display';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/dm-serif-display-400-italic.ttf') format('truetype')}
+:root{--font-ui:'DM Sans',Arial,Helvetica,sans-serif;--font-display:'DM Serif Display',Georgia,serif;font-family:var(--font-ui)}
+body{line-height:1.5}
+button,.button,input,select,textarea,.shortcut-list a,.shortcut-list button,
+.network,.eyebrow,.num,.chip,footer,.label,.plate-caption{font-family:var(--font-ui)}
+input[type=file]::file-selector-button{font-family:var(--font-ui)}
+input:not([type=checkbox]):not([type=radio]),select,textarea{font-weight:400}
+h1,h2,.serif,.wallet-panel>summary{font-family:var(--font-display);font-weight:400;letter-spacing:-.025em;line-height:1.08}
+.campaign h1{line-height:1;letter-spacing:-.035em}
+.hero.campaign{grid-template-columns:minmax(0,46fr) minmax(0,54fr)}
+.campaign .hero-copy,.campaign-images{min-width:0}
+@media(max-width:760px){.hero.campaign{grid-template-columns:minmax(0,1fr)}}
+h3{letter-spacing:-.015em;line-height:1.3}
+label{line-height:1.4}
+.eyebrow,.label,.plate-caption{font-weight:600;letter-spacing:.13em}
+.chip{font-weight:600;letter-spacing:.035em}
+/* Keep public wallet addresses easy to compare character by character. */
+.wallet-body [data-public]{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
