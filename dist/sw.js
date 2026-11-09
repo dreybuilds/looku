@@ -1,4 +1,4 @@
-const CACHE='looku-shell-store-branding-1';
+const CACHE='looku-shell-pin-inspiration-1';
 const SHELL=['/','/index.html','/app','/welcome.js','/landing.css','/style.css','/ui.css','/ui.js','/vendor/bootstrap-components.css','/merchant-stores.js','/store-branding.js','/app.js','/features.js','/bookings.js','/wishlist.js','/merchant-payment.js','/shopping.js','/community.js','/social.js','/pinterest.js','/inspiration.js','/inspiration-data.js','/pinterest-board.html','/pinterest-board.js','/email-auth.js','/admin.js','/support.js','/device.js','/wallet.js','/stellar-wallet.js','/local-wallet.js','/api/payments/client.js','/model.js','/style-options.js','/choice-picker.js','/look-prompt.js','/garments.js','/stores.json','/app.webmanifest','/icon-192.png','/icon-512.png','/orchid-portrait.webp','/orchid-detail.webp','/looku-orchid.webp','/orchid-turn.webp','/sample1.webp','/sample2.webp','/sample3.webp','/sample4.webp','/orchid-frames.glb'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);

@@ -17,9 +17,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const options=(items,current)=>items.map(([v,t])=>`<option value="${esc(v)}" ${v===current?'selected':''}>${esc(t)}</option>`).join('');
 const optOcc=v=>options(occasions.map(x=>[x,x]),v);
 let items=await read('items',sample),saved=await read('looks',[]),receipts=await read('receipts',[]),inspo=await read('inspo',null);
-let foundPins=[];
-let lookRequest = null;
-let promptDraft = '';
+let lookRequest = inspo?.pinId && typeof inspo.notes==='string' ? {...interpretLook(inspo.notes,items),color:inspo.color,colorName:'reference colour'} : null;
+let promptDraft = inspo?.pinId ? inspo.notes || '' : '';
 let paletteBook = await read('palette-book',{active:'',entries:[]});
 const presets = [
  {id:'orchid',name:'Orchid Hour',colors:['#a77bb6','#544160','#d599ae']},
@@ -30,6 +29,21 @@ const presets = [
  {id:'coast',name:'Sea Glass',colors:['#387773','#a2c7b5','#e8d7b9']}
 ];
 const activePalette = () => [...presets,...paletteBook.entries].find(entry => entry.id === paletteBook.active);
+function browseInspiration(options={}) {
+ openInspiration({...options,occasion,onUse:async reference=>{
+   const nextPalette={...paletteBook,active:''};
+   await write('palette-book',nextPalette);
+   await write('inspo',reference);
+   paletteBook=nextPalette;
+   inspo=reference;promptDraft=reference.notes;lookRequest=interpretLook(reference.notes,items);
+   // The explicitly chosen reference colour takes precedence over a colour word in the notes.
+   lookRequest.color=reference.color;lookRequest.colorName='reference colour';
+   occasion=reference.occasion;variation=0;
+   await render();
+   requestAnimationFrame(()=>main.querySelector('#outfit-result')?.focus());
+   notice(items.some(item=>!item.id.startsWith('sample'))?'Inspiration saved. Look built from your closet.':'Inspiration saved. Add your clothes in Wardrobe to build your own look.');
+ }});
+}
 function paletteEditor() {
  const palette=activePalette();
  const colors=palette?.colors || ['#a77bb6','#544160','#d599ae'];
@@ -46,7 +60,7 @@ async function setPaletteBook(next) { await write('palette-book',next);paletteBo
 
 const currentLook = () => styleLook(items,occasion,[lookRequest?.color,...(lookRequest?.gptColors||[]),...(activePalette()?.colors || []),inspo?.color].filter(Boolean),variation,lookRequest);
 const editName = () => lookRequest?.text || occasion+' edit';
-let occasion='Everyday',variation=0,filter='',section='',toastTimer,renderId=0,stores;
+let occasion=occasions.includes(inspo?.occasion)?inspo.occasion:'Everyday',variation=0,filter='',section='',toastTimer,renderId=0,stores;
 const notice=t=>{const e=document.querySelector('#toast');e.textContent=t;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{e.textContent=''},4200)};
 function modal(html) {
  body.innerHTML = html;
@@ -135,7 +149,7 @@ function stylist(){
  <input id="look-brief" name="brief" required maxlength="180" value="${esc(promptDraft)}" placeholder="A lilac top and denim for brunch">
  <p class="fine">Try a colour, a favourite piece or an occasion. Choose Build my look to match clothes on this device.</p>
  <div class="row"><button>Build my look</button></div><details><summary>Online styling advice</summary><p class="fine">For a styling tip, <a href="#account">sign in with email</a>. Your account includes a Stellar wallet. Only your description goes to the online styling service. Your wardrobe photos stay on this device.</p><button type="submit" name="engine" value="gpt" class="secondary">Get styling advice</button></details><p role="status" data-prompt-status></p><div class="row">${lookRequest?'<button type="button" class="secondary" data-reset-prompt>Clear description</button>':''}</div></form>
- ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<a href="https://www.pinterest.com/pin/${esc(inspo.pinId)}/" target="_blank" rel="noopener noreferrer">${esc(inspo.title||'Pinterest reference')} ↗</a>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Discover fashion boards for Black women, Black men, office outfits and more.</p><button type="button" data-browse-inspiration>Browse inspiration boards</button><p>Search online using only the words you enter. Your wardrobe photos stay on this device.</p><form class="actions" id="pin-search"><label>Search Pins<input name="query" required maxlength="120" placeholder="Olive linen outfits"></label><button>Search Pinterest</button></form><p role="status" id="pin-status"></p><div id="pin-results" class="stack"></div></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>${money()}</strong><p class="fine">The boutique pays looku ${money(.1)} for the referral. Demo order.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
+ ${paletteEditor()}<div class="toolbar"><label>Occasion<select id="occasion">${optOcc(occasion)}</select></label><label>Inspiration photo<input id="inspo" type="file" accept="image/*"></label>${inspo?`${inspo.photo?`<img width="52" height="52" alt="Your reference" src="${esc(inspo.photo)}">`:`<span>${esc(inspo.title||'Pinterest reference')}</span><button type="button" class="secondary small" data-view-inspiration>View saved Pinterest inspiration</button>`}<span class="chip" style="border-color:${esc(inspo.color)}">Colour ${esc(inspo.color)}</span><button class="secondary small" data-clearref>Clear reference</button>`:''}</div><details class="panel"><summary>Find inspiration on Pinterest</summary><p>Discover fashion boards for Black women, Black men, office outfits and more.</p><button type="button" data-browse-inspiration>Browse inspiration boards</button><p class="fine">Search the curated board themes by clothing, colour or style. Your wardrobe stays on this device.</p><form class="actions" id="pin-search"><label>Search inspiration boards<input name="query" required maxlength="120" placeholder="Olive, office or denim"></label><button>Search inspiration</button></form></details><div class="sectionhead"><div><div class="eyebrow">Your fitting room</div><h2 id="outfit-result" tabindex="-1">${esc(occasion)} edit</h2></div></div>${lookRequest?`<p class="prompt-feedback" role="status">${lookRequest.tip?esc(lookRequest.tip)+' · ':''}${esc([lookRequest.occasion, lookRequest.colorName, ...lookRequest.terms, ...lookRequest.excluded.map(term=>'excluding '+term)].filter(Boolean).join(' · ') || 'No matching details found. Showing your current wardrobe combination.')}</p>`:''}<div class="grid cards4">${look.pieces.map(card).join('')||'<p>Add a piece to start an outfit.</p>'}</div><div class="actions"><button data-save ${look.pieces.length?'':'disabled'}>Save outfit</button><button class="secondary" data-remix>Try another combination</button><a class="link" href="#wardrobe" data-saved-link>View saved outfits</a></div><div class="panel"><h3>${look.missing.length?'Still needed for a full outfit':'Why these pieces'}</h3><p>${look.missing.length?'Add '+look.missing.map(t=>categories[t].toLowerCase()).join(' and ')+' to your rail to finish this look.':look.pieces.map(p=>esc(p.name)).join(' + ')+'.'} ${activePalette()?'Colour match: '+esc(activePalette().name)+'.':inspo?'Items closer to your reference colour rank higher.':'Pieces tagged for '+esc(occasion.toLowerCase())+' get first pick.'}</p></div>${look.layer&&look.pieces.length?`<div class="panel split"><div><div class="eyebrow">Optional finishing piece</div><h2>Cropped jacket</h2><p>Your rail has no outer layer. Try this piece from the looku demo boutique.</p></div><div><strong>${money()}</strong><p class="fine">The boutique pays looku ${money(.1)} for the referral. Demo order.</p><div class="actions"><button data-buy>Review purchase →</button></div></div></div>`:''}`
 }
 function showSaved(){return saved.length?saved.map(l=>`<div class="panel"><div class="eyebrow">Saved outfit</div><h3>${esc(l.name)}</h3><p>${l.pieces.map(p=>esc(p.name)).join(' · ')}</p><details><summary>View outfit pieces</summary><div class="grid cards4">${l.pieces.map((piece,index)=>{const garment=items.find(item=>item.id===piece.id);return garment?card(garment,index):`<p class="fine">${esc(piece.name)} · removed from wardrobe</p>`}).join('')}</div></details><button class="secondary small" data-publish="${esc(l.id)}">Publish look</button> <button class="link small" data-unsave="${esc(l.id)}">Remove saved outfit</button></div>`).join(''):'<p class="empty">Your saved outfits will appear here.</p>'}
 function showAdminNavigation(){
@@ -404,7 +418,8 @@ main.addEventListener('input', e => {
 main.addEventListener('input',e=>{if(e.target.id==='store-search'&&stores)drawStores(e.target.value)});
 main.addEventListener('change',async e=>{try{if(e.target.id==='saved-palette'){await setPaletteBook({...paletteBook,active:e.target.value});const form=main.querySelector('#custom-palette');form.closest('details').open=true;form.elements.paletteName.focus();return}if(e.target.id==='filter'){filter=e.target.value;render()}if(e.target.id==='occasion'){lookRequest=null;occasion=e.target.value;variation=0;render()}if(e.target.id==='inspo'&&e.target.files[0]){lookRequest=null;const next=await processPhoto(e.target.files[0]);await write('inspo',next);inspo=next;render()}}catch(err){notice(err.message)}});
 main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
- if(b.hasAttribute('data-browse-inspiration')){openInspiration();return}
+ if(b.hasAttribute('data-browse-inspiration')){browseInspiration();return}
+ if(b.hasAttribute('data-view-inspiration')){browseInspiration({reference:inspo});return}
  if(b.hasAttribute('data-install')||b.hasAttribute('data-backup')){await deviceAction(b,()=>({items,looks:saved,inspo}));return}
  if(b.dataset.publish||b.dataset.sale||b.dataset.donate){
    const look=saved.find(entry=>entry.id===b.dataset.publish);
@@ -420,7 +435,7 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
  }
  if(b.hasAttribute('data-palette-off')){await setPaletteBook({...paletteBook,active:''});return}
  if(b.hasAttribute('data-reset-prompt')){promptDraft='';lookRequest=null;variation=0;render();main.querySelector('#look-brief')?.focus();return}
- if(b.dataset.pin){lookRequest=null;const pin=foundPins.find(p=>p.id===b.dataset.pin);if(!pin)return;const color=b.parentElement.querySelector('input').value;const ref={pinId:pin.id,title:pin.title,color};await write('inspo',ref);inspo=ref;render();notice('Pin palette applied');return}
+
  if(b.hasAttribute('data-edit-palette')) {
    lookRequest=null;
    const reference = {photo:'/orchid-detail.webp',color:'#a77bb6',title:'The Orchid Edit'};
@@ -435,7 +450,7 @@ main.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b
  if(b.hasAttribute('data-remix')){const prior=currentLook().pieces.map(p=>p.id).join();variation++;render();if(currentLook().pieces.map(p=>p.id).join()===prior)notice('Add another piece in the same category for more combinations.')}
  if(b.hasAttribute('data-save')){const look=currentLook();const pieces=look.pieces.map(({id,name})=>({id,name}));if(saved.some(s=>s.name===editName()&&s.pieces.map(p=>p.id).join()===pieces.map(p=>p.id).join()))return notice('This outfit is already saved');const next=[{id:crypto.randomUUID(),name:editName(),pieces},...saved];await write('looks',next);saved=next;notice('Outfit saved to Wardrobe')}
  if(b.dataset.unsave){if(!confirm('Remove this saved outfit? Your wardrobe pieces stay on this device.'))return;const next=saved.filter(s=>s.id!==b.dataset.unsave);await write('looks',next);saved=next;render()}
- if(b.hasAttribute('data-clearref')){await write('inspo',null);inspo=null;render()}
+ if(b.hasAttribute('data-clearref')){await write('inspo',null);if(inspo?.pinId&&lookRequest?.text===inspo.notes){lookRequest=null;promptDraft=''}inspo=null;render()}
  if(b.hasAttribute('data-cancel-order')){
    sessionStorage.removeItem('looku.return-to-order');sessionStorage.removeItem('looku.jacket-limit');
    checkoutDraft=null;b.closest('.order-return').remove();main.focus();return;
@@ -485,12 +500,5 @@ main.addEventListener('submit',async e=>{
    return;
  }
  if(e.target.id!=='pin-search')return;e.preventDefault();
- const form=e.target,status=main.querySelector('#pin-status'),results=main.querySelector('#pin-results');
- results.replaceChildren();status.textContent='Searching Pinterest…';form.querySelector('button').disabled=true;
- try{
- const response=await fetch('/api/pinterest/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:form.elements.query.value.trim()})});
- const data=await response.json();if(!response.ok)throw Error(data.error);
- foundPins=data.pins;status.textContent=foundPins.length?'Open a Pin, then choose the colour to use for your outfit.':'No Pins returned for this search.';
- results.innerHTML=foundPins.map(p=>`<div class="row"><a href="https://www.pinterest.com/pin/${esc(p.id)}/" target="_blank" rel="noopener noreferrer">${esc(p.title)} ↗</a><label>Palette colour<input type="color" value="${esc(p.color||'#718269')}"></label><button class="secondary" data-pin="${esc(p.id)}">Use this reference</button></div>`).join('');
- }catch(err){status.textContent=err.message||'Pinterest is unavailable offline.'}finally{form.querySelector('button').disabled=false}
+ browseInspiration({query:e.target.elements.query.value.trim()});
 });

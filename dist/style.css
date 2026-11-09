@@ -444,3 +444,20 @@ body.storefront {background:var(--store-background,#fffefb);--ink:var(--store-ba
 /* Admin dashboard uses the shared card and action spacing. */
 .looku-ui .admin-metrics {grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));margin:1.25rem 0}
 .looku-ui .admin-metrics .ui-card button {margin-top:auto}
+
+/* Pin reference controls sit beside the official embed, and stack on phones. */
+.inspiration-dialog .ui-section-header{padding-right:32px;margin-bottom:var(--ui-space-5,24px)}
+.inspiration-dialog h2{font-size:var(--ui-section-size,28px);text-align:left;line-height:1.25}
+.inspiration-dialog h3{font-size:var(--ui-card-size,18px);line-height:1.4;margin-block:var(--ui-space-3,12px)}
+.inspiration-dialog p{line-height:1.6}
+.inspiration-dialog .inspiration-instruction{margin-block:var(--ui-space-4,16px);color:var(--ui-accent,#61216c)}
+.inspiration-match{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ui-space-5,24px);margin-top:var(--ui-space-5,24px)}
+.inspiration-match>*{min-width:0}
+.inspiration-match form{align-content:start}
+.inspiration-match form>*{margin:0}
+.inspiration-match input:not([type=color]),.inspiration-match textarea,.inspiration-match select{width:100%;min-width:0}
+.inspiration-match .inspiration-frame{height:560px;max-height:65dvh;margin-top:0}
+.inspiration-paste{margin-block:var(--ui-space-4,16px)}
+.inspiration-paste form{margin-top:var(--ui-space-3,12px)}
+.inspiration-dialog .inspiration-card button{margin-top:auto}
+@media(max-width:600px){.inspiration-match{grid-template-columns:1fr}.inspiration-match .inspiration-frame{height:320px;max-height:42dvh}.inspiration-match form{padding-bottom:var(--ui-space-4,16px)}}
