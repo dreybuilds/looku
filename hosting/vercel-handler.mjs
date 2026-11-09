@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   headers.delete('oai-authenticated-user-email');
   let response;
   if(url.pathname.startsWith('/api/admin/')){
-    // Vercel has no Sites identity headers. Verify the owner through Privy before wallet enrollment.
+    // Vercel has no Sites identity headers. Verify the owner email through Privy before allowing admin access.
     if(headers.has('authorization')){
       try{
         const did=await privySubject(new Request(url,{headers}));

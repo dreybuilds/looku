@@ -1,5 +1,4 @@
 import {test,expect} from '@playwright/test';
-import {Keypair} from '../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js';
 
 test('private support conversation goes through the owner dashboard',async({page,browser,baseURL})=>{
  await page.goto('/#support');
@@ -21,11 +20,7 @@ test('private support conversation goes through the owner dashboard',async({page
  expect((await page.request.post('/api/support',{headers:{Authorization:'Bearer '+other,Origin:baseURL,'X-Looku-Action':'support'},data:{id:ticket.id,revision:ticket.revision,message:'Test'}})).status()).toBe(404);
  const owner=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
  try{
-   const key=Keypair.fromRawEd25519Seed(Buffer.alloc(32,7)),address=key.publicKey(),headers={Origin:baseURL,'X-Looku-Action':'wallet-account'};
-   const challenge=await (await owner.request.post('/api/account/challenge',{headers,data:{address}})).json();
-   const signature=Buffer.from(key.sign(Buffer.from(challenge.message))).toString('base64');
-   expect((await owner.request.post('/api/account/verify',{headers,data:{address,signature,nonce:challenge.nonce}})).status()).toBe(200);
-   if((await (await owner.request.get('/api/admin/access')).json()).state==='enroll')await owner.request.post('/api/admin/enroll',{headers:{Origin:baseURL,'X-Looku-Action':'admin'},data:{address}});
+  expect((await (await owner.request.get('/api/account')).json()).address).toBeNull();
    const admin=await owner.newPage();await admin.goto('/owner.html#wardrobe');
    await expect(admin.getByRole('link',{name:'Wardrobe',exact:true})).toHaveCount(0);
    await expect(admin.getByRole('link',{name:'Admin home'})).toBeVisible();

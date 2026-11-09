@@ -1,5 +1,4 @@
 import {test,expect} from '@playwright/test';
-import {Keypair} from '../payments/node_modules/@stellar/stellar-sdk/lib/esm/index.js';
 
 test('owner switches control listings and booking requests while customers retain private booking history',async({page,browser,baseURL})=>{
   const token=await (await page.request.get('/qa-privy-token')).text();
@@ -18,14 +17,7 @@ test('owner switches control listings and booking requests while customers retai
   expect((await page.request.get('/api/admin/bookings')).status()).toBe(403);
   expect((await page.request.post('/api/admin/features',{data:{id:'donate',enabled:false}})).status()).toBe(403);
   const owner=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
-  const key=Keypair.fromRawEd25519Seed(Buffer.alloc(32,7)),address=key.publicKey();
-  const headers={Origin:baseURL,'X-Looku-Action':'wallet-account'};
-  const challenge=await (await owner.request.post('/api/account/challenge',{headers,data:{address}})).json();
-  const signature=Buffer.from(key.sign(Buffer.from(challenge.message))).toString('base64');
-  expect((await owner.request.post('/api/account/verify',{headers,data:{address,signature,nonce:challenge.nonce}})).status()).toBe(200);
-  if((await (await owner.request.get('/api/admin/access')).json()).state==='enroll'){
-    await owner.request.post('/api/admin/enroll',{headers:{Origin:baseURL,'X-Looku-Action':'admin'},data:{address}});
-  }
+  expect((await (await owner.request.get('/api/account')).json()).address).toBeNull();
   try{
     const admin=await owner.newPage();await admin.goto('/owner.html');
     expect((await page.request.get('/api/admin/partner-programs')).status()).toBe(403);

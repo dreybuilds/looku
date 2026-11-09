@@ -1,7 +1,6 @@
 import partnerPrograms from './partner-programs.json' with {type:'json'};
 import {reportPage} from './reports.mjs';
 import {adminSupport,dashboard} from './support.mjs';
-import {session} from './account.mjs';
 import {walletReceipts} from './wallet-receipts.mjs';
 import {StrKey} from '@stellar/stellar-sdk';
 
@@ -26,20 +25,13 @@ export async function admin(req,env,recheckPayout){
  const id=req.headers.get('oai-authenticated-user-id'),email=req.headers.get('oai-authenticated-user-email');
  const identity=id&&email?.trim().toLowerCase()===ownerEmail;
  if(!identity)return path==='access'&&req.method==='GET'?reply(200,{state:id?'unavailable':'sign-in'}):error(403,'Owner access required.');
- const user=await session(req,store);
- const owner=await (await store.get(ownerKey))?.json();
- const authorized=user&&owner?.id===id&&owner.address===user.address;
- if(path==='access'&&req.method==='GET')return reply(200,{state:authorized?'admin':!user?'wallet':owner?'unavailable':'enroll',address:user?.address});
+ if(path==='access'&&req.method==='GET')return reply(200,{state:'admin'});
  if(req.method!=='GET'&&(req.method!=='POST'||req.headers.get('Origin')!==url.origin||req.headers.get('X-Looku-Action')!=='admin'))return error(403,'Open the admin workspace to make changes.');
  let data={};
  if(req.method==='POST'){
    try{data=await req.json()}catch{return error(400,'Invalid request.')}
    if(!data||typeof data!=='object')return error(400,'Invalid request.');
  }
- if(path==='enroll'&&req.method==='POST'&&!owner&&user&&data.address===user.address){
-   return await write(store,ownerKey,{id,address:user.address})?reply(201,{ok:true}):conflict();
- }
- if(!authorized)return error(403,'Sign in with the owner account and its linked wallet.');
  if(path==='partner-programs'&&req.method==='GET')return reply(200,{items:partnerPrograms});
  if(path==='features')return featureControls(req,store,data);
  if(path==='bookings')return adminBookings(req,store,data);
@@ -62,12 +54,14 @@ export async function admin(req,env,recheckPayout){
    return await write(store,affiliateKey,next,revision)?reply(200,{ok:true}):conflict();
  }
  if(path==='accounts'&&req.method==='GET'){
+   const owner=await (await store.get(ownerKey))?.json();
    const page=await store.list({prefix:'wallet-accounts/',limit:20,cursor});
-   const rows=await Promise.all(page.objects.map(async x=>{const obj=await store.get(x.key);if(!obj)return null;const {address,createdAt,suspended}=await obj.json();return {address,createdAt,suspended:!!suspended,self:address===owner.address,revision:obj.etag}}));
+   const rows=await Promise.all(page.objects.map(async x=>{const obj=await store.get(x.key);if(!obj)return null;const {address,createdAt,suspended}=await obj.json();return {address,createdAt,suspended:!!suspended,self:address===owner?.address,revision:obj.etag}}));
    return reply(200,{items:rows.filter(Boolean),next:page.truncated?page.cursor:null});
  }
  if(path==='accounts'&&req.method==='POST'){
-   if(!StrKey.isValidEd25519PublicKey(data.address||'')||data.address===owner.address||typeof data.suspended!=='boolean')return error(400,'Choose another valid wallet account.');
+   const owner=await (await store.get(ownerKey))?.json();
+   if(!StrKey.isValidEd25519PublicKey(data.address||'')||data.address===owner?.address||typeof data.suspended!=='boolean')return error(400,'Choose another valid wallet account.');
    const key='wallet-accounts/'+data.address,obj=await store.get(key);
    if(!obj||obj.etag!==data.revision)return conflict();
    return await write(store,key,{...await obj.json(),suspended:data.suspended},obj.etag)?reply(200,{ok:true}):conflict();
