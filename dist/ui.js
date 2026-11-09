@@ -56,3 +56,21 @@ export function metricCard({title,value,action}){
   card.append(element('h3','ui-card-title',title),element('p','ui-metric-value',String(value)));
   if(action)card.append(action);return card;
 }
+
+export function sectionNav({label,items,current}){
+  const nav=element('nav','ui-section-nav');nav.setAttribute('aria-label',label);
+  for(const item of items){
+    const link=actionLink(item);
+    if(item.href===current)link.setAttribute('aria-current','page');
+    nav.append(link);
+  }
+  return nav;
+}
+export function disclosure({title,description,label,open=false}){
+  const card=element('details','panel ui-disclosure');card.open=open;
+  const summary=element('summary',''),copy=element('span','ui-disclosure-copy');
+  if(label)copy.append(element('span','ui-eyebrow',label));
+  copy.append(element('span','ui-disclosure-title',title));summary.append(copy);card.append(summary);
+  if(description)card.append(element('p','ui-description',description));
+  return card;
+}

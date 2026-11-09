@@ -38,7 +38,7 @@ export function readProfile(container){
 }
 export function saveProfile(fields){localStorage.setItem(storeKey,JSON.stringify({...loadProfile(),...fields}))}
 export function mountProfile(panel){
- panel.innerHTML='<summary>My sizes and delivery details</summary><form class="stack"><p>Save your fit and usual destination on this device. You can change either when you order.</p>'+profileFields()+'<div class="row"><button>Save shopping profile</button><button type="button" class="secondary" data-forget>Clear details</button></div><p role="status"></p></form>';
+ panel.innerHTML='<summary>My sizes and delivery details</summary><form class="stack ui-form-grid"><p class="ui-full-width">Save your fit and usual destination on this device. You can change either when you order.</p>'+profileFields()+'<div class="row ui-full-width"><button>Save shopping profile</button><button type="button" class="secondary" data-forget>Clear details</button></div><p role="status"></p></form>';
  const form=panel.querySelector('form'),note=form.querySelector('[role=status]');
  fillProfile(form);
  form.onsubmit=e=>{e.preventDefault();try{saveProfile(readProfile(form));note.textContent='Shopping profile saved on this device.'}catch{note.textContent='Could not save on this device.'}};

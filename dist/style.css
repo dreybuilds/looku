@@ -478,3 +478,37 @@ body.storefront.has-store-background,.store-brand-preview.has-store-background{
 .storefront.has-store-background .merchant-product{background:var(--store-background)}
 .store-brand-preview.has-store-background>.eyebrow{background:var(--store-background);padding:4px 8px;justify-self:start}
 @media(max-width:600px){.merchant-cover-identity{flex-direction:column;align-items:flex-start;gap:20px}}
+
+/* Account, wallet, wishlist and support compose the same app primitives. */
+#member-account{display:grid;gap:24px;margin:0 0 24px}
+#member-account>.panel{margin:0}.account-identity .ui-section-header{margin-bottom:16px}
+.account-device>details{margin-top:24px}
+#shopping-profile{margin:0}
+#shopping-profile+details{margin-top:24px}
+#support-area{margin:0}
+.support-faq{display:grid;gap:12px}.support-faq .ui-section-header{margin-bottom:8px}
+.support-contact{display:grid;gap:20px}.support-contact>.ui-section-header{margin-bottom:0}
+.support-contact>form{margin:0 0 16px}.support-contact .account-trigger{background:var(--ui-accent);color:white;border-color:var(--ui-accent)}
+.support-inbox{display:grid;gap:16px}.support-inbox>.stack:empty{display:none}
+.support-message{padding:16px 0;border-top:1px solid var(--line)}
+#wallet-panel>.stellar-account{margin:0 0 32px}
+.stellar-account>.ui-section-header{margin:0}.stellar-account>.ui-section-header .ui-description{font-size:14px}
+.wallet-balance{padding:18px;background:#f3ecf6;border-radius:12px;font-weight:600;line-height:1.6}
+.stellar-account>.ui-action{justify-self:start}
+#wallet-panel .wallet-grid{margin-top:0;align-items:start}
+.wallet-receipts .receipt{margin:0;display:grid;gap:12px}
+.wallet-receipts>details{margin-top:24px}
+.wishlist-collection{display:grid;gap:20px;align-content:start}
+.wishlist-wallet>.stellar-account{margin:0}
+.wishlist-collection .wish-card{display:grid;gap:20px}
+.wish-item-heading{display:flex;gap:18px;align-items:flex-start}
+.wish-item-heading img{width:92px;height:116px;object-fit:cover;border-radius:10px;flex-shrink:0}
+.wish-item-heading .ui-heading-copy{gap:8px}.wish-item-heading small{color:var(--muted)}
+.wish-item-heading h2{margin:0}.wish-card .wish-funding{margin:0}
+.wishlist-workspace .stellar-account .ui-actions{gap:10px}
+@media(min-width:900px){.looku-ui .wishlist-workspace{grid-template-columns:minmax(0,1.35fr) minmax(0,.85fr)}}
+@media(max-width:760px){.wish-item-heading{gap:12px}.wish-item-heading img{width:72px;height:90px}.wish-card .ui-actions{gap:10px}}
+
+.looku-ui .stellar-account>.ui-section-header,.looku-ui .support-contact>.ui-section-header{margin-bottom:0}
+.looku-ui .wallet-receipts>details.ui-disclosure{margin-top:24px}
+.wallet-workspace>.stellar-account{margin:0}

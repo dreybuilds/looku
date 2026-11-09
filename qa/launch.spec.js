@@ -36,7 +36,8 @@ test('Varial entry establishes a verified Stellar session and signs out',async({
  await expect(page).toHaveURL(/#studio$/);
  await page.goto('/app');
  await expect(page).toHaveURL(/#studio$/);
- await page.getByRole('navigation').getByRole('link',{name:'Wallet',exact:true}).click();
+ await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Account',exact:true}).click();
+ await page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Wallet & payments',exact:true}).click();
  await page.getByRole('button',{name:'Sign out of wallet'}).click();
  await expect(page.getByRole('heading',{name:'Enter your studio.'})).toBeVisible();
 });

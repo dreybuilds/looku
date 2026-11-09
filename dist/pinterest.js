@@ -43,9 +43,9 @@ async function choose(parent,resource,label,status,onPick){
  await page();parent.replaceChildren(controls);
 }
 export function pinterestPanel(){
- const panel=node('details');panel.className='panel';
+ const panel=node('details');panel.className='panel ui-disclosure';
  panel.append(node('summary','Pinterest account and imports'));
- const controls=node('div'),picker=node('div'),status=node('p');
+ const controls=node('div'),picker=node('div'),status=node('p');controls.className='ui-actions';
  status.setAttribute('role','status');panel.append(controls,picker,status);
  const messages={connected:'Pinterest connected.',cancelled:'Pinterest authorization cancelled.',failed:'Could not link Pinterest. Try connecting again.'};
  const url=new URL(location.href),outcome=url.searchParams.get('pinterest');

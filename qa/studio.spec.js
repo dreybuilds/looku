@@ -130,7 +130,7 @@ test('native PWA metadata and install affordance',async({baseURL},testInfo)=>{
 test('accessible pages, dialog names and viewport fit',async({page})=>{
  const failures=[];
  page.on('pageerror',e=>failures.push(e.message));
- for(const route of ['studio','wardrobe','stylist','community','wallet','shops','bookings','account','support','wishlist','merchant']){
+ for(const route of ['studio','wardrobe','stylist','community','wallet','shops','bookings','account','account/device','support','wishlist','merchant']){
    await page.goto('/#'+route);
    const heading=page.getByRole('heading',{level:1});await expect(heading).toBeVisible();
    if(route==='wallet'){
@@ -175,6 +175,7 @@ test('encrypted backup round trip and wrong passphrase',async({page},info)=>{
  await page.goto('/#wardrobe');
  await expect(page.getByText('Install looku & manage storage')).toHaveCount(0);
  await nav(page,'Account');
+ await page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Device & storage'}).click();
  await page.getByText('Install looku & manage storage').click();
  const pass=page.locator('[data-pass]');const phrase=crypto.randomUUID();
  await pass.fill(phrase);page.once('dialog',d=>d.accept());

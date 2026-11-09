@@ -1,4 +1,4 @@
-import {pageHeader} from './ui.js';
+import {pageHeader,emptyState} from './ui.js';
 import {mountStellarWallet,stellarBudgetPanel,releaseStellarBudget} from './stellar-wallet.js';
 import {emailHeaders} from './email-auth.js';
 import {productUrl,guessName,fetchProductPreview} from './shopping.js';
@@ -62,8 +62,8 @@ function makeBookmark(){
 }
 export async function mountWishlist(main){
   const seed=new URLSearchParams(location.hash.split('?').slice(1).join('?'));
-  main.innerHTML=pageHeader({eyebrow:'Your shopping list',title:'Wishlist',description:'Save a piece, plan its budget and return to the store when you’re ready.'}).outerHTML+`
-  <details class="panel" data-editor><summary>Save a product link</summary><form class="stack">
+  main.innerHTML=pageHeader({eyebrow:'Your shopping list',title:'Wishlist',description:'Save pieces you love and plan for your next purchase.',actions:[{label:'Browse stores',href:'#shops'},{label:'Wallet & payments',href:'#account/wallet'}]}).outerHTML+`<div class="ui-two-column wishlist-workspace"><section class="wishlist-collection">
+  <details class="panel ui-disclosure" data-editor><summary>Save a product link</summary><form class="stack">
   <div class="ui-field"><label>Product link<input type="url" name="url" placeholder="https://…" maxlength="4096" required></label>
   <p class="fine" data-preview-status role="status">Product details will appear here when available.</p><img data-preview width="120" alt="Product thumbnail" hidden></div>
   <label>Item name<input name="title" maxlength="120" placeholder="e.g. Ayla Knit Top in Plum"></label>
@@ -74,9 +74,9 @@ export async function mountWishlist(main){
   <p class="fine">Check the price and size on the retailer’s page. Add delivery costs to your target if you want to save for them too.</p>
   <div class="row" data-editor-actions><button>Save item</button></div></form></details>
   <p role="status" data-wish-note></p><div class="stack" data-items></div>
-  <details class="panel"><summary>Save while browsing</summary><p>On a supported phone with looku installed, share the product page to looku. You can always copy the link and paste it above.</p><p>On desktop, drag <a data-bookmark>Save to looku</a> to your bookmarks bar. Click that bookmark on a product page to review it here.</p></details>
-  <p class="fine">Your wishlist, photos and price targets stay in this browser. Clearing site data removes this list.</p>`;
-  const sharedWallet=document.createElement('section');main.querySelector('[data-editor]').before(sharedWallet);void mountStellarWallet(sharedWallet,true);
+  <details class="panel ui-disclosure"><summary>Save while browsing</summary><p>On a supported phone with looku installed, share the product page to looku. You can always copy the link and paste it above.</p><p>On desktop, drag <a data-bookmark>Save to looku</a> to your bookmarks bar. Click that bookmark on a product page to review it here.</p></details>
+  <p class="fine">Your wishlist, photos and price targets stay in this browser. Clearing site data removes this list.</p></section><aside class="wishlist-wallet" aria-label="Shared wishlist wallet"></aside></div>`;
+  const sharedWallet=document.createElement('section');main.querySelector('.wishlist-wallet').append(sharedWallet);void mountStellarWallet(sharedWallet,true);
   const editor=main.querySelector('[data-editor]'),form=editor.querySelector('form'),f=form.elements;
   const note=main.querySelector('[data-wish-note]'),list=main.querySelector('[data-items]');
   const bookmark=main.querySelector('[data-bookmark]');
@@ -163,16 +163,17 @@ export async function mountWishlist(main){
     if(oldPanel&&!oldPanel.isConnected)return all;
     if(oldPanel)checks.delete(oldPanel);
     else{list.replaceChildren();checks.clear()}
-    if(!all.length)list.append(el('p','Your saved pieces will appear here.'));
+    if(!all.length)list.append(emptyState('Your saved pieces will appear here. Add a product link to get started.','A little room for your favourites'));
     for(const item of all){
       if(oldPanel&&oldPanel.dataset.item!==item.url)continue;
-      const url=productUrl(item.url),card=el('article','');card.className='panel wish-card';
-      if(item.photo){const image=document.createElement('img');image.src=item.photo;image.alt=item.title;image.width=100;card.append(image)}
-      card.append(el('small',url.hostname.replace(/^www\./,'')),el('h2',item.title));
-      if(item.variant)card.append(el('p',item.variant));
-      card.append(el('p',item.target?'Target price · '+fmt(item.target,item.currency):'Add a target when you know the price.'));
+      const url=productUrl(item.url),card=el('article','');card.className='panel ui-surface wish-card';
+      const heading=el('div','');heading.className='wish-item-heading';const copy=el('div','');copy.className='ui-heading-copy';
+      if(item.photo){const image=document.createElement('img');image.src=item.photo;image.alt=item.title;image.width=100;heading.append(image)}
+      copy.append(el('small',url.hostname.replace(/^www\./,'')),el('h2',item.title));
+      if(item.variant)copy.append(el('p',item.variant));
+      copy.append(el('p',item.target?'Target price · '+fmt(item.target,item.currency):'Add a target when you know the price.'));heading.append(copy);card.append(heading);
       if(item.saved>0)card.append(el('small','Previous manual entry: '+fmt(item.saved,item.savedCurrency||item.currency)+'. No deposit was recorded.'));
-      const row=el('div','');row.className='actions';
+      const row=el('div','');row.className='ui-actions';
       const shop=el('a','View at store ↗');shop.href=item.url;shop.target='_blank';shop.rel='noopener noreferrer';shop.className='button';
       const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>{editor.hidden=false;populate(item)};
       const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await releaseStellarBudget(item.url);await update(item.url,current=>{if(current?.mpesa&&!current.mpesa.closed)throw Error('Wait for the M-Pesa request to finish before removing this item.');if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};

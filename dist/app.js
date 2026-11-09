@@ -1,5 +1,5 @@
 import {emailHeaders} from './email-auth.js';
-import {pageHeader,sectionHeader,contentCard,emptyState} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,sectionNav} from './ui.js';
 import {mountChoicePickers} from './choice-picker.js';
 import {openInspiration} from './inspiration.js';
 import {enabled,refreshFeatures} from './features.js';
@@ -137,7 +137,7 @@ function studio() {
    <a href="#bookings"><span>${enabled('bookings')?'Book a stylist':'My bookings'}</span><span aria-hidden="true">↗</span></a>
    <a href="#wishlist"><span>Your wishlist</span><span aria-hidden="true">↗</span></a>
    <a href="#wardrobe"><span>Your wardrobe <small>${items.length} pieces</small></span><span aria-hidden="true">↗</span></a>
-   <a href="#wallet"><span>Your wallet</span><span aria-hidden="true">↗</span></a></div></section>
+   <a href="#account/wallet"><span>Your wallet</span><span aria-hidden="true">↗</span></a></div></section>
    <section class="object-study"><div class="object-head"><div><div class="eyebrow">Object study &nbsp;/&nbsp; 001</div><h2>Orchid frames</h2></div><span class="chip">3D</span></div>
    <div class="turntable" role="img" aria-label="Rotatable 3D study of glossy orchid sunglasses with smoked lenses"></div>
    <div class="object-controls"><label>Rotate the frames<input aria-label="Rotate the frames" id="turn-frame" type="range" min="0" max="23" value="0" aria-valuetext="0 degrees"></label><a href="/orchid-frames.glb" download="looku-orchid-frames.glb">3D file ↓</a></div></section>
@@ -184,8 +184,12 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSwitch
 window.addEventListener('online',syncSwitches);
 setInterval(()=>{if(!document.hidden&&navigator.onLine)syncSwitches()},60000);
 receiveSharedLink();
+function accountHeader(active){
+ return pageHeader({eyebrow:'Looku Wear / Account',title:active==='wallet'?'Wallet & payments':active==='device'?'Device & storage':'Your account',description:active==='wallet'?'One account wallet for your wishlist, payments and receipts.':active==='device'?'Keep your wardrobe available and backed up.':'Manage your sign-in, personal details and connected profiles.',actions:active==='wallet'?[{label:'Open wishlist',href:'#wishlist'}]:[]}).outerHTML+sectionNav({label:'Account sections',current:active==='profile'?'#account':'#account/'+active,items:[{label:'Profile',href:'#account'},{label:'Wallet & payments',href:'#account/wallet'},{label:'Device & storage',href:'#account/device'}]}).outerHTML;
+}
 async function render(){
  const id=++renderId;section=location.hash.slice(1)||(location.hostname==='admin.lookuwear.xyz'?'admin':'welcome');
+ if(section==='wallet'||section.startsWith('wallet/')){section='account/'+section;history.replaceState(null,'',location.pathname+location.search+'#'+section)}
  if(['lookuwear.xyz','www.lookuwear.xyz'].includes(location.hostname)&&section==='admin'){location.replace('https://admin.lookuwear.xyz/');return}
  if(section==='admin')sessionStorage.setItem('looku.admin-navigation','1');
  if(location.hostname==='admin.lookuwear.xyz'||sessionStorage.getItem('looku.admin-navigation'))showAdminNavigation();
@@ -219,9 +223,10 @@ async function render(){
    main.innerHTML=title('Looku Wear / Community','Community closet','Discover outfits, shop a closet sale or find a piece someone is giving away.')+'<section id="community-feed"></section>';
    await mountCommunity(main.querySelector('#community-feed'),section.split('/').slice(1));
  }
- else if(section==='account'||section.startsWith('account/')){
-   main.innerHTML=title('Looku Wear / Account','Your account','Manage sign-in, sizes, delivery details and connected profiles.')+'<section id="member-account"></section><details class="panel" id="shopping-profile"></details>'+devicePanel();
-   mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1));
+ else if((section==='account'||section.startsWith('account/'))&&!section.startsWith('account/wallet')){
+   main.innerHTML=accountHeader(section==='account/device'?'device':'profile');
+   if(section==='account/device')main.insertAdjacentHTML('beforeend','<section class="ui-section account-device">'+sectionHeader({title:'On this device',description:'Install Looku and protect the wardrobe saved in this browser.'}).outerHTML+devicePanel()+'</section>');
+   else{main.insertAdjacentHTML('beforeend','<section id="member-account"></section><details class="panel ui-disclosure" id="shopping-profile"></details>');mountMemberAccount(main.querySelector('#member-account'),section.split('/').slice(1))}
  }
  else if(section==='support'){
    main.innerHTML='<div id="support-area"></div>';
@@ -234,20 +239,20 @@ async function render(){
    const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
  }
  else if(section==='stylist')main.innerHTML=stylist();
- else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'||section==='wallet/merchant'){
-   main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist price targets →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
+ else if(section==='account/wallet'||section.startsWith('account/wallet/')){
+   main.innerHTML=accountHeader('wallet')+'<div id="wallet-panel"></div>';
    try{
      const {mountWallet}=await import('./wallet.js');
      if(id!==renderId)return;
      const panel=main.querySelector('#wallet-panel');
      await mountWallet(panel);
      if(id!==renderId)return;
-     if(section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'||section==='wallet/merchant')panel.querySelector('.wallet-panel').open=true;
+     if(['admin','support','bookings','merchant'].includes(section.split('/')[2]))panel.querySelector('.wallet-panel').open=true;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);
      }
-     panel.insertAdjacentHTML('afterend','<div class="sectionhead"><h2>Purchase receipts</h2></div><div id="receipts"></div><details class="panel"><summary>See a verified demo sale</summary><p>See the shopper’s payment and the boutique’s referral payout in the payment records.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details>');
+     panel.insertAdjacentHTML('afterend','<section class="ui-section wallet-receipts">'+sectionHeader({title:'Purchase receipts',description:'Your demo orders and their payment records.'}).outerHTML+'<div id="receipts" class="stack"></div><details class="panel ui-disclosure"><summary>See a verified demo sale</summary><p>See the shopper’s payment and the boutique’s referral payout in the payment records.</p><div class="row"><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/4f6fb6e2771c57828048ee6ebafd57150b0fa24fb47f5efb57719f30b1af8e99">Purchase ↗</a><a target="_blank" rel="noopener" href="https://stellar.expert/explorer/testnet/tx/f758f8ffa69bf2912d9819f46edb06daece16dff4023e5068a2320e3fed160e7">Commission ↗</a></div></details></section>');
      drawReceipts();
      if(sessionStorage.getItem('looku.show-receipt')){
        sessionStorage.removeItem('looku.show-receipt');
@@ -296,7 +301,7 @@ async function render(){
  }
  else main.innerHTML=studio();
  mountChoicePickers(main);
- if(section.split('/')[0]==='account')mountProfile(main.querySelector('#shopping-profile'));
+ if(main.querySelector('#shopping-profile'))mountProfile(main.querySelector('#shopping-profile'));
  if (section === 'wardrobe' && sessionStorage.getItem('looku.show-saved')) {
    sessionStorage.removeItem('looku.show-saved');
    document.querySelector('#saved-heading')?.focus();
@@ -327,11 +332,11 @@ function drawReceipts(){
    const purchase=receipt.purchaseTx?'Payment confirmed':purchaseStates[receipt.status]||'Check payment status';
    const affiliate=receipt.payoutTx?'Paid to looku':receipt.purchaseTx?'Awaiting payout':'Awaiting purchase';
    const refresh=['complete','failed'].includes(receipt.status)?'':`<button class="secondary small" data-refresh="${esc(receipt.id)}">Refresh receipt</button>`;
-   return `<article class="receipt"><h3>${esc(receipt.item||'Cropped jacket')}</h3>
+   return `<article class="panel receipt"><h3>${esc(receipt.item||'Cropped jacket')}</h3>
    ${receipt.selection?`<p>Size ${esc(receipt.selection.size)} · Demo order</p>`:''}<p><strong>Your purchase</strong> · ${money(receipt.amount||1)} · ${purchase}</p>
    <p><strong>Affiliate payout</strong> · ${money(receipt.commission??.1)} · ${affiliate}</p>
    <div class="row">${txLink(receipt.purchaseTx,'Purchase transaction')}${txLink(receipt.payoutTx,'Affiliate payout')}${refresh}</div></article>`;
- }).join(''):'<p class="empty">Your first test purchase and its affiliate payout will appear here.</p>';
+ }).join(''):emptyState('Your first test purchase and its affiliate payout will appear here.','No purchase receipts yet').outerHTML;
 }
 async function record(r){const next=[r,...receipts.filter(x=>x.id!==r.id)];await write('receipts',next);receipts=next}
 async function checkout() {
@@ -340,7 +345,7 @@ async function checkout() {
     <form class="stack" data-order-fields><h3>Size and delivery</h3><p>Review the details the agent will send to the demo boutique. You can use example details.</p><button type="button" class="secondary" data-example>Use example details</button>${profileFields(true)}<button type="button" class="secondary" data-save-delivery>Remember these details on this device</button><span data-saved-detail aria-live="polite"></span></form>
     <section class="panel stack"><label>Spending limit · ${unit}<input data-agent-limit type="text" inputmode="decimal" value="${prices[unit]}" maxlength="16"></label><p class="fine">Approve one jacket from the demo boutique. The agent checks the price and merchant before your wallet signs.</p><button type="button" class="secondary" data-check-limit>Check my limit</button></section>
     <form class="stack" data-local-pay hidden><label>Wallet passphrase<input type="password" name="phrase" autocomplete="current-password" required></label><button>Place demo order · ${money()}</button></form>
-    <div class="actions"><button class="secondary" data-freighter>Use an external wallet</button><a href="#wallet" data-create>Set up checkout</a></div>
+    <div class="actions"><button class="secondary" data-freighter>Use an external wallet</button><a href="#account/wallet" data-create>Set up checkout</a></div>
     <p role="status" data-order-status></p>`);
   const local = body.querySelector('[data-local-pay]');
   const extension = body.querySelector('[data-freighter]');
@@ -399,7 +404,7 @@ async function checkout() {
       sessionStorage.removeItem('looku.jacket-limit');
       sessionStorage.setItem('looku.show-receipt','1');
       dialog.close();
-      if (location.hash === '#wallet') await render();
+      if (location.hash === '#account/wallet') await render();
       location.hash = 'wallet';
       notice('Order receipt saved');
     } catch (e) { message.textContent = e.message; }

@@ -7,12 +7,12 @@ async function profile(handles){
  const result=await r.json();if(!r.ok)throw Object.assign(Error(result.error),{status:r.status});return result.handles;
 }
 export function accountDetails(){
- const panel=el('details');panel.className='panel';panel.append(el('summary','Account details · social accounts'));
+ const panel=el('details');panel.className='panel ui-disclosure';panel.append(el('summary','Account details · social accounts'));
  const body=el('div');panel.append(body);
  panel.ontoggle=async()=>{
    if(!panel.open)return;body.textContent='Loading account details…';
    try{
-     const handles=await profile(),form=el('form');form.className='stack';
+     const handles=await profile(),form=el('form');form.className='stack ui-form-grid';
      form.append(el('p','Save your usernames here, then choose which ones to tag when you publish a look.'));
      for(const name of Object.keys(networks)){
        const label=el('label',name+' username'),input=el('input');input.name=name;input.value=handles[name]||'';input.placeholder='@username';input.maxLength=31;label.append(input);form.append(label);

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const appRoutes=['welcome','studio','wardrobe','stylist','bookings','community','community/sale','community/donate','wallet','wishlist','shops','support','account','merchant','boutique/looku/cropped-jacket'];
+const appRoutes=['welcome','studio','wardrobe','stylist','bookings','community','community/sale','community/donate','wallet','wishlist','shops','support','account','account/wallet','account/device','merchant','boutique/looku/cropped-jacket'];
 async function layout(page){
  await expect(page.locator('h1')).toHaveCount(1);
  await expect(page.locator('h1')).toBeVisible();
@@ -21,7 +21,7 @@ test('every app page follows shared layout and remains usable on narrow screens'
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  for(const route of appRoutes){
   await page.goto('/app#'+route);
-  await expect(page.locator('main')).toHaveAttribute('data-page',route.split('/')[0]);
+  await expect(page.locator('main')).toHaveAttribute('data-page',route==='wallet'?'account':route.split('/')[0]);
   if(route==='bookings')await expect(page.getByRole('button',{name:'Sign in with email to book',exact:true})).toBeVisible();
   if(route==='merchant')await expect(page.getByRole('button',{name:'Sign in with email to manage a store',exact:true})).toBeVisible();
   if(route==='support')await expect(page.getByRole('heading',{name:'Contact support',exact:true})).toBeVisible();

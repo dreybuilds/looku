@@ -1,4 +1,4 @@
-import {mountStellarWallet} from './stellar-wallet.js';
+import {sectionHeader,contentCard} from './ui.js';
 import {enabled} from './features.js';
 import {fillProfile} from './shopping.js';
 import {accountDetails,tagChoices,chosenTags,tagLinks} from './social.js';
@@ -71,8 +71,9 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
 
 }
 export function mountMemberAccount(panel,[kind,id]=[]){
- const login=element('section');
- panel.replaceChildren(login,link('Create or manage your store','#merchant'));const wallet=element('section');panel.append(wallet);void mountStellarWallet(wallet,true);if(enabled('social'))panel.append(accountDetails());if(enabled('pinterest'))panel.append(pinterestPanel());
+ const login=element('div'),identity=element('section');identity.className='panel account-identity';identity.append(sectionHeader({title:'Sign-in',description:'Sign in with email. Your account includes a Stellar wallet.'}),login);
+ const shortcuts=element('div');shortcuts.className='ui-grid ui-grid-pair';shortcuts.append(contentCard({title:'Wallet & payments',description:'Manage your shared wallet, funding and purchase receipts.',action:{label:'Open wallet & payments',href:'#account/wallet'}}),contentCard({title:'Your storefront',description:'Create a store or update its products, logo and colours.',action:{label:'Create or manage your store',href:'#merchant'}}));
+ panel.replaceChildren(identity,shortcuts);if(enabled('social'))panel.append(accountDetails());if(enabled('pinterest'))panel.append(pinterestPanel());
  emailAccount(login,()=>{
    if(['sale','donate'].includes(kind)&&/^[a-f0-9]{64}$/.test(id))location.hash=route(kind,id);
    else mountMemberAccount(panel);

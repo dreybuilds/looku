@@ -1,4 +1,4 @@
-import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard,metricCard} from './ui.js';
+import {pageHeader,sectionHeader,contentCard,emptyState,selectionCard,metricCard,sectionNav,disclosure} from './ui.js';
 const main=document.querySelector('main');
 main.append(pageHeader({eyebrow:'Looku / Interface library',title:'A little more room to browse',description:'The same components, spacing and hierarchy used by the app. These examples update with the shared source.',actions:[{label:'Open your wishlist',href:'/app#wishlist'},{label:'Create a store',href:'/app#merchant'}]}));
 const gallery=document.createElement('div');gallery.className='ui-gallery';main.append(gallery);
@@ -32,3 +32,5 @@ workspace.append(pair);gallery.append(workspace);
 const metrics=document.createElement('section');metrics.append(sectionHeader({title:'Workspace metrics',description:'Admin summaries use the same cards and spacing.'}));
 const metricGrid=document.createElement('div');metricGrid.className='ui-grid';
 metricGrid.append(metricCard({title:'Example requests',value:12}),metricCard({title:'Example stores',value:4}));metrics.append(metricGrid);gallery.append(metrics);
+
+const settings=document.createElement('section');settings.append(sectionHeader({title:'Settings and disclosures',description:'Related tasks stay together, with secondary controls available when needed.'}),sectionNav({label:'Example account sections',current:'/app#account',items:[{label:'Profile',href:'/app#account'},{label:'Wallet & payments',href:'/app#account/wallet'},{label:'Device & storage',href:'/app#account/device'}]}),disclosure({title:'A focused settings panel',label:'Your account',description:'Use a disclosure for optional settings, help answers and secondary wallet tools.'}));gallery.append(settings);

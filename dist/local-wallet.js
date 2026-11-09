@@ -70,10 +70,10 @@ export async function mountAccount(panel,wallet,onSignIn, owner=false) {
      const signature=await signLookuLogin(wallet,form.elements.pass.value,challenge);
      await accountCall('/api/account/verify',{address:wallet.address,nonce:challenge.nonce,signature});
      signedIn();
-     if(panel.isConnected&&location.hash==='#wallet/admin')location.hash='admin';
-     if(panel.isConnected&&location.hash==='#wallet/merchant')location.hash='merchant';
-     if(panel.isConnected&&location.hash==='#wallet/bookings')location.hash='bookings';
-     if(panel.isConnected&&location.hash==='#wallet/support')location.hash='support';
+     if(panel.isConnected&&location.hash==='#account/wallet/admin')location.hash='admin';
+     if(panel.isConnected&&location.hash==='#account/wallet/merchant')location.hash='merchant';
+     if(panel.isConnected&&location.hash==='#account/wallet/bookings')location.hash='bookings';
+     if(panel.isConnected&&location.hash==='#account/wallet/support')location.hash='support';
    }catch(e){note.textContent=e.message}finally{form.reset();button.disabled=false}
  };
  try{const state=await accountCall('/api/account');if(state.address===wallet.address&&!form.hidden)signedIn()}catch{/* Local wallet remains usable offline. */}

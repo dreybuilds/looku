@@ -65,7 +65,7 @@
 /* Shared rhythm for every task, including dynamically rendered account/admin views. */
 .looku-ui :is(main,dialog) :is(form,section,article,div,label){min-width:0}
 .looku-ui :is(button,.button,input,select,summary){min-height:44px}
-.looku-ui :is(input,select,textarea){line-height:1.5}
+.looku-ui :is(input,select,textarea){line-height:1.5;font-size:16px}
 .looku-ui :is(input,textarea,select):not([type=checkbox],[type=radio],[type=range],[type=color]){padding:12px 14px;border-radius:10px}
 .looku-ui textarea{min-height:112px;resize:vertical}
 .looku-ui label{gap:8px;line-height:1.45}
@@ -208,3 +208,31 @@
 .looku-ui .brand-preview-cover h3{font-family:var(--ui-font)}
 .looku-ui .ui-page-header>*{min-width:0}
 .looku-ui .ui-actions{flex-shrink:1}
+
+.looku-ui .ui-section-nav{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px;padding:6px;margin:0 0 var(--ui-space-6);background:#f0e8f3;border-radius:14px;width:fit-content;max-width:100%}
+.looku-ui .ui-section-nav .ui-action{flex:0 1 auto;background:transparent;border-color:transparent;color:var(--ui-muted);padding:10px 16px;font-size:14px}
+.looku-ui .ui-section-nav [aria-current=page]{background:var(--ui-surface);color:var(--ui-accent);box-shadow:var(--ui-shadow)}
+.looku-ui details.ui-disclosure{padding:0;margin:0;border:1px solid var(--ui-border);border-radius:var(--ui-radius);background:var(--ui-surface);box-shadow:var(--ui-shadow);min-width:0}
+.looku-ui details.ui-disclosure>summary{display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:20px 24px;font:600 15px/1.5 var(--ui-font);letter-spacing:0;min-height:64px}
+.looku-ui details.ui-disclosure>summary::-webkit-details-marker{display:none}
+.looku-ui details.ui-disclosure>summary::after{content:'+';margin-left:auto;flex-shrink:0;font:400 24px/1 var(--ui-font);width:20px;text-align:center;border:0;transform:none;color:var(--ui-accent)}
+.looku-ui details.ui-disclosure[open]>summary::after{content:'−';transform:none}
+.looku-ui .ui-disclosure-copy{display:grid;gap:6px;min-width:0}
+.looku-ui details.ui-disclosure[open]>:not(summary){margin:0 var(--ui-card-pad) var(--ui-card-pad);max-width:calc(100% - var(--ui-card-pad)*2)}
+.looku-ui .ui-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.looku-ui .ui-form-grid>:is(p,button,[role=status]),.looku-ui .ui-full-width{grid-column:1/-1}
+.looku-ui .ui-address{display:block;padding:14px;background:#f4edf6;border-radius:10px;font:13px/1.7 ui-monospace,monospace;overflow-wrap:anywhere}
+.looku-ui :is(.ui-two-column,.ui-grid,.ui-form-grid)>*{min-width:0}
+.looku-ui :is(.ui-two-column,.ui-form-grid) :is(input,select,textarea){min-width:0;width:100%;font-size:16px}
+.looku-ui [role=status]:empty{display:none}
+@media(max-width:600px){
+ .looku-ui .ui-form-grid{grid-template-columns:1fr}
+ .looku-ui .ui-section-nav{width:100%;gap:4px}
+ .looku-ui .ui-section-nav .ui-action{flex:1 1 80px;padding:10px 8px;font-size:13px}
+ .looku-ui details.ui-disclosure>summary{padding:18px 20px}
+ .looku-ui :is(.ui-actions,.row)>:is(button,.button){min-height:44px}
+}
+
+.looku-ui .ui-grid-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+.looku-ui .wishlist-collection [data-preview-status][role=status]{display:block;min-height:3.2em;margin:0}
+@media(max-width:600px){.looku-ui .ui-grid-pair{grid-template-columns:1fr}}

@@ -102,7 +102,7 @@ export async function mountMerchantManager(root,slug){
     if(error.status===401){
       const auth=node('div');body.append(auth);
       emailAccount(auth,()=>mountMerchantManager(root,slug),'Sign in with email to manage a store');
-      body.append(link('Use your wallet','#wallet/merchant'));
+      body.append(link('Use your wallet','#account/wallet/merchant'));
     }
     return;
   }

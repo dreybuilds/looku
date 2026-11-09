@@ -62,7 +62,7 @@ export async function mountBookings(root,enabled){
       const heading=sectionHeader({title:enabled?'Let’s plan your appointment':'Your appointment history'});
       request.append(heading,node('p','Sign in with email to request a service and keep track of the details. Your account includes a Stellar wallet.'));
       const auth=node('div','');auth.className='booking-auth';request.append(auth);emailAccount(auth,()=>mountBookings(root,enabled),enabled?'Sign in with email to book':'Sign in with email to see bookings');
-      const alternate=node('details','');alternate.className='quiet-disclosure';alternate.append(node('summary','Already use a wallet?'));const a=node('a','Use an existing wallet instead');a.href='#wallet/bookings';alternate.append(a);request.append(alternate);
+      const alternate=node('details','');alternate.className='quiet-disclosure';alternate.append(node('summary','Already use a wallet?'));const a=node('a','Use an existing wallet instead');a.href='#account/wallet/bookings';alternate.append(a);request.append(alternate);
     }else{request.append(node('p','We couldn’t load your account.'));const retry=node('button','Try again');retry.onclick=()=>mountBookings(root,enabled);request.append(retry)}
     return;
   }

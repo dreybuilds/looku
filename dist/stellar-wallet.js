@@ -1,3 +1,4 @@
+import {sectionHeader} from './ui.js';
 import {emailHeaders} from './email-auth.js';
 
 export function stellarAmount(units){
@@ -45,19 +46,19 @@ export function watchStellar(root,refresh){
   timer=setTimeout(sync,20000);
 }
 export async function mountStellarWallet(root,compact=false){
-  root.className='panel stellar-account';root.innerHTML='<div class="eyebrow">Primary account wallet</div><h2>Stellar wallet</h2><p role="status">Loading your account wallet…</p>';
+  root.className='panel ui-surface stellar-account';root.innerHTML=sectionHeader({title:'Stellar wallet',description:'One wallet for your account and every wishlist item.'}).outerHTML+'<p role="status">Loading your account wallet…</p>';
   const status=root.querySelector('[role=status]');
   try{
     let account=await ensureStellarWallet();if(!root.isConnected)return;
     status.textContent='';
     const destination=el('code',account.address);destination.style.overflowWrap='anywhere';
-    root.append(el('p','One wallet for your account and every wishlist item.'),destination);
-    const balance=el('p','');balance.setAttribute('aria-live','polite');root.append(balance);
+    destination.className='ui-address';root.append(destination);
+    const balance=el('p','');balance.className='wallet-balance';balance.setAttribute('aria-live','polite');root.append(balance);
     const networkLabel=el('label','Stellar network'),network=el('select','');
     network.innerHTML='<option value="mainnet">Mainnet · real USDC</option><option value="testnet">Testnet · demo XLM</option>';
     network.setAttribute('aria-label','Stellar network');network.value=account.network;networkLabel.append(network);root.append(networkLabel);
     network.onchange=()=>{localStorage.setItem('looku.stellar-network',network.value);window.dispatchEvent(new Event('looku-stellar-network'));void mountStellarWallet(root,compact)};
-    const controls=el('div','');controls.className='actions';root.append(controls);
+    const controls=el('div','');controls.className='ui-actions';root.append(controls);
     function button(label,action){const b=el('button',label);b.type='button';b.className='secondary';controls.append(b);b.onclick=async()=>{b.disabled=true;try{await action()}catch(e){status.textContent=e.message}finally{b.disabled=false}};return b}
     button('Copy Stellar address',async()=>{await navigator.clipboard.writeText(account.address);status.textContent='Stellar address copied.'});
     const note=el('p','');root.append(note);
@@ -99,15 +100,15 @@ export async function mountStellarWallet(root,compact=false){
         const response=await fetch('https://friendbot.stellar.org/?addr='+encodeURIComponent(account.address),{signal:AbortSignal.timeout(20000)});
         if(!response.ok)throw Error('Test funding is unavailable. Check this account’s balance before trying again.');await refresh();
       });
-      const send=el('details','');send.append(el('summary','Send funds'));
+      const send=el('details','');send.className='ui-disclosure panel';send.append(el('summary','Send funds'));
       const form=el('form','');form.className='stack';
       form.innerHTML='<label>Recipient Stellar address<input name="destination" placeholder="G…" required minlength="56" maxlength="56"></label><label>Send amount<input name="amount" inputmode="decimal" required></label><button>Review Stellar payment</button>';
       form.onsubmit=async event=>{event.preventDefault();const b=form.querySelector('button');b.disabled=true;try{await review({type:'payment',destination:form.elements.destination.value.trim(),amount:form.elements.amount.value.trim()})}catch(e){status.textContent=e.message}finally{b.disabled=false}};
       send.append(form);root.append(send);
       reviewPending=button('Review pending wallet request',async()=>{const payment=await stellarCall('/receipt/'+account.pending.id,undefined,account.pending.network);await approve(payment)});
-    }else{const link=el('a','Manage Stellar wallet →');link.href='#wallet';root.append(link)}
+    }else{const link=el('a','Manage Stellar wallet →');link.href='#account/wallet';link.className='ui-action';root.append(link)}
     draw();watchStellar(networkLabel,refresh);
-  }catch(e){status.textContent=e.status===401?'Sign in with email to create your Stellar account wallet.':e.message;const link=el('a',e.status===401?'Sign in with email →':'Open account →');link.href='#account';root.append(link)}
+  }catch(e){status.textContent=e.status===401?'Sign in with email to create your Stellar account wallet.':e.message;const link=el('a',e.status===401?'Sign in with email →':'Open account →');link.href='#account';link.className='ui-action ui-action-primary';root.append(link)}
 }
 export async function stellarBudgetPanel(item){
   const root=el('section','');root.className='wish-funding stellar-budget';
@@ -125,7 +126,7 @@ export async function stellarBudgetPanel(item){
       const save=el('button','Assign Stellar funds');form.append(label,save);
       const message=el('p','Budgets are saved to your account and share one wallet.');message.setAttribute('role','status');root.append(form,message);
       form.onsubmit=async event=>{event.preventDefault();save.disabled=true;try{await stellarCall('/budget',{item:key,amount:input.value.trim()},account.network);await load()}catch(e){message.textContent=e.message}finally{save.disabled=false}};
-      const manage=el('a','Fund or manage Stellar wallet →');manage.href='#wallet';root.append(manage);
+      const manage=el('a','Fund or manage Stellar wallet →');manage.href='#account/wallet';root.append(manage);
     }catch(e){status.textContent=e.status===401?'Sign in with email to use one Stellar wallet for all your wishlist items.':e.message;root.replaceChildren(el('h3','Stellar · account wallet'),status)}
   }
   const events=new AbortController();window.addEventListener('looku-stellar-network',()=>{if(root.isConnected)void load();else events.abort()},{signal:events.signal});

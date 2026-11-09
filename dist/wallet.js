@@ -1,3 +1,4 @@
+import {sectionHeader} from './ui.js';
 import {mountStellarWallet} from './stellar-wallet.js';
 import {enabled} from './features.js';
 import {productUrl,guessName,fetchProductPreview,prices,currency,money} from './shopping.js';
@@ -44,10 +45,10 @@ export async function mountWallet(element) {
   try { saved = JSON.parse(localStorage.getItem(storageKey)) || {}; }
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-  const heading = (number, title, description) => `<summary><span class="eyebrow" aria-hidden="true">${number}</span><span>${title}</span></summary><p class="wallet-description">${description}</p>`;
-  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','Device wallet · demo','Use an existing device wallet for the demo, or restore a previous backup. Your primary Stellar account wallet is above.')}<div data-device-wallet class="wallet-body"></div></details>
-    <details name="wallet-tool" class="panel wallet-panel" data-funding></details>
-    <details name="wallet-tool" class="panel wallet-panel">
+  const heading = (number, title, description) => `<summary><span class="ui-disclosure-copy"><span class="ui-eyebrow" aria-hidden="true">${number}</span><span class="ui-disclosure-title">${title}</span></span></summary><p class="wallet-description">${description}</p>`;
+  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel ui-disclosure wallet-panel">${heading('01','Device wallet · demo','Use an existing device wallet for the demo, or restore a previous backup. Your primary Stellar account wallet is above.')}<div data-device-wallet class="wallet-body"></div></details>
+    <details name="wallet-tool" class="panel ui-disclosure wallet-panel" data-funding></details>
+    <details name="wallet-tool" class="panel ui-disclosure wallet-panel">
       ${heading('03','Check balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
       <form data-account>
         <label>Network<select name="network"><option value="testnet">Demo shopping balance</option><option value="stellar">Stellar mainnet · real funds</option><option value="base">Base mainnet · MiniSend funds</option></select></label>
@@ -55,7 +56,7 @@ export async function mountWallet(element) {
         <button class="btn" type="submit">Check balance</button>
       </form><p data-balance role="status"></p></div>
     </details>
-    <details name="wallet-tool" class="panel wallet-panel">
+    <details name="wallet-tool" class="panel ui-disclosure wallet-panel">
       ${heading('04','Save for a piece','Track a wardrobe goal against your balance. Your funds stay available to you.')}<div class="wallet-body">
       <form data-goal>
         <label><span id="wallet-goal-source-label">Choose a piece</span><select name="source" aria-labelledby="wallet-goal-source-label"><option value="manual">Enter a piece by name</option><option value="link">Paste a product link</option><optgroup label="From your Wishlist" data-wishes></optgroup></select></label>
@@ -67,7 +68,7 @@ export async function mountWallet(element) {
       </form><a data-goal-link hidden target="_blank" rel="noopener noreferrer">View product ↗</a><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
     </details>
     </div>`;
-  const primary=document.createElement('section');element.prepend(primary);void mountStellarWallet(primary);
+  const primary=document.createElement('section'),workspace=document.createElement('div'),secondary=document.createElement('section');workspace.className='ui-two-column wallet-workspace';const tools=element.querySelector('.wallet-grid');secondary.append(sectionHeader({title:'More wallet tools',description:'Demo access, other networks and balance checks.'}),tools);workspace.append(primary,secondary);element.append(workspace);void mountStellarWallet(primary);
   const account = element.querySelector('[data-account]');
   const goalForm = element.querySelector('[data-goal]');
   const status = element.querySelector('[data-balance]');
