@@ -1,4 +1,5 @@
 import {merchantStores} from './merchant-stores.mjs';
+import {stellarWallet} from '../payments/account-wallet.mjs';
 import {wishlistMpesa} from './wishlist-mpesa.mjs';
 import {privySubject} from './privy.mjs';
 import {wishlistFunding} from './wishlist-funding.mjs';
@@ -54,6 +55,10 @@ async function handle(request,env){
  if(required.length){
    const {enabled}=await settings(env.ORDERS);
    if(required.some(key=>!enabled[key]))return pausedReply();
+ }
+ if(p==='/api/stellar-wallet'||p.startsWith('/api/stellar-wallet/')){
+   const owner=await privySubject(request)||(await session(request,env.ORDERS))?.address;
+   return stellarWallet(request,env,owner);
  }
  if(p==='/api/bookings')return bookings(request,env);
  if(p==='/api/wishlist-mpesa'||p.startsWith('/api/wishlist-mpesa/')){

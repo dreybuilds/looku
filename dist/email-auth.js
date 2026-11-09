@@ -52,7 +52,9 @@ export function emailAccount(root,onChange,triggerLabel='Sign up or log in with 
      if(!token)throw Error('Sign-in did not finish. Request a new code.');
      const verified=await fetch('/api/community/session',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
      if(!verified.ok)throw Error('Looku could not verify this session. Request a new code.');
-     root.querySelector('dialog').close();localStorage.setItem(flag,'1');emailAccount(root,onChange,triggerLabel);await onChange();
+     root.querySelector('dialog').close();localStorage.setItem(flag,'1');
+     void import('./stellar-wallet.js').then(module=>module.ensureStellarWallet()).catch(()=>{});
+     emailAccount(root,onChange,triggerLabel);await onChange();
    }catch(e){status.textContent=e.message||'Email sign-in is unavailable. Try again.'}
    finally{form.removeAttribute('aria-busy');submit.disabled=reset.disabled=false}
  };

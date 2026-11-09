@@ -7,8 +7,8 @@ export async function mountWelcome(root) {
     <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a><h1>Enter your studio.</h1>
     <p>Sign in to publish looks and take part in the Community closet.</p>
     <div data-email></div><div data-wallet-entry><button type="button" class="secondary account-trigger" data-open-account aria-haspopup="dialog">Use a Stellar wallet</button><dialog aria-label="Use a Stellar wallet"><button type="button" class="close" aria-label="Close wallet sign-in">×</button><h2>Wallet sign-in</h2>
-    <p>Approve a sign-in message in Freighter. Signing in has no fee and moves no funds.</p>
-    <button data-connect>Continue with Freighter</button><p data-status role="status"></p>
+    <p>Approve a sign-in message in Varial. Signing in has no fee and moves no funds.</p>
+    <button data-connect>Continue with Varial</button><p data-status role="status"></p>
     <div data-device></div></dialog></div><a href="#studio">Explore the studio as a guest →</a></div></section>`;
   const panel = root.querySelector('[data-email]');
   bindAccountDialog(root.querySelector('[data-wallet-entry]'));
@@ -18,7 +18,7 @@ export async function mountWelcome(root) {
   button.onclick = async () => {
     const note = root.querySelector('[data-status]');
     button.disabled = true;
-    note.textContent = 'Open Freighter to approve your sign-in.';
+    note.textContent = 'Open Varial to approve your sign-in.';
     try {
       const {freighterAddress, signFreighterLogin} = await import('/api/payments/client.js');
       const address = await freighterAddress();

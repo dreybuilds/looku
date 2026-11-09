@@ -1,3 +1,4 @@
+import {mountStellarWallet} from './stellar-wallet.js';
 import {enabled} from './features.js';
 import {productUrl,guessName,fetchProductPreview,prices,currency,money} from './shopping.js';
 import {accountCall,mountDeviceWallet} from './local-wallet.js';
@@ -44,7 +45,7 @@ export async function mountWallet(element) {
   catch { saved = {}; }
   if (typeof saved !== 'object' || Array.isArray(saved)) saved = {};
   const heading = (number, title, description) => `<summary><span class="eyebrow" aria-hidden="true">${number}</span><span>${title}</span></summary><p class="wallet-description">${description}</p>`;
-  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','See or create wallet','Manage your shopping wallet here. Create a wallet or restore one you already use.')}<div data-device-wallet class="wallet-body"></div></details>
+  element.innerHTML = `<div class="wallet-grid"><details name="wallet-tool" class="panel wallet-panel">${heading('01','Device wallet · demo','Use an existing device wallet for the demo, or restore a previous backup. Your primary Stellar account wallet is above.')}<div data-device-wallet class="wallet-body"></div></details>
     <details name="wallet-tool" class="panel wallet-panel" data-funding></details>
     <details name="wallet-tool" class="panel wallet-panel">
       ${heading('03','Check balance','Choose a network and check what’s available for your next look.')}<div class="wallet-body">
@@ -66,6 +67,7 @@ export async function mountWallet(element) {
       </form><a data-goal-link hidden target="_blank" rel="noopener noreferrer">View product ↗</a><p data-progress role="status"></p><progress aria-label="Savings target progress" max="100" hidden></progress></div>
     </details>
     </div>`;
+  const primary=document.createElement('section');element.prepend(primary);void mountStellarWallet(primary);
   const account = element.querySelector('[data-account]');
   const goalForm = element.querySelector('[data-goal]');
   const status = element.querySelector('[data-balance]');

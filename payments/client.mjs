@@ -1,6 +1,6 @@
 import { planPurchase, chooseOffer } from './shopping-agent.mjs'
 export { checkBudget } from './shopping-agent.mjs'
-import freighter from '@stellar/freighter-api'
+import varial from '@stellar/varial-sdk'
 import { ExactStellarScheme } from '@x402/stellar/exact/client'
 import { BASE, ITEM, NETWORK, PASSPHRASE, SKU } from './common.mjs'
 
@@ -9,22 +9,22 @@ export { generateWallet, unlockWallet, signLookuLogin } from './local-wallet.mjs
 const endpoint = new URL(BASE + '/', import.meta.url)
 const key = (address, sku) => 'looku-checkout:' + address + ':' + sku
 export async function freighterAddress() {
-  if (!(await freighter.isConnected()).isConnected) throw Error('Install or open the Freighter extension, then try again.')
-  const result = await freighter.requestAccess()
+  if (!(await varial.isConnected()).isConnected) throw Error('Install or open the Varial extension, then try again.')
+  const result = await varial.requestAccess()
   if (result.error || !result.address) throw Error(result.error?.message || 'Wallet access was declined.')
   return result.address
 }
 
 export async function signFreighterLogin(address, message) {
-  const result = await freighter.signMessage(message, {address})
-  if (result.error || !result.signedMessage || result.signerAddress !== address) throw Error(result.error?.message || 'Freighter did not sign with the selected address.')
+  const result = await varial.signMessage(message, {address})
+  if (result.error || !result.signedMessage || result.signerAddress !== address) throw Error(result.error?.message || 'Varial did not sign with the selected address.')
   return typeof result.signedMessage === 'string' ? result.signedMessage : Buffer.from(result.signedMessage).toString('base64')
 }
 
 export async function connectWallet() {
   const address = await freighterAddress()
-  const network = await freighter.getNetwork()
-  if (network.networkPassphrase !== PASSPHRASE) throw Error('Switch Freighter to Stellar Testnet, then reconnect.')
+  const network = await varial.getNetwork()
+  if (network.networkPassphrase !== PASSPHRASE) throw Error('Switch Varial to Stellar Testnet, then reconnect.')
   return address
 }
 async function read(path, opts = {}) {
@@ -78,11 +78,21 @@ async function executeOrder({sku = SKU, address, signer, details, limit = ITEM.a
   }
   const offer = chooseOffer(plan,challenge,{address:active,sku,resource:url.href})
   onStatus(signer ? 'Approving your order on this device…' : 'Approve this order in your external wallet.')
-  const scheme = new ExactStellarScheme(signer || {address:active, signAuthEntry:freighter.signAuthEntry})
+  const scheme = new ExactStellarScheme(signer || {address:active, signAuthEntry:varial.signAuthEntry})
   const authorization = await scheme.createPaymentPayload(2, offer)
   const payment = {...authorization, accepted:offer, resource:challenge.resource}
   onStatus('Confirming your purchase and the store’s referral payment…')
   const receipt = await read('orders/' + id + '/checkout',{method:'POST',headers:{'Payment-Signature':btoa(JSON.stringify(payment))}})
   if (receipt.status === 'complete') localStorage.removeItem(storageKey)
   return receipt
+}
+
+export async function signVarialTransaction(xdr,address,network){
+  const passphrase=network==='mainnet'?'Public Global Stellar Network ; September 2015':'Test SDF Network ; September 2015';
+  if(await freighterAddress()!==address)throw Error('Select your linked Stellar account in Varial.');
+  const selected=await varial.getNetwork();
+  if(selected.networkPassphrase!==passphrase)throw Error('Switch Varial to Stellar '+network+'.');
+  const result=await varial.signTransaction(xdr,{networkPassphrase:passphrase,address});
+  if(result.error||!result.signedTxXdr)throw Error(result.error?.message||'Varial signing was cancelled.');
+  return result.signedTxXdr;
 }

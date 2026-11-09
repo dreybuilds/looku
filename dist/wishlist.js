@@ -1,3 +1,4 @@
+import {mountStellarWallet,stellarBudgetPanel,releaseStellarBudget} from './stellar-wallet.js';
 import {emailHeaders} from './email-auth.js';
 import {productUrl,guessName,fetchProductPreview} from './shopping.js';
 import {merchantOffer,signOffer,submitOffer,newNonce,authorizationStatus} from './merchant-payment.js';
@@ -75,6 +76,7 @@ export async function mountWishlist(main){
   <p role="status" data-wish-note></p><div class="stack" data-items></div>
   <details class="panel"><summary>Save while browsing</summary><p>On a supported phone with looku installed, share the product page to looku. You can always copy the link and paste it above.</p><p>On desktop, drag <a data-bookmark>Save to looku</a> to your bookmarks bar. Click that bookmark on a product page to review it here.</p></details>
   <p class="fine">Your wishlist, photos and price targets stay in this browser. Clearing site data removes this list.</p>`;
+  const sharedWallet=document.createElement('section');main.querySelector('[data-editor]').before(sharedWallet);void mountStellarWallet(sharedWallet,true);
   const editor=main.querySelector('[data-editor]'),form=editor.querySelector('form'),f=form.elements;
   const note=main.querySelector('[data-wish-note]'),list=main.querySelector('[data-items]');
   const bookmark=main.querySelector('[data-bookmark]');
@@ -173,8 +175,8 @@ export async function mountWishlist(main){
       const row=el('div','');row.className='actions';
       const shop=el('a','View at store ↗');shop.href=item.url;shop.target='_blank';shop.rel='noopener noreferrer';shop.className='button';
       const edit=el('button','Edit item');edit.className='secondary';edit.onclick=()=>{editor.hidden=false;populate(item)};
-      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await update(item.url,current=>{if(current?.mpesa&&!current.mpesa.closed)throw Error('Wait for the M-Pesa request to finish before removing this item.');if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
-      row.append(shop,edit,remove);card.append(row);
+      const remove=el('button','Remove');remove.className='link';remove.onclick=async()=>{if(!confirm('Remove this item from your wishlist?'))return;try{await releaseStellarBudget(item.url);await update(item.url,current=>{if(current?.mpesa&&!current.mpesa.closed)throw Error('Wait for the M-Pesa request to finish before removing this item.');if(current?.agentPayment&&!current.agentPayment.closed)throw Error('Verify the pending payment before removing this item.');return null});if(editing===item.url)reset();await refresh();note.textContent='Item removed.'}catch(e){note.textContent=e.message}};
+      row.append(shop,edit,remove);card.append(row);card.append(await stellarBudgetPanel(item));
       if(item.goalWallet){const total=el('p','Item budget · '+formatUSDC(BigInt(item.allocation||0))+' USDC');total.dataset.itemBudget='';total.setAttribute('aria-live','polite');card.append(total)}
       const funding=fundingPanel(item,refresh,all,checks,mpesaEnabled);funding.open=item.url===openFundingUrl;card.append(funding);if(oldPanel)oldPanel.closest('article').replaceWith(card);else list.append(card);
     }
@@ -205,7 +207,7 @@ export async function mountWishlist(main){
 
 function fundingPanel(item,refresh,all,checks,mpesaEnabled){
   const panel=el('details','');panel.className='wish-funding';
-  const summary=el('summary','Fund this item'),body=el('div',''),status=el('p','');body.className='stack';status.setAttribute('role','status');panel.append(summary,body);
+  const summary=el('summary','Additional funding · M-Pesa / Base'),body=el('div',''),status=el('p','');body.className='stack';status.setAttribute('role','status');panel.append(summary,body);
   const watchers=[];
   checks.set(panel,async()=>{for(const watcher of watchers){if(!panel.isConnected)return;try{await watcher()}catch{/* Retry this payment independently on the next sync. */}}});
   async function redraw(){

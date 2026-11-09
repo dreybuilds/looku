@@ -83,7 +83,7 @@ test('checkout detour, wallet recovery, savings and wrong signing passphrase',as
  const fresh=await browser.newContext();
  try{
    const restored=await fresh.newPage();await restored.goto(new URL('/app#wallet',page.url()).href);
- await toggleWallet(restored,'See or create wallet');
+ await toggleWallet(restored,'Device wallet · demo');
    await restored.getByText('Restore a wallet',{exact:true}).click();
    const restore=restored.locator('[data-device-wallet] details form');
    await restore.getByLabel('looku recovery file').setInputFiles(file);
@@ -265,7 +265,7 @@ test('returning from checkout focuses the receipt without hiding wallet tools',a
  await page.evaluate(()=>sessionStorage.setItem('looku.show-receipt','1'));
  await nav(page,'Wallet');
  await expect(page.locator('#receipts')).toBeFocused();
- await expect(page.getByText('See or create wallet',{exact:true})).toBeVisible();
+ await expect(page.getByText('Device wallet · demo',{exact:true})).toBeVisible();
 });
 
 test('community publishes selective snapshots for visitors and enforces ownership',async({page,browser,baseURL})=>{

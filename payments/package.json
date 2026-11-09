@@ -10,13 +10,14 @@
     "build": "node build.mjs",
     "start": "node --env-file-if-exists=.env server.mjs",
     "setup:testnet": "node setup.mjs",
-    "test": "node --test checkout.test.mjs wishlist-funding.test.mjs",
+    "test": "node --test checkout.test.mjs wishlist-funding.test.mjs stellar-wallet.test.mjs",
     "test:live": "node --env-file-if-exists=.env smoke.mjs"
   },
   "dependencies": {
     "@privy-io/js-sdk-core": "0.79.2",
-    "@stellar/freighter-api": "6.0.1",
+    "@privy-io/node": "0.38.0",
     "@stellar/stellar-sdk": "17.4.0",
+    "@stellar/varial-sdk": "7.0.0",
     "@x402/core": "2.29.0",
     "@x402/stellar": "2.29.0",
     "buffer": "6.0.3",

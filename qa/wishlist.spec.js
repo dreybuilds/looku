@@ -74,7 +74,7 @@ test('wallet and MiniSend funding count only finalized Base holdings',async({pag
  });
  await page.goto('/app?'+new URLSearchParams({share_url:item,share_title:'Funding test'}));
  await page.getByRole('button',{name:'Save item',exact:true}).click();
- await page.getByText('Fund this item',{exact:true}).click();
+ await page.getByText('Additional funding · M-Pesa / Base',{exact:true}).click();
  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Choose receiving wallet'}).click();
  await expect(page.getByRole('link',{name:/M-Pesa via MiniSend/})).toHaveAttribute('href','https://app.minisend.xyz/');
  await page.getByLabel('Request from an agent').fill('0.25');
@@ -97,7 +97,7 @@ test('wallet and MiniSend funding count only finalized Base holdings',async({pag
  await expect(page.getByText(/Assigned 1.5 USDC/)).toBeVisible();
  await page.goto('/app?'+new URLSearchParams({share_url:'https://example.com/second',share_title:'Second goal'}));
  await page.getByRole('button',{name:'Save item',exact:true}).click();
- const second=page.getByRole('article').filter({hasText:'Second goal'});await second.getByText('Fund this item').click();
+ const second=page.getByRole('article').filter({hasText:'Second goal'});await second.getByText('Additional funding · M-Pesa / Base').click();
  page.once('dialog',d=>d.accept());await second.getByRole('button',{name:/Use wallet/}).click();
  await second.getByLabel('Budget for this item').fill('2');await second.getByRole('button',{name:'Assign wallet funds'}).click();
  await expect(second).toContainText('exceeds the confirmed balance');
@@ -135,7 +135,7 @@ test('merchant x402 authorization is capped, bound to Base USDC and sent only af
    return r.fulfill({status:402,headers:{'access-control-expose-headers':'payment-required','payment-required':encoded({x402Version:2,resource:{url},accepts:[{scheme:'exact',network:'eip155:8453',asset:token,amount,payTo,maxTimeoutSeconds:60,extra:{name:'USD Coin',version:'2'}}]})},body:''});
  });
  await page.goto('/app?'+new URLSearchParams({share_url:url,share_title:'Agent look'}));
- await page.getByRole('button',{name:'Save item',exact:true}).click();await page.getByText('Fund this item',{exact:true}).click();
+ await page.getByRole('button',{name:'Save item',exact:true}).click();await page.getByText('Additional funding · M-Pesa / Base',{exact:true}).click();
  page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Choose receiving wallet'}).click();
  await page.getByLabel('Budget for this item').fill('2');await page.getByRole('button',{name:'Assign wallet funds'}).click();
  const checkout=page.getByRole('button',{name:'Review x402 merchant payment'});
@@ -199,7 +199,7 @@ test('returning to the wishlist automatically credits finalized M-Pesa and x402 
  });
  await page.goto('/app?'+new URLSearchParams({share_url:item,share_title:'Auto funded'}));
  await page.getByRole('button',{name:'Save item',exact:true}).click();
- await page.getByText('Fund this item',{exact:true}).click();page.once('dialog',d=>d.accept());
+ await page.getByText('Additional funding · M-Pesa / Base',{exact:true}).click();page.once('dialog',d=>d.accept());
  await page.getByRole('button',{name:'Choose receiving wallet'}).click();
  await page.getByLabel('Pay with M-Pesa (KES)').fill('200');await page.getByLabel('M-Pesa phone number').fill('0700000000');
  await page.getByRole('button',{name:'Request M-Pesa prompt for this item'}).click();

@@ -1,3 +1,4 @@
+import {mountStellarWallet} from './stellar-wallet.js';
 import {enabled} from './features.js';
 import {fillProfile} from './shopping.js';
 import {accountDetails,tagChoices,chosenTags,tagLinks} from './social.js';
@@ -71,7 +72,7 @@ export function composePost({kind,source,pieces,modal,body,dialog,esc}){
 }
 export function mountMemberAccount(panel,[kind,id]=[]){
  const login=element('section');
- panel.replaceChildren(login,link('Create or manage your store','#merchant'));if(enabled('social'))panel.append(accountDetails());if(enabled('pinterest'))panel.append(pinterestPanel());
+ panel.replaceChildren(login,link('Create or manage your store','#merchant'));const wallet=element('section');panel.append(wallet);void mountStellarWallet(wallet,true);if(enabled('social'))panel.append(accountDetails());if(enabled('pinterest'))panel.append(pinterestPanel());
  emailAccount(login,()=>{
    if(['sale','donate'].includes(kind)&&/^[a-f0-9]{64}$/.test(id))location.hash=route(kind,id);
    else mountMemberAccount(panel);

@@ -24,7 +24,7 @@ test('landing opens email entry, verifies the code and remembers the session',as
  await expect(page).toHaveURL(/\/app#community$/);
 });
 
-test('Freighter entry establishes a verified Stellar session and signs out',async({page})=>{
+test('Varial entry establishes a verified Stellar session and signs out',async({page})=>{
  const {privateKey,publicKey}=generateKeyPairSync('ed25519');
  const address=StrKey.encodeEd25519PublicKey(publicKey.export({format:'der',type:'spki'}).subarray(-32));
  await page.exposeFunction('walletSign',message=>sign(null,createHash('sha256').update('Stellar Signed Message:\n'+message).digest(),privateKey).toString('base64'));
@@ -32,7 +32,7 @@ test('Freighter entry establishes a verified Stellar session and signs out',asyn
    'export async function freighterAddress(){return '+JSON.stringify(address)+'};export const signFreighterLogin=(address,message)=>window.walletSign(message)'}));
  await page.goto('/app');
  await page.getByText('Use a Stellar wallet',{exact:true}).click();
- await page.getByRole('button',{name:'Continue with Freighter'}).click();
+ await page.getByRole('button',{name:'Continue with Varial'}).click();
  await expect(page).toHaveURL(/#studio$/);
  await page.goto('/app');
  await expect(page).toHaveURL(/#studio$/);
