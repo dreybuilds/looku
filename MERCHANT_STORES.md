@@ -19,6 +19,8 @@ flowchart TD
   Suspended -->|Admin approves again| Approved
 ```
 
+The public storefront is a dedicated merchant site: the merchant’s name in the header, collection navigation, product cards and direct store contact. Looku attribution and platform support stay in the footer. The Looku landing page and app navigation are not used on merchant domains.
+
 ## Sites and roles
 
 | Site | Purpose |

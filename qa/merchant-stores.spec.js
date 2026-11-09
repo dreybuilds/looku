@@ -60,6 +60,10 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     const customer=await guest.newPage();await customer.goto('/store/'+slug);
     await expect(customer.getByRole('heading',{name,exact:true})).toBeVisible();
     await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toBeVisible();
+    await expect(customer.locator('header .merchant-brand')).toHaveText(name);
+    await expect(customer.locator('header').getByRole('link',{name:'Create your store'})).toHaveCount(0);
+    await expect(customer.locator('header').getByRole('link',{name:'Shop the collection'})).toHaveAttribute('href','#collection');
+    await expect(customer.getByRole('link',{name:'Email '+name,exact:true})).toHaveAttribute('href','mailto:merchant@example.org');
     await expect(customer.getByRole('link',{name:'Ask about this piece'})).toHaveAttribute('href',/mailto:merchant@example.org/);
     expect(await customer.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
     await customer.addScriptTag({path:'node_modules/axe-core/axe.min.js'});

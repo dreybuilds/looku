@@ -44,17 +44,23 @@ export async function mountStorefront(root,slug){
   root.replaceChildren(node('p','Opening store…'));
   try{
     const store=await api('/'+encodeURIComponent(slug));
-    document.title=store.name+' · Looku';
+    document.title=store.name;
+    const brand=document.querySelector('[data-store-brand]');if(brand)brand.textContent=store.name;
+    const navigation=document.querySelector('[data-store-nav]');if(navigation)navigation.hidden=false;
     const hero=node('section');hero.className='merchant-cover';
     const monogram=node('div',store.name.slice(0,1).toUpperCase());monogram.className='merchant-monogram';monogram.setAttribute('aria-hidden','true');
-    const intro=node('div');intro.append(node('span','Independent store on Looku'),node('h1',store.name),node('p',store.description));
+    const intro=node('div');intro.append(node('span','Welcome to'),node('h1',store.name),node('p',store.description));
     hero.append(monogram,intro);root.replaceChildren(hero);
     if(store.mine){
       root.append(node('p','Store status · '+store.status),link('Manage this store','/app#merchant/'+store.slug));
     }
     const list=node('div');list.className='merchant-products';
     const note=statusNode(),more=action('Load more products',()=>load());more.hidden=true;
-    root.append(node('h2','Shop the collection'),node('p','Contact the merchant to confirm availability, delivery and payment arrangements.'),list,more,note);
+    const collection=node('h2','Shop the collection');collection.id='collection';
+    root.append(collection,node('p','Find a piece you love. Ask us about sizing, availability and delivery.'),list,more,note);
+    const contact=node('section');contact.className='merchant-contact';contact.id='contact-store';
+    contact.append(node('h2','Let’s find your next favourite'),node('p','Get in touch to confirm availability, arrange delivery and agree payment.'),link('Email '+store.name,'mailto:'+encodeURIComponent(store.contact).replace('%40','@')));
+    root.append(contact);
     let cursor;
     async function load(){
       more.disabled=true;note.textContent='Loading products…';
@@ -75,7 +81,7 @@ export async function mountStorefront(root,slug){
     }
     await load();
   }catch(error){
-    root.replaceChildren(node('h1','Store unavailable'),node('p',error.message),link('Explore Looku stores','https://lookuwear.xyz/app#shops'));
+    root.replaceChildren(node('h1','Store unavailable'),node('p',error.status===404?'This store is not open right now. Please check back later.':error.message));
   }
 }
 
