@@ -369,3 +369,14 @@ main :is(a,button,summary,input,textarea,select):focus-visible {outline:2px soli
 }
 /* Pinterest browsing stays inside a dedicated dialog. */
 dialog.inspiration-dialog{width:min(1080px,94vw);max-width:94vw;max-height:92dvh;padding:28px;overflow:auto}.inspiration-dialog h2{margin-right:35px}.inspiration-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-block:20px}.inspiration-filters label{display:grid;gap:6px}.inspiration-filters input,.inspiration-filters select{width:100%;min-width:0}.inspiration-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.inspiration-card{margin:0;display:flex;flex-direction:column;align-items:start;gap:8px;overflow-wrap:anywhere}.inspiration-card h3,.inspiration-card p{margin:0}.inspiration-card button{margin-top:auto}.inspiration-frame{display:block;width:100%;height:580px;max-height:62dvh;border:0;margin:12px 0}.inspiration-dialog>div>button{margin-top:12px}@media(max-width:760px){.inspiration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){dialog.inspiration-dialog{padding:20px}.inspiration-grid{grid-template-columns:1fr}.inspiration-filters{grid-template-columns:1fr}}
+
+.merchant-cover {display:flex;align-items:center;gap:2rem;padding:2.5rem;border:1px solid var(--line);border-radius:24px;background:linear-gradient(115deg,#ecdfef,#faf5eb);margin-bottom:2rem}
+.merchant-cover h1 {overflow-wrap:anywhere;margin:.7rem 0;font-size:clamp(2rem,5vw,3.6rem)}
+.merchant-cover p {white-space:pre-line;max-width:60ch}
+.merchant-monogram {display:grid;place-items:center;flex-shrink:0;width:100px;height:100px;border-radius:50%;background:#563c60;color:#fff;font-size:3rem}
+.merchant-products {display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:1.25rem}
+.merchant-product {display:flex;flex-direction:column;gap:.7rem;overflow-wrap:anywhere}
+.merchant-product img {width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:12px}
+.merchant-product p {white-space:pre-line}
+.merchant-product .button {margin-top:auto;text-align:center}
+@media(max-width:600px){.merchant-cover{padding:1.5rem;gap:1rem;align-items:flex-start}.merchant-monogram{width:56px;height:56px;font-size:2rem}.merchant-cover h1{font-size:1.8rem}}

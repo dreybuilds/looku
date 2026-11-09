@@ -369,15 +369,14 @@ test('community publishes selective snapshots for visitors and enforces ownershi
  }finally{await guest.close();await admin.close()}
 });
 
-test('shopping profile fills an affiliate order locally and supports both price lists',async({page})=>{
+test('shopping profile fills a demo order locally and supports both price lists',async({page})=>{
  await page.goto('/#account');
  await page.getByText('My sizes and delivery details').click();
  const form=page.locator('#shopping-profile form');
  await form.getByLabel('Top size').fill('M');await form.getByLabel('Jacket size').selectOption('L');
  for(const [label,value] of [['Recipient name','Example Shopper'],['Street and building','42 Demo Lane'],['Town or city','Nairobi'],['Country','Kenya']])await form.getByLabel(label).fill(value);
  await form.getByRole('button',{name:'Save shopping profile'}).click();
- await page.reload();await nav(page,'Stores');
- await page.getByRole('link',{name:'Shop the jacket'}).click();
+ await page.reload();await page.goto('/app#boutique/looku/cropped-jacket');
  await page.getByLabel('Shopping currency').selectOption('USD');
  await page.getByRole('button',{name:'Review purchase'}).click();
  const dialog=page.getByRole('dialog');

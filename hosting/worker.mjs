@@ -1,3 +1,4 @@
+import {merchantStores} from './merchant-stores.mjs';
 import {wishlistMpesa} from './wishlist-mpesa.mjs';
 import {privySubject} from './privy.mjs';
 import {wishlistFunding} from './wishlist-funding.mjs';
@@ -45,6 +46,8 @@ async function reconcile(chain,order){
 function matches(a,b){return a&&typeof a==='object'&&Object.keys(a).length===Object.keys(b).length&&Object.entries(b).every(([k,v])=>typeof v==='object'?matches(a[k],v):a[k]===v)}
 async function handle(request,env){
  const url=new URL(request.url),p=url.pathname;
+ if(/^\/store\/[a-z0-9-]+\/?$/.test(p)&&assets['/storefront.html']&&request.method==='GET')return new Response(assets['/storefront.html'][1],{headers:{'Content-Type':'text/html; charset=utf-8'}});
+ if(p==='/api/merchant-stores'||p.startsWith('/api/merchant-stores/'))return merchantStores(request,env);
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
  if(p==='/api/features'&&request.method==='GET')return json(200,{enabled:(await settings(env.ORDERS)).enabled});
  const required=requiredFeatures(p,request.method);

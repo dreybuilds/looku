@@ -1,0 +1,90 @@
+import {test,expect} from '@playwright/test';
+
+test('merchants own stores, approved stores publish immediately, and suspension hides products',async({page,browser,baseURL},info)=>{
+  const token=await (await page.request.get('/qa-privy-token')).text();
+  await page.route('**/privy.js',route=>route.fulfill({contentType:'text/javascript',body:'export async function accessToken(){return '+JSON.stringify(token)+'}'}));
+  await page.goto('/app#merchant');
+  await page.evaluate(()=>localStorage.setItem('looku.privy-session','1'));await page.reload();
+  const slug='samaiahs-'+crypto.randomUUID().slice(0,8),name='Samaiah’s Closet '+slug;
+  await page.getByLabel('Store name',{exact:true}).fill(name);
+  await page.getByLabel('Store address',{exact:true}).fill(slug);
+  await page.getByLabel('About your store').fill('Thoughtful finds and gently worn favourites.');
+  await page.getByLabel('Public contact email').fill('merchant@example.org');
+  await page.getByRole('button',{name:'Submit store for approval'}).click();
+  await expect(page).toHaveURL(new RegExp('#merchant/'+slug+'$'));
+  await expect(page.getByText('Store status · pending',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Publish product'})).toHaveCount(0);
+  const guest=await browser.newContext({baseURL}),other=await browser.newContext({baseURL});
+  const admin=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
+  const ownHeaders={Authorization:'Bearer '+token,Origin:baseURL,'X-Looku-Action':'merchant-store'};
+  try{
+    expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
+    const otherToken=await (await other.request.get('/qa-privy-token')).text();
+    const otherHeaders={...ownHeaders,Authorization:'Bearer '+otherToken};
+    const draft={slug,name:'Copy',description:'',contact:'other@example.org'};
+    expect((await other.request.post('/api/merchant-stores',{headers:otherHeaders,data:draft})).status()).toBe(409);
+    expect((await other.request.post('/api/merchant-stores/'+slug,{headers:otherHeaders,data:draft})).status()).toBe(404);
+    expect((await (await other.request.get('/api/merchant-stores/mine',{headers:otherHeaders})).json()).items).toEqual([]);
+    expect((await page.request.post('/api/merchant-stores',{headers:ownHeaders,data:{...draft,slug:'admin'}})).status()).toBe(400);
+    expect((await page.request.get('/api/admin/merchant-stores',{headers:ownHeaders})).status()).toBe(403);
+    const adminHeaders={Origin:baseURL,'X-Looku-Action':'admin'};
+    expect((await (await admin.request.get('/api/admin/access')).json()).state).toBe('admin');
+    const ownerPage=await admin.newPage();await ownerPage.goto('/owner.html');
+    await ownerPage.getByRole('button',{name:'Manage merchant stores'}).click();
+    let card=ownerPage.getByRole('article').filter({has:ownerPage.getByRole('heading',{name,exact:true})});
+    await card.getByRole('button',{name:'Approve store'}).click();
+    await expect(card).toContainText('approved');
+    async function setFeature(id,enabled){
+      const flags=await (await admin.request.get('/api/admin/features')).json();
+      expect((await admin.request.post('/api/admin/features',{headers:adminHeaders,data:{id,enabled,revision:flags.revision}})).status()).toBe(200);
+    }
+    try{
+      await setFeature('shops',false);
+      const directory=await guest.newPage();await directory.goto('/app#shops');
+      await expect(directory.getByRole('link',{name:'Stores',exact:true})).toBeVisible();
+      await expect(directory.getByRole('link',{name:'Visit '+name,exact:true})).toBeVisible();
+      await expect(directory.getByRole('heading',{name:'Shop retailer websites'})).toHaveCount(0);
+      await setFeature('storefronts',false);
+      expect((await guest.request.get('/api/merchant-stores/'+slug)).status()).toBe(404);
+      expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{}})).status()).toBe(403);
+      await directory.reload();await expect(directory.getByRole('heading',{name:'Feature paused'})).toBeVisible();
+      await directory.close();
+    }finally{await setFeature('shops',true);await setFeature('storefronts',true)}
+    await page.reload();await page.getByText('Add a product',{exact:true}).click();
+    await page.getByLabel('Product name').fill('Lilac occasion jacket');
+    await page.getByLabel('Product photo').setInputFiles('../dist/orchid-detail.webp');
+    await page.getByLabel('Price in KSh').fill('2500');
+    await page.getByLabel('Description',{exact:true}).fill('Size M, gently worn. Nairobi collection.');
+    await page.getByRole('button',{name:'Publish product',exact:true}).click();
+    await expect(page.getByText(/Lilac occasion jacket · available · (KES|Ksh)\s*2,500/)).toBeVisible();
+    const customer=await guest.newPage();await customer.goto('/store/'+slug);
+    await expect(customer.getByRole('heading',{name,exact:true})).toBeVisible();
+    await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toBeVisible();
+    await expect(customer.getByRole('link',{name:'Ask about this piece'})).toHaveAttribute('href',/mailto:merchant@example.org/);
+    expect(await customer.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+    await customer.addScriptTag({path:'node_modules/axe-core/axe.min.js'});
+    const accessibility=await customer.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));
+    expect(accessibility.violations.map(item=>item.id)).toEqual([]);
+    await customer.screenshot({path:'/private/tmp/looku-merchant-store-'+info.project.name+'.png',fullPage:true});
+    const publicStore=await (await guest.request.get('/api/merchant-stores/'+slug)).json();
+    expect(publicStore).not.toHaveProperty('owner');expect(publicStore).not.toHaveProperty('revision');
+    const products=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items;
+    const product=products[0];
+    expect((await other.request.post('/api/merchant-stores/'+slug+'/products',{headers:otherHeaders,data:product})).status()).toBe(404);
+    expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:{...ownHeaders,Origin:'https://wrong.example'},data:product})).status()).toBe(403);
+    const detail=page.locator('details').filter({has:page.locator('summary').filter({hasText:'Lilac occasion jacket'})});
+    await detail.locator('summary').click();
+    await detail.getByLabel('Availability').selectOption('sold-out');
+    await detail.getByRole('button',{name:'Save product'}).click();
+    await expect(page.getByText(/Lilac occasion jacket · sold-out/)).toBeVisible();
+    expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:product})).status()).toBe(409);
+    await customer.reload();await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toHaveCount(0);
+    const updated=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items[0];
+    expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{...updated,status:'available'}})).status()).toBe(200);
+    await card.getByRole('button',{name:'Suspend store'}).click();await expect(card).toContainText('suspended');
+    expect((await guest.request.get('/api/merchant-stores/'+slug+'/products')).status()).toBe(404);
+    const latest=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items[0];
+    expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:latest})).status()).toBe(403);
+    await customer.reload();await expect(customer.getByRole('heading',{name:'Store unavailable'})).toBeVisible();
+  }finally{await guest.close();await other.close();await admin.close()}
+});

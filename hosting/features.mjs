@@ -1,4 +1,5 @@
 const labels = {
+  storefronts:'Merchant storefronts',
   bookings:'Stylist and beauty booking requests', donate:'Closet donations', sale:'Closet sales',
   look:'Published looks', shops:'Affiliate store directory', support:'New support requests',
   pinterest:'Pinterest tools', advice:'Online styling advice', backup:'New wardrobe backups',

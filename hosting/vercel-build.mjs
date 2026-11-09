@@ -32,6 +32,14 @@ const ownerRoutes=[
   {src:'^/sw\\.js$',has:adminHost,dest:'/owner-sw.js',headers:{'Cache-Control':'no-store'}},
   {src:'^/(?!(?:'+adminAssets+'|'+adminApi+')$).*$',has:adminHost,status:404}
 ];
+// Merchant hosts serve a storefront and public store data. Management stays on the main site.
+const merchantHost=[{type:'host',value:'(?!admin\\.|www\\.)[a-z0-9-]+\\.lookuwear\\.xyz'}];
+const merchantAssets='storefront\\.js|merchant-stores\\.js|features\\.js|email-auth\\.js|style\\.css';
+const merchantRoutes=[
+  {src:'^/$',has:merchantHost,dest:'/storefront.html'},
+  {src:'^/api/merchant-stores/[^?]*$',has:merchantHost,dest:'/studio'},
+  {src:'^/(?!(?:'+merchantAssets+')$).*$',has:merchantHost,status:404}
+];
 await writeFile(path.join(out, 'config.json'), JSON.stringify({
-  version: 3, routes: [...ownerRoutes,{src: '^/app/?$', dest: '/studio.html'}, {src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
+  version: 3, routes: [...ownerRoutes,...merchantRoutes,{src:'^/store/[a-z0-9-]+/?$',dest:'/storefront.html'},{src: '^/app/?$', dest: '/studio.html'}, {src: '^/privacy-policy/?$', dest: '/privacy-policy.html'}, {handle: 'filesystem'}, {src: '^/api/(.*)$', dest: '/studio'}]
 }));

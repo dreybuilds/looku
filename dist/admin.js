@@ -35,6 +35,34 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      const heading=node('h2',name);view.append(heading);
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
+     if(path==='merchant-stores'){
+       view.append(node('p','Approve a merchant store once to let its owner publish products directly. Suspended stores and their products are hidden from shoppers.'));
+       const list=node('div');list.className='stack';view.append(list);
+       let cursor;
+       const more=button('More merchant stores',()=>load());more.hidden=true;view.append(more);
+       async function load(){
+         const page=await api('merchant-stores'+(cursor?'?cursor='+encodeURIComponent(cursor):''));
+         if(!view.isConnected)return;
+         for(const store of page.items){
+           const card=node('article');card.className='panel';
+           const storefront=link('View storefront','https://lookuwear.xyz/store/'+store.slug);storefront.target='_blank';storefront.rel='noopener noreferrer';
+           card.append(node('h3',store.name),node('p',store.slug+'.lookuwear.xyz · '+store.status),node('p',store.description),node('p','Public contact · '+store.contact));
+           if(store.status==='approved')card.append(storefront);
+           const controls=node('div');controls.className='actions';card.append(controls);
+           for(const [label,status] of [['Approve store','approved'],['Reject store','rejected'],['Suspend store','suspended']]){
+             if(store.status===status)continue;
+             controls.append(button(label,async()=>{
+               await api('merchant-stores',{slug:store.slug,status,revision:store.revision});
+               await refresh();
+             }));
+           }
+           list.append(card);
+         }
+         cursor=page.next;more.hidden=!cursor;
+         if(!list.children.length&&!cursor)list.append(node('p','No merchant stores yet.'));
+       }
+       await load();return;
+     }
      if(path==='bookings'){
        const {bookingList}=await import('./bookings.js');
        await bookingList(view,(data,cursor)=>api(path+(cursor?'?cursor='+encodeURIComponent(cursor):''),data),true);return;
@@ -103,7 +131,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          const card=node('article');card.className='panel';
          card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
        }
-       view.append(cards,button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')));return;
+       view.append(cards,button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));return;
      }
      const rows=node('div');rows.className='stack';view.append(rows);
      const more=button('Load more',()=>load(next));view.append(more);let next;
@@ -140,7 +168,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Merchant stores','merchant-stores'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}

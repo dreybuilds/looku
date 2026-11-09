@@ -152,8 +152,9 @@ await refreshFeatures();
 function applySwitches(){
  const bookingNav=document.querySelector('nav a[href="#bookings"]');
  if(bookingNav)bookingNav.textContent=enabled('bookings')?'Book a stylist':'My bookings';
- const selectors={sale:'[data-sale]',donate:'[data-donate]',look:'[data-publish]',shops:'a[href="#shops"]',pinterest:'details:has(#pin-search)',advice:'details:has([value="gpt"])',backup:'[data-backup="save"]',boutique:'.panel.split:has([data-buy]),[data-buy],section.panel:has(a[href^="#boutique"])',support:'[data-new-ticket]'};
+ const selectors={sale:'[data-sale]',donate:'[data-donate]',look:'[data-publish]',pinterest:'details:has(#pin-search)',advice:'details:has([value="gpt"])',backup:'[data-backup="save"]',boutique:'.panel.split:has([data-buy]),[data-buy],section.panel:has(a[href^="#boutique"])',support:'[data-new-ticket]'};
  const rules=Object.entries(selectors).filter(([id])=>!enabled(id)).map(([,selector])=>selector);
+ if(!enabled('shops')&&!enabled('storefronts'))rules.push('a[href="#shops"]');
  if(!['look','sale','donate'].some(enabled))rules.push('a[href="#community"]');
  let sheet=document.querySelector('#feature-styles');
  if(!sheet){sheet=document.createElement('style');sheet.id='feature-styles';document.head.append(sheet)}
@@ -176,9 +177,14 @@ async function render(){
  document.body.classList.toggle('entry',section==='welcome');
  const communityKinds=['look','sale','donate'];
  const routeKind=section==='community'?communityKinds.find(enabled)||'look':section.split('/')[1];
- const feature=section==='shops'?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
+ const feature=section==='shops'&&!enabled('storefronts')?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
  if(feature&&!enabled(feature)){
    main.innerHTML='<h1>Feature paused</h1><p>This part of Looku is currently unavailable.</p><a href="#studio">Back to Studio</a>';return;
+ }
+ if(section==='merchant'||section.startsWith('merchant/')){
+   main.innerHTML='<section id="merchant-area"></section>';const panel=main.firstElementChild;
+   const {mountMerchantManager}=await import('./merchant-stores.js');
+   if(panel.isConnected)await mountMerchantManager(panel,section.split('/')[1]);return;
  }
  if(section==='bookings'){
    main.innerHTML='<section id="booking-area"></section>';const panel=main.firstElementChild;
@@ -211,7 +217,7 @@ async function render(){
    const {mountAdmin}=await import('./admin.js');await mountAdmin(panel);
  }
  else if(section==='stylist')main.innerHTML=stylist();
- else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'){
+ else if(section==='wallet'||section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'||section==='wallet/merchant'){
    main.innerHTML=title('Account / Shopping','Your wallet','Choose a wallet action.')+'<p><a class="link" href="#wishlist">Wishlist price targets →</a></p><div id="wallet-panel"></div><a href="#admin">Owner workspace</a>';
    try{
      const {mountWallet}=await import('./wallet.js');
@@ -219,7 +225,7 @@ async function render(){
      const panel=main.querySelector('#wallet-panel');
      await mountWallet(panel);
      if(id!==renderId)return;
-     if(section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings')panel.querySelector('.wallet-panel').open=true;
+     if(section==='wallet/admin'||section==='wallet/support'||section==='wallet/bookings'||section==='wallet/merchant')panel.querySelector('.wallet-panel').open=true;
      if(sessionStorage.getItem('looku.return-to-order')){
        panel.querySelector('.wallet-panel').open=true;
        panel.insertAdjacentHTML('afterbegin',`<section class="alert order-return"><strong>Cropped jacket · ${money()}</strong><p>Once your wallet is funded, return to review the order.</p><div class="row"><button data-buy>Return to checkout</button><button class="secondary" data-cancel-order>Dismiss order</button></div></section>`);
@@ -239,10 +245,14 @@ async function render(){
  }
  else if(section==='shops'){
    main.innerHTML=title('Looku Wear / Shopping','Find your next piece','Explore stores, choose something you love, and save its product link to your wishlist.')+
+     (enabled('storefronts')?'<section class="panel"><h2>Sell on Looku</h2><p>Open a storefront for your collection and manage your own products.</p><a class="button" href="#merchant">Create or manage your store</a></section><section id="looku-merchants"></section>':'')+
      '<section class="panel"><h2>Keep your favourites together</h2><p>Save a product’s link, size or colour and target price so you can return to it later.</p><a class="button secondary" href="#wishlist">Open your wishlist</a></section>'+
-     '<div class="toolbar"><label>Find a store<input type="search" id="store-search" placeholder="Store, clothing, shoes or jewellery"></label></div>'+
+     (enabled('shops')?'<section id="retailer-stores"><h2>Shop retailer websites</h2><div class="toolbar"><label>Find a store<input type="search" id="store-search" placeholder="Store, clothing, shoes or jewellery"></label></div>'+
      '<p class="fine">Store links open the retailer’s website. Check delivery, prices and returns there. Looku may earn a commission on links marked Partner link.</p>'+
-     '<p role="status" id="store-status">Loading stores…</p><div id="store-list" class="store-list"></div>';
+     '<p role="status" id="store-status">Loading stores…</p><div id="store-list" class="store-list"></div></section>':'');
+   const merchants=main.querySelector('#looku-merchants');
+   if(enabled('storefronts'))import('./merchant-stores.js').then(({merchantDirectory})=>{if(merchants.isConnected)merchantDirectory(merchants)}).catch(()=>{merchants.textContent='Merchant stores could not load. Refresh to try again.'});
+   if(!enabled('shops'))return;
    try{
      const [catalog,partners]=await Promise.all([
        fetch('stores.json').then(response=>{if(!response.ok)throw Error();return response.json()}),

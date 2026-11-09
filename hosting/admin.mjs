@@ -1,3 +1,4 @@
+import {adminStores} from './merchant-stores.mjs';
 import partnerPrograms from './partner-programs.json' with {type:'json'};
 import {reportPage} from './reports.mjs';
 import {adminSupport,dashboard} from './support.mjs';
@@ -33,6 +34,7 @@ export async function admin(req,env,recheckPayout){
    if(!data||typeof data!=='object')return error(400,'Invalid request.');
  }
  if(path==='partner-programs'&&req.method==='GET')return reply(200,{items:partnerPrograms});
+ if(path==='merchant-stores')return adminStores(req,store,data);
  if(path==='features')return featureControls(req,store,data);
  if(path==='bookings')return adminBookings(req,store,data);
  if(path==='reports'&&req.method==='GET')return reportPage(store,url.searchParams);
