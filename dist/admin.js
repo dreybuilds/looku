@@ -35,6 +35,10 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      const heading=node('h2',name);view.append(heading);
      if(address)view.append(node('code',address));
      const refresh=()=>section(name,path,address);
+     if(path==='earnings'){
+       const {mountEarnings}=await import('./earnings.js');
+       await mountEarnings(view,api);return;
+     }
      if(path==='merchant-stores'){
        view.append(node('p','Approve a merchant store once to let its owner publish products directly. Suspended stores and their products are hidden from shoppers.'));
        const list=node('div');list.className='stack';view.append(list);
@@ -131,7 +135,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
          const card=node('article');card.className='ui-card';
          card.append(node('h3',label),node('p',String(counts[key])),button('View '+label.toLowerCase(),()=>section(label,target)));cards.append(card);
        }
-       const actions=node('div');actions.className='ui-actions';actions.append(button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));view.append(cards,actions);return;
+       const actions=node('div');actions.className='ui-actions';actions.append(button('View earnings and profit',()=>section('Earnings & profit','earnings')),button('Manage app features',()=>section('App features','features')),button('Manage bookings',()=>section('Bookings','bookings')),button('Manage merchant stores',()=>section('Merchant stores','merchant-stores')));view.append(cards,actions);return;
      }
      const rows=node('div');rows.className='stack';view.append(rows);
      const more=button('Load more',()=>load(next));view.append(more);let next;
@@ -168,7 +172,7 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      }
      more.hidden=true;await load();
    }
-   for(const [name,path] of [['Dashboard','dashboard'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Merchant stores','merchant-stores'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
+   for(const [name,path] of [['Dashboard','dashboard'],['Earnings & profit','earnings'],['App features','features'],['Bookings','bookings'],['Reports','reports'],['Support requests','support'],['Closet sales','review/sale'],['Donations','review/donate'],['Merchant stores','merchant-stores'],['Affiliates','affiliates'],['Partner programs','partner-programs'],['Accounts','accounts']])tabs.append(button(name,()=>section(name,path)));
    await section('Dashboard','dashboard');
  }
  try{await start()}catch(e){status.textContent=e.message}

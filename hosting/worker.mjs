@@ -40,7 +40,7 @@ async function reconcile(chain,order){
  if(row.status==='payout_pending'){
  if(!row.payoutXdr)await update({payoutXdr:await chain.prepareCommission(row.id)});
  const out=await chain.reconcile(row.payoutXdr);
- if(out.status==='SUCCESS')await update({status:'complete',payoutTx:out.hash});
+ if(out.status==='SUCCESS')await update({status:'complete',payoutTx:out.hash,paidAt:new Date().toISOString()});
  if(out.status==='FAILED')await update({payoutXdr:null});
  }
 }
@@ -88,7 +88,8 @@ async function handle(request,env){
  let selection;try{selection=demoSelection(details)}catch(error){throw new HttpError(400,error.message)}
  if(sku!==SKU||!StrKey.isValidEd25519PublicKey(address||''))throw new HttpError(400,'Choose the demo jacket and a valid Stellar address.');
  if((await (await bucket.get('wallet-accounts/'+address))?.json())?.suspended)throw new HttpError(403,'Wallet account suspended.');
- const row={id:crypto.randomUUID(),selection,status:'awaiting_signature',address,merchant:chain.merchant,platform:chain.platform,purchaseTx:null,payoutTx:null};
+ const row={id:crypto.randomUUID(),selection,status:'awaiting_signature',address,merchant:chain.merchant,platform:chain.platform,purchaseTx:null,payoutTx:null,
+   amount:ITEM.amount,commission:ITEM.commission,currency:ITEM.currency,network:NETWORK,createdAt:new Date().toISOString()};
  await bucket.put('orders/'+row.id,JSON.stringify(row));return json(201,receipt(row));
  }
  const route=p.match(/^\/api\/payments\/orders\/([a-f0-9-]{36})(\/checkout)?$/);

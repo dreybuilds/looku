@@ -91,3 +91,9 @@ Wishlist item budgets are saved per account and network against the shared confi
 Validation: `npm run build` and `cd qa && npm test -- stellar-wallet.spec.js launch.spec.js wishlist.spec.js`. Unit tests use provider fixtures and real Stellar transaction signatures; they do not transfer real funds.
 
 Online styling and wardrobe backup requests send the member’s Privy access token and accept email authentication directly. General sign-in prompts point to Account and email sign-in; explicit demo wallet recovery and legacy purchase receipts still use their original wallet. `qa/email-features.spec.js` checks email-only styling and backup isolation.
+
+## Admin earnings
+
+Open Admin → Earnings & profit for all-time income, expenses and recorded profit, calculated separately in KES and USD. Enter received income and paid expenses, including fees and refunds. Void incorrect entries and record replacements. Profit reflects the entries recorded so far.
+
+The testnet section reads stored boutique orders, separates received referral commissions from pending payouts, and links confirmed transactions. Older orders use their original fixed 1 test XLM purchase and 0.10 test XLM commission terms. Test balances are excluded from real-money totals. External store sales, wishlist contributions and customer wallet deposits are excluded from automatic platform earnings.

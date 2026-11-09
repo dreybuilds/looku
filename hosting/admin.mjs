@@ -3,6 +3,7 @@ import partnerPrograms from './partner-programs.json' with {type:'json'};
 import {reportPage} from './reports.mjs';
 import {adminSupport,dashboard} from './support.mjs';
 import {walletReceipts} from './wallet-receipts.mjs';
+import {earnings} from './earnings.mjs';
 import {StrKey} from '@stellar/stellar-sdk';
 
 import {featureControls} from './features.mjs';
@@ -38,6 +39,7 @@ export async function admin(req,env,recheckPayout){
  if(path==='features')return featureControls(req,store,data);
  if(path==='bookings')return adminBookings(req,store,data);
  if(path==='reports'&&req.method==='GET')return reportPage(store,url.searchParams);
+ if(path==='earnings')return earnings(req,store,data);
  if(path==='recheck-payout'&&req.method==='POST'&&typeof data.id==='string'&&/^[a-f0-9-]{36}$/.test(data.id))return recheckPayout(data.id);
  if(path==='support')return adminSupport(req,store,data);
  if(path==='dashboard'&&req.method==='GET')return dashboard(store);

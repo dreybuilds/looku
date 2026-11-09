@@ -45,3 +45,8 @@ console.log('Verified merchant subdomains, storefront assets and admin host isol
 assert.match(studio,/href="\/ui.css"/);
 assert.ok((await readFile(new URL('static/ui.css',output))).length);
 assert.equal(explicitRoute('admin.lookuwear.xyz','/ui.css'),undefined);
+
+for(const asset of ['/earnings.js','/ui.js']){
+ assert.equal(explicitRoute('admin.lookuwear.xyz',asset),undefined);
+ assert.ok((await readFile(new URL('static'+asset,output))).length);
+}
