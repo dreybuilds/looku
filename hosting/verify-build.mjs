@@ -19,9 +19,8 @@ const studio = await readFile(new URL('static' + appRoute.dest, output), 'utf8')
 assert.match(studio, /href="#community"/);
 assert.equal(typeof handler.default, 'function');
 console.log('Verified studio homepage, browser signer and server entry point.');
-for(const file of ['landing.js','experience.js'])assert.ok((await readFile(new URL('static/'+file,output))).length);
-assert.match(home,/src="\/landing.js"/);
-assert.match(home,/data-experience-switch/);
+for(const file of ['experience.js'])assert.ok((await readFile(new URL('static/'+file,output))).length);
+assert.doesNotMatch(home,/data-experience-switch/);
 assert.match(studio,/data-experience-switch/);
 
 // Host rules must run before public files or the general API route can match.

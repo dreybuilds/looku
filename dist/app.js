@@ -1,9 +1,9 @@
 import {emailHeaders} from './email-auth.js';
 import {pageHeader,sectionHeader,contentCard,emptyState,sectionNav,experienceSwitch} from './ui.js';
-import {experience,setExperience,homeRoute,routeExperience} from './experience.js';
+import {experience,setExperience,homeRoute,routeExperience,lockPersonal} from './experience.js';
 import {mountChoicePickers} from './choice-picker.js';
 import {openInspiration} from './inspiration.js';
-import {enabled,refreshFeatures} from './features.js';
+import {enabled,refreshFeatures,appNotice} from './features.js';
 import {mountWishlist,receiveSharedLink} from './wishlist.js';
 import {prices,currency,money,budgetUnits,profileFields,fillProfile,readProfile,saveProfile,mountProfile} from './shopping.js';
 import {mountCommunity,mountMemberAccount,composePost} from './community.js';
@@ -196,6 +196,11 @@ function showAdminNavigation(){
 }
 await refreshFeatures();
 function applySwitches(){
+ lockPersonal(!enabled('business'));
+ document.querySelector('[data-experience-switch]').hidden=!enabled('business');
+ let banner=document.querySelector('#app-notice');
+ if(!banner){banner=document.createElement('p');banner.id='app-notice';banner.className='app-notice';banner.setAttribute('role','status');document.querySelector('header').after(banner)}
+ banner.textContent=appNotice();banner.hidden=!appNotice();
  const bookingNav=document.querySelector('nav a[href="#bookings"]');
  if(bookingNav)bookingNav.textContent=enabled('bookings')?'Book a stylist':'My bookings';
  const selectors={sale:'[data-sale]',donate:'[data-donate]',look:'[data-publish]',pinterest:'details:has(#pin-search)',advice:'details:has([value="gpt"])',backup:'[data-backup="save"]',boutique:'.panel.split:has([data-buy]),[data-buy],section.panel:has(a[href^="#boutique"])',support:'[data-new-ticket]'};
@@ -230,7 +235,7 @@ async function render(){
  main.dataset.page=section.split('/')[0];
  const communityKinds=['look','sale','donate'];
  const routeKind=section==='community'?communityKinds.find(enabled)||'look':section.split('/')[1];
- const feature=section==='shops'&&!enabled('storefronts')?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
+ const feature=routeExperience(section)==='business'?'business':section==='shops'&&!enabled('storefronts')?'shops':section.startsWith('boutique/')?'boutique':section.split('/')[0]==='community'&&communityKinds.includes(routeKind)?routeKind:null;
  if(feature&&!enabled(feature)){
    main.innerHTML='<h1>Feature paused</h1><p>This part of Looku is currently unavailable.</p><a href="#studio">Back to Studio</a>';return;
  }
@@ -249,7 +254,7 @@ async function render(){
    main.innerHTML='<div id="welcome"></div>';
    const root=main.firstElementChild;
    const {mountWelcome}=await import('./welcome.js');
-   if(root.isConnected)await mountWelcome(root);
+   if(root.isConnected)await mountWelcome(root,{onChoose:render});
  }
  else if(section==='wardrobe')main.innerHTML=title('Collection / Personal archive','Your wardrobe','Add the pieces you reach for and organise them by occasion.')+`<div class="toolbar"><button data-add>＋ Add a piece</button><a class="link" href="#stylist">Style an outfit →</a><a class="link" href="#wishlist">Wishlist</a><label>Category<select id="filter">${options([['','All pieces'],...Object.entries(categories)],filter)}</select></label></div>${gallery()}${sectionHeader({title:'Saved outfits'}).outerHTML.replace('<h2 ','<h2 id="saved-heading" tabindex="-1" ')}${showSaved()}`;
  else if(section==='community'||section.startsWith('community/')){

@@ -3,7 +3,7 @@ import {stellarWallet} from '../payments/account-wallet.mjs';
 import {wishlistMpesa} from './wishlist-mpesa.mjs';
 import {privySubject} from './privy.mjs';
 import {wishlistFunding} from './wishlist-funding.mjs';
-import {settings,requiredFeatures,paused,pausedReply} from './features.mjs';
+import {settings,requiredFeatures,paused,pausedReply,appNotice} from './features.mjs';
 import {bookings} from './bookings.mjs';
 import {support} from './support.mjs';
 import {demoSelection} from '../payments/demo-order.mjs';
@@ -50,7 +50,7 @@ async function handle(request,env){
  if(/^\/store\/[a-z0-9-]+\/?$/.test(p)&&assets['/storefront.html']&&request.method==='GET')return new Response(assets['/storefront.html'][1],{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(p==='/api/merchant-stores'||p.startsWith('/api/merchant-stores/'))return merchantStores(request,env);
  if(Object.hasOwn(assets,p)&&['GET','HEAD'].includes(request.method)){const [type,text]=assets[p];return new Response(request.method==='HEAD'?null:(type.startsWith('image/')||type.startsWith('font/')||type==='model/gltf-binary')?Uint8Array.from(atob(text),c=>c.charCodeAt(0)):text,{headers:{'Content-Type':type,'X-Content-Type-Options':'nosniff'}})}
- if(p==='/api/features'&&request.method==='GET')return json(200,{enabled:(await settings(env.ORDERS)).enabled});
+ if(p==='/api/features'&&request.method==='GET')return json(200,{enabled:(await settings(env.ORDERS)).enabled,notice:await appNotice(env.ORDERS)});
  const required=requiredFeatures(p,request.method);
  if(required.length){
    const {enabled}=await settings(env.ORDERS);

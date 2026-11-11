@@ -99,6 +99,13 @@ export async function mountAdmin(root,{ownerOnly=false}={}){
      if(path==='features'){
        const settings=await api(path);
        view.append(node('p','Turn features on or off for the shopper app. Changes take effect online without a deployment.'));
+       const form=node('form');form.className='panel ui-surface';
+       const label=node('label','App notice');const field=node('textarea');field.name='notice';field.maxLength=280;field.rows=2;field.value=settings.notice||'';field.placeholder='Shown at the top of the app for every shopper, e.g. planned maintenance.';label.append(field);
+       const save=node('button','Publish notice');const clear=button('Clear notice',async()=>{await api(path,{notice:''});await refresh();status.textContent='App notice cleared.'});clear.className='secondary';clear.hidden=!settings.notice;
+       const row=node('div');row.className='ui-actions';row.append(save,clear);
+       form.append(label,node('p',settings.notice?'Live now.':'No notice is showing.'),row);
+       form.onsubmit=async event=>{event.preventDefault();save.disabled=true;status.textContent='';try{await api(path,{notice:field.value});await refresh();status.textContent=field.value.trim()?'App notice published.':'App notice cleared.'}catch(e){status.textContent=e.message}finally{save.disabled=false}};
+       view.append(form);
        const controls=node('div');controls.className='ui-grid ui-feature-grid';view.append(controls);
        for(const [id,label] of Object.entries(settings.labels)){
          const card=node('article');card.className='panel ui-surface';

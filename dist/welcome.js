@@ -1,9 +1,32 @@
-import {pageHeader} from './ui.js';
-import {experience,homeRoute} from './experience.js';
+import {pageHeader,selectionCard} from './ui.js';
+import {experience,experienceChosen,setExperience,homeRoute} from './experience.js';
+import {enabled} from './features.js';
 import {emailAccount, emailHeaders, bindAccountDialog} from './email-auth.js';
 import {accountCall, mountAccount, walletRecord} from './local-wallet.js';
 
-export async function mountWelcome(root) {
+const choices=[
+  {mode:'personal',label:'01',title:'Personal',description:'Style the clothes you own, plan purchases, shop stores and join the community.'},
+  {mode:'business',label:'02',title:'Business',description:'Create your storefront, brand it and publish your collection to Looku shoppers.'}
+];
+
+// First visit: ask how the shopper will use Looku before sign-in. The header switch changes it later.
+function mountChoice(root, onChoose) {
+  document.body.classList.add('choosing');
+  root.innerHTML = `<section class="entry-card"><div class="entry-photo" aria-hidden="true"></div>
+    <div class="entry-copy"><a href="/" class="eyebrow">← Looku home</a>${pageHeader({title:'How will you use Looku?',description:'Pick one to start. You can switch between Personal and Business at any time from the top of the app.'}).outerHTML}
+    <div class="ui-choice-grid entry-choices" role="group" aria-label="Choose your Looku experience"></div></div></section>`;
+  const grid = root.querySelector('.entry-choices');
+  for (const choice of choices) {
+    const card = selectionCard(choice);
+    card.dataset.experience = choice.mode;
+    card.onclick = () => { setExperience(choice.mode); document.body.classList.remove('choosing'); onChoose(); };
+    grid.append(card);
+  }
+}
+
+export async function mountWelcome(root, {onChoose=()=>mountWelcome(root)}={}) {
+  if (enabled('business') && !experienceChosen()) return mountChoice(root, onChoose);
+  document.body.classList.remove('choosing');
   const business=experience()==='business';
   const enter = () => { if (root.isConnected) location.replace(homeRoute()); };
   root.innerHTML = `<section class="entry-card"><div class="entry-photo" aria-hidden="true"></div>

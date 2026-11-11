@@ -270,3 +270,8 @@
  .app-header>nav.nav .nav-link{flex:1 0 27%;padding:10px 6px;font-size:13px}
  .looku-ui .business-grid{grid-template-columns:1fr}
 }
+.looku-ui .entry-choices{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:var(--ui-space-2)}
+.looku-ui.entry.choosing [data-experience-switch]{display:none}
+.looku-ui .app-notice{margin:0;padding:var(--ui-space-3) clamp(20px,4vw,48px);background:#f5d5ff;color:var(--ink);border-bottom:1px solid var(--ui-border);font-size:var(--ui-caption-size);text-align:center;overflow-wrap:anywhere}
+.looku-ui .app-notice[hidden]{display:none}
+@media(max-width:480px){.looku-ui .entry-choices{grid-template-columns:1fr}}

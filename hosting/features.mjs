@@ -1,5 +1,5 @@
 const labels = {
-  storefronts:'Merchant storefronts',
+  business:'Business experience (Personal / Business choice)', storefronts:'Merchant storefronts',
   bookings:'Stylist and beauty booking requests', donate:'Closet donations', sale:'Closet sales',
   look:'Published looks', shops:'Affiliate store directory', support:'New support requests',
   pinterest:'Pinterest tools', advice:'Online styling advice', backup:'New wardrobe backups',
@@ -7,7 +7,12 @@ const labels = {
   preview:'Retailer product previews', social:'New social profile tags',
   merchant:'Wishlist merchant checkout', wishlist:'Save new wishlist items'
 };
-const key='admin/features';
+const key='admin/features',noticeKey='admin/notice';
+export async function appNotice(store){
+  const record=await store.get(noticeKey);
+  const text=record?(await record.json()).text:'';
+  return typeof text==='string'?text:'';
+}
 export async function settings(store){
   const record=await store.get(key);
   const stored=record?await record.json():{};
@@ -17,7 +22,13 @@ export async function settings(store){
 export async function featureControls(request,store,data){
   const current=await settings(store);
   const reply=(status,body)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
-  if(request.method==='GET')return reply(200,{...current,labels});
+  if(request.method==='GET')return reply(200,{...current,labels,notice:await appNotice(store)});
+  if(typeof data.notice==='string'){
+    const text=data.notice.replace(/\s+/g,' ').trim();
+    if(text.length>280)return reply(400,{error:'Keep the app notice to 280 characters.'});
+    await store.put(noticeKey,JSON.stringify({text,updatedAt:new Date().toISOString()}));
+    return reply(200,{ok:true,notice:text});
+  }
   if(typeof data.id!=='string'||!Object.hasOwn(labels,data.id)||typeof data.enabled!=='boolean')return reply(400,{error:'Choose a feature and its new state.'});
   if(data.revision===current.revision){
     const saved=await store.put(key,JSON.stringify({...current.enabled,[data.id]:data.enabled}),{onlyIf:current.revision?{etagMatches:current.revision}:{etagDoesNotMatch:'*'}});

@@ -5,28 +5,63 @@ async function fits(page){
  await page.evaluate(()=>document.fonts.ready);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
 }
-test('landing explains both audiences and carries Business through email sign-in',async({page,request},info)=>{
+const choice=(page,name)=>page.getByRole('group',{name:'Choose your Looku experience'}).getByRole('button',{name:new RegExp('^\\d+\\s*'+name)});
+test('landing asks Personal or Business before launching the app',async({page,request},info)=>{
  const token=await (await request.get('/qa-privy-token')).text();
  await page.route('**/privy.js',route=>route.fulfill({contentType:'text/javascript',body:'export async function sendCode(){};export async function verifyCode(){};export async function accessToken(){return '+JSON.stringify(token)+'}'}));
  await page.goto('/');
- await expect(modeButton(page,'Personal')).toHaveAttribute('aria-pressed','true');
- for(const heading of ['Build your wardrobe','Find a fresh combination','Plan your next purchase','Share, sell or donate','Bring in a professional','Make it your everyday companion'])await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();
- await fits(page);await page.screenshot({path:'/private/tmp/looku-personal-landing-'+info.project.name+'.png',fullPage:true});
- await modeButton(page,'Business').click();
- await expect(page.getByRole('heading',{level:1})).toContainText('Your own storefront');
- await expect(page.getByRole('heading',{name:'Build your wardrobe'})).toBeHidden();
- await expect(page.getByRole('heading',{name:'Build your brand identity'})).toBeVisible();
- await expect(page.getByText('Once approved, publish products', {exact:false})).toBeVisible();
- await fits(page);await page.screenshot({path:'/private/tmp/looku-business-landing-'+info.project.name+'.png',fullPage:true});
- await page.reload();await expect(modeButton(page,'Business')).toHaveAttribute('aria-pressed','true');
- await page.getByRole('link',{name:'Open business'}).first().click();
+ await expect(page.getByRole('group',{name:'Looku experience',exact:true})).toHaveCount(0);
+ for(const heading of ['Build your wardrobe','Find a fresh combination','Plan your next purchase','Share, sell or donate','Bring in a professional','Make it your everyday companion','Set up your store','Build your brand identity'])await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible();
+ await fits(page);await page.screenshot({path:'/private/tmp/looku-landing-'+info.project.name+'.png',fullPage:true});
+ await page.getByRole('link',{name:'Launch app'}).first().click();
+ const launch=page.getByRole('dialog',{name:'How will you use Looku?'});
+ await expect(launch).toBeVisible();
+ await page.screenshot({path:'/private/tmp/looku-launch-choice-'+info.project.name+'.png'});
+ await launch.getByRole('button',{name:'Close'}).click();await expect(launch).toBeHidden();
+ await page.getByRole('link',{name:'Launch app'}).last().click();
+ await launch.getByRole('link',{name:/Business/}).click();
+ await expect(page).toHaveURL(/\/app\?mode=business$/);
  await expect(page.getByRole('heading',{name:'Enter your business workspace.'})).toBeVisible();
+ await expect(modeButton(page,'Business')).toHaveAttribute('aria-pressed','true');
+ await page.reload();await expect(page.getByRole('heading',{name:'Enter your business workspace.'})).toBeVisible();
  await page.getByText('Continue with email',{exact:true}).click();
  await page.getByLabel('Email address').fill('business@example.test');await page.getByRole('button',{name:'Send code'}).click();
  await page.getByLabel('Six-digit code').fill('123456');await page.getByRole('button',{name:'Verify code and continue'}).click();
  await expect(page).toHaveURL(/#business$/);
  await expect(page.getByRole('heading',{name:'Your business workspace'})).toBeVisible();
  await page.goto('/app');await expect(page).toHaveURL(/#business$/);
+});
+
+test('opening the app directly still asks Personal or Business',async({page},info)=>{
+ await page.goto('/app');
+ await expect(page.getByRole('heading',{name:'How will you use Looku?'})).toBeVisible();
+ await expect(page.getByRole('group',{name:'Looku experience',exact:true})).toBeHidden();
+ await fits(page);
+ await choice(page,'Personal').click();
+ await expect(page.getByRole('heading',{name:'Enter your studio.'})).toBeVisible();
+});
+
+test('admin can switch off Business and publish an app notice',async({page})=>{
+ await page.route('**/api/features',route=>route.fulfill({json:{enabled:{business:false},notice:'Checkout is in maintenance until 6pm.'}}));
+ await page.goto('/app');
+ await expect(page.getByRole('heading',{name:'Enter your studio.'})).toBeVisible();
+ await expect(page.getByRole('group',{name:'Looku experience',exact:true})).toBeHidden();
+ await page.getByRole('link',{name:'Explore the studio as a guest'}).click();
+ await expect(page.locator('#app-notice')).toHaveText('Checkout is in maintenance until 6pm.');
+ await page.goto('/app#merchant');await expect(page.getByRole('heading',{name:'Feature paused'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'My stores'})).toBeHidden();
+});
+
+test('admin app notice is saved for every shopper',async({browser,baseURL})=>{
+ const owner=await browser.newContext({baseURL,extraHTTPHeaders:{'oai-authenticated-user-email':'nzauaudrey@gmail.com'}});
+ const headers={Origin:baseURL,'X-Looku-Action':'admin'};
+ try{
+  expect((await owner.request.post('/api/admin/features',{headers,data:{notice:'x'.repeat(281)}})).status()).toBe(400);
+  expect((await owner.request.post('/api/admin/features',{headers,data:{notice:'  Planned   maintenance tonight. '}})).status()).toBe(200);
+  expect((await (await owner.request.get('/api/features')).json()).notice).toBe('Planned maintenance tonight.');
+  const flags=await (await owner.request.get('/api/admin/features')).json();
+  expect(flags.labels.business).toContain('Business experience');expect(flags.enabled.business).toBe(true);
+ }finally{await owner.request.post('/api/admin/features',{headers,data:{notice:''}});await owner.close()}
 });
 
 test('app switching preserves wardrobe, supports keyboard and follows deep links',async({page},info)=>{
@@ -54,9 +89,9 @@ test('app switching preserves wardrobe, supports keyboard and follows deep links
 
 test('mode choice works with unavailable storage and offline navigation',async({page,context})=>{
  await page.addInitScript(()=>{const get=Storage.prototype.getItem,set=Storage.prototype.setItem;Storage.prototype.getItem=function(key){if(key==='looku.experience.v1')throw new Error('Storage unavailable');return get.call(this,key)};Storage.prototype.setItem=function(key,value){if(key==='looku.experience.v1')throw new Error('Storage unavailable');return set.call(this,key,value)}});
- await page.goto('/?mode=business');await expect(modeButton(page,'Business')).toHaveAttribute('aria-pressed','true');
- await modeButton(page,'Personal').click();await expect(modeButton(page,'Personal')).toHaveAttribute('aria-pressed','true');
- await page.goto('/app?mode=business');await page.getByRole('link',{name:'Explore business tools as a guest'}).click();
+ await page.goto('/app');await choice(page,'Business').click();
+ await expect(modeButton(page,'Business')).toHaveAttribute('aria-pressed','true');
+ await page.getByRole('link',{name:'Explore business tools as a guest'}).click();
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true}))});
  await context.setOffline(true);await page.reload();
  await expect(page.getByRole('heading',{name:'Your business workspace'})).toBeVisible();

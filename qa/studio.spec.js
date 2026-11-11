@@ -253,14 +253,14 @@ test('add and style opens a look with the new piece and receipts are directly vi
  await expect(page.getByRole('heading',{name:'Style an outfit'})).toBeVisible();
  await expect(page.getByLabel('Describe your look')).toHaveValue(/Lilac linen camp shirt/);
  await expect(page.getByRole('article').filter({hasText:'Lilac linen camp shirt'})).toBeVisible();
- await nav(page,'Wallet');
- await expect(page.getByRole('heading',{name:'Purchase receipts'})).toBeVisible();
+ await page.evaluate(()=>{location.hash='wallet'});
+ await expect(page.getByRole('heading',{name:'Purchase receipts',exact:true})).toBeVisible();
 });
 
 test('returning from checkout focuses the receipt without hiding wallet tools',async({page})=>{
  await page.goto('/app#studio');
  await page.evaluate(()=>sessionStorage.setItem('looku.show-receipt','1'));
- await nav(page,'Wallet');
+ await page.evaluate(()=>{location.hash='wallet'});
  await expect(page.locator('#receipts')).toBeFocused();
  await expect(page.getByText('Device wallet · demo',{exact:true})).toBeVisible();
 });
