@@ -76,10 +76,26 @@ export async function mountStorefront(root,slug){
         for(const product of page.items){
           if(product.status!=='available')continue;
           const card=node('article');card.className='panel merchant-product';
-          const image=node('img');image.src=product.photo;image.alt=product.title;image.loading='lazy';
-          const subject='Enquiry about '+product.title+' at '+store.name;
-          const contact=link('Ask about this piece','mailto:'+encodeURIComponent(store.contact).replace('%40','@')+'?subject='+encodeURIComponent(subject));contact.className='button';
-          card.append(image,node('h3',product.title),node('strong',money(product.price)),node('p',product.description),contact);
+          const gallery=productGallery(product);
+          const contact=link('Ask about this piece','#');contact.className='button';
+          const choices=node('div');choices.className='product-choices';
+          const pickers={};
+          for(const [key,label] of [['sizes','Size'],['colours','Colour']]){
+            const values=product[key]||[];if(!values.length)continue;
+            const field=node('label',label),select=node('select');
+            select.append(...values.map(value=>{const option=node('option',value);option.value=value;return option}));
+            field.append(select);choices.append(field);pickers[label]=select;select.onchange=enquiry;
+          }
+          function enquiry(){
+            const picked=Object.entries(pickers).map(([label,select])=>label+': '+select.value);
+            const subject='Enquiry about '+product.title+(picked.length?' ('+picked.join(', ')+')':'')+' at '+store.name;
+            const message='Hi '+store.name+',\n\nI’m interested in '+product.title+' ('+money(product.price)+').'+(picked.length?'\n'+picked.join('\n'):'')+'\n\nIs it available, and how do delivery and payment work?';
+            contact.href='mailto:'+encodeURIComponent(store.contact).replace('%40','@')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(message);
+          }
+          enquiry();
+          card.append(gallery,node('h3',product.title),node('strong',money(product.price)),node('p',product.description));
+          if(choices.children.length)card.append(choices);
+          card.append(contact);
           list.append(card);
         }
         cursor=page.next;more.hidden=!cursor;
@@ -320,35 +336,75 @@ function brandEditor(root,form,store,save){
   form.elements.name.addEventListener('input',draw);form.elements.description.addEventListener('input',draw);draw();
   return ()=>{if(pending.size)throw Error('Wait for your images to finish preparing.');return {...artwork,theme,bannerCrop:crops}};
 }
+const maxPhotos=5;
+function productGallery(product){
+  const photos=productPhotos(product),root=node('div');root.className='product-gallery';
+  const main=node('img');main.src=photos[0];main.alt=product.title;main.loading='lazy';root.append(main);
+  if(photos.length<2)return root;
+  const thumbs=node('div');thumbs.className='product-thumbs';thumbs.setAttribute('role','group');thumbs.setAttribute('aria-label',product.title+' photos');
+  photos.forEach((photo,index)=>{
+    const button=node('button');button.type='button';button.setAttribute('aria-label','Show photo '+(index+1)+' of '+photos.length);button.setAttribute('aria-pressed',String(index===0));
+    const image=node('img');image.src=photo;image.alt='';image.loading='lazy';button.append(image);
+    button.onclick=()=>{main.src=photo;main.alt=product.title+', photo '+(index+1);for(const other of thumbs.children)other.setAttribute('aria-pressed',String(other===button))};
+    thumbs.append(button);
+  });
+  root.append(thumbs);return root;
+}
+const listText=list=>(list||[]).join(', ');
+const parseList=text=>[...new Set(text.split(',').map(item=>item.replace(/\s+/g,' ').trim()).filter(Boolean))];
+const productPhotos=product=>product?.photos?.length?product.photos:product?.photo?[product.photo]:[];
 function productForm(root,store,product,onSave){
   const form=node('form');form.className='stack ui-form';
-  form.innerHTML='<label>Product name<input name="title" maxlength="100" required></label><label>Product photo<input name="photo" type="file" accept="image/*"></label>'+
+  form.innerHTML='<label>Product name<input name="title" maxlength="100" required></label>'+
+    '<fieldset class="product-photos"><legend>Product photos</legend><div class="product-photo-list" data-photos></div><label>Add photos (up to '+maxPhotos+')<input name="photo" type="file" accept="image/*" multiple></label><small>The first photo is the cover shoppers see first.</small></fieldset>'+
     '<label>Price in KSh<input name="price" type="number" min="1" max="99999999" step="1" required></label>'+
-    '<label>Description<textarea name="description" maxlength="1000" placeholder="Size, condition, colour and delivery details"></textarea></label>'+
+    '<label>Sizes available<input name="sizes" maxlength="400" placeholder="XS, S, M, L, XL or 38, 39, 40"></label>'+
+    '<label>Colours available<input name="colours" maxlength="400" placeholder="Lilac, Black, Ivory"></label>'+
+    '<label>Description<textarea name="description" maxlength="1000" placeholder="Fabric, fit, condition and delivery details"></textarea></label>'+
     '<label>Availability<select name="status"><option value="available">Available</option><option value="sold-out">Sold out</option><option value="hidden">Hidden</option></select></label><button></button><p role="status"></p>';
-  const save=form.querySelector('button'),note=form.querySelector('[role=status]');
-  save.textContent=product?'Save product':'Publish product';form.elements.photo.required=!product;
+  const save=form.querySelector('button:not([type])'),note=form.querySelector('[role=status]'),list=form.querySelector('[data-photos]');
+  save.textContent=product?'Save product':'Publish product';
+  let photos=[...productPhotos(product)];
   if(product){
     for(const key of ['title','price','description','status'])form.elements[key].value=product[key];
-    const image=node('img');image.src=product.photo;image.alt=product.title;image.width=120;root.append(image);
+    form.elements.sizes.value=listText(product.sizes);form.elements.colours.value=listText(product.colours);
   }
-  let id=product?.id||crypto.randomUUID(),revision=product?.revision,photo=product?.photo;
-  form.onsubmit=async event=>{
-    event.preventDefault();save.disabled=true;note.textContent='Saving…';
+  function drawPhotos(){
+    list.replaceChildren(...photos.map((photo,index)=>{
+      const item=node('figure');const image=node('img');image.src=photo;image.alt=(form.elements.title.value||'Product')+' photo '+(index+1);image.width=96;
+      const remove=node('button','Remove');remove.type='button';remove.className='link';remove.setAttribute('aria-label','Remove photo '+(index+1));
+      remove.onclick=()=>{photos.splice(index,1);drawPhotos()};
+      const cover=node('button','Make cover');cover.type='button';cover.className='link';cover.hidden=index===0;cover.setAttribute('aria-label','Make photo '+(index+1)+' the cover');
+      cover.onclick=()=>{photos.unshift(...photos.splice(index,1));drawPhotos()};
+      item.append(image,node('figcaption',index===0?'Cover':'Photo '+(index+1)),cover,remove);return item;
+    }));
+    form.elements.photo.disabled=photos.length>=maxPhotos;
+  }
+  form.elements.photo.onchange=async()=>{
+    const files=[...form.elements.photo.files].slice(0,maxPhotos-photos.length);
+    if(form.elements.photo.files.length>files.length)note.textContent='Only '+maxPhotos+' photos per product. Extra photos were left out.';
+    if(!files.length)return;
+    save.disabled=true;note.textContent='Preparing photos…';
     try{
-      const file=form.elements.photo.files[0];
-      if(file){
-        const {processPhoto}=await import('./model.js');
-        photo=(await processPhoto(file,400)).photo;
+      const {processPhoto}=await import('./model.js');
+      for(const file of files){
+        let photo=(await processPhoto(file,400)).photo;
         if(photo.length>80000)photo=(await processPhoto(file,240)).photo;
+        photos.push(photo);
       }
+      note.textContent='';
+    }catch(error){note.textContent=error.message}finally{form.elements.photo.value='';save.disabled=false;drawPhotos()}
+  };
+  drawPhotos();
+  let id=product?.id||crypto.randomUUID(),revision=product?.revision;
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    if(!photos.length){note.textContent='Add at least one product photo.';return}
+    save.disabled=true;note.textContent='Saving…';
+    try{
       const fields=Object.fromEntries(new FormData(form));
-      await api('/'+store.slug+'/products',{id,revision,title:fields.title,description:fields.description,price:Number(fields.price),status:fields.status,photo});
-      if(!product){id=crypto.randomUUID();photo=null;form.reset()}
-      if(product){
-        // Reload the record before allowing another revision of this product.
-        save.disabled=true;
-      }
+      await api('/'+store.slug+'/products',{id,revision,title:fields.title,description:fields.description,price:Number(fields.price),status:fields.status,photos,sizes:parseList(fields.sizes||''),colours:parseList(fields.colours||'')});
+      if(!product){id=crypto.randomUUID();photos=[];form.reset();drawPhotos()}
       note.textContent=product?'Product updated.':'Product published.';
       await onSave();
     }catch(error){note.textContent=error.message}finally{save.disabled=false}

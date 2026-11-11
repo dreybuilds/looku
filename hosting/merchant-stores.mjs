@@ -6,6 +6,15 @@ import {paused,pausedReply} from './features.mjs';
 const prefix='merchant-stores/';
 const reserved=new Set(['mine','admin','www','api','app','mail','email','support','help','account','accounts','store','stores','shop','shops','looku','lookuwear','assets','static','cdn','auth','login','payments','checkout','dev','test','staging']);
 const slugPattern=/^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])$/;
+const maxPhotos=5;
+const productPhoto=photo=>typeof photo==='string'&&photo.length<=80000&&/^data:image\/webp;base64,UklGR[A-Za-z0-9+/]+=*$/.test(photo);
+// Sizes and colours a business stocks: unique, trimmed labels. Missing means none listed.
+function options(value,count,length){
+  if(value===undefined)return [];
+  if(!Array.isArray(value)||value.length>count)return null;
+  const list=[...new Set(value.map(item=>typeof item==='string'?item.replace(/\s+/g,' ').trim():''))];
+  return list.every(item=>item&&item.length<=length)?list:null;
+}
 const productPattern=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
 const reply=(status,data)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
 const error=(status,message)=>reply(status,{error:message});
@@ -71,7 +80,7 @@ export async function merchantStores(req,{ORDERS:store}){
   }
   if(!owner)return error(401,'Sign in to create or manage your store.');
   if(req.method!=='POST'||req.headers.get('origin')!==url.origin||req.headers.get('x-looku-action')!=='merchant-store')return error(403,'Make changes from your Looku store manager.');
-  let data;try{data=await body(req,resource?100000:420000)}catch{return error(400,'Invalid store request.')}
+  let data;try{data=await body(req,resource?440000:420000)}catch{return error(400,'Invalid store request.')}
   if(!data||typeof data!=='object')return error(400,'Invalid store request.');
   if(!slug){
     if(await paused(store,'storefronts'))return pausedReply();
@@ -87,11 +96,13 @@ export async function merchantStores(req,{ORDERS:store}){
   const productKey='merchant-products/'+slug+'/'+data.id;
   const existing=await store.get(productKey);
   if(existing?.etag!==data.revision)return error(409,'This product changed. Refresh your store.');
+  const photos=Array.isArray(data.photos)?data.photos:typeof data.photo==='string'?[data.photo]:null;
   if(!fits(data.title,100)||typeof data.description!=='string'||data.description.length>1000||
     !Number.isSafeInteger(data.price)||data.price<1||data.price>99999999||
-    !['available','sold-out','hidden'].includes(data.status)||typeof data.photo!=='string'||data.photo.length>80000||
-    !/^data:image\/webp;base64,UklGR[A-Za-z0-9+/]+=*$/.test(data.photo))return error(400,'Add a product title, photo, price in whole KSh and availability.');
-  const product={id:data.id,title:data.title.trim(),description:data.description.trim(),price:data.price,photo:data.photo,status:data.status};
+    !['available','sold-out','hidden'].includes(data.status)||!photos||photos.length<1||photos.length>maxPhotos||!photos.every(productPhoto))return error(400,'Add a product title, 1 to '+maxPhotos+' photos, price in whole KSh and availability.');
+  const sizes=options(data.sizes,24,24),colours=options(data.colours,16,30);
+  if(!sizes||!colours)return error(400,'List up to 24 sizes and 16 colours, each one short.');
+  const product={id:data.id,title:data.title.trim(),description:data.description.trim(),price:data.price,photo:photos[0],photos,sizes,colours,status:data.status};
   const saved=await store.put(productKey,JSON.stringify(product),{onlyIf:existing?{etagMatches:existing.etag}:{etagDoesNotMatch:'*'}});
   return saved?reply(existing?200:201,{ok:true}):error(409,'This product changed. Refresh your store.');
 }

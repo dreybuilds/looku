@@ -125,14 +125,26 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     await page.screenshot({path:'/private/tmp/looku-layout/'+info.project.name+'/merchant-editor.png',fullPage:true});
     await page.getByText('Add a product',{exact:true}).click();
     await page.getByLabel('Product name').fill('Lilac occasion jacket');
-    await page.getByLabel('Product photo').setInputFiles('../dist/orchid-detail.webp');
+    await page.getByLabel(/Add photos/).setInputFiles(['../dist/orchid-detail.webp','../dist/orchid-portrait.webp','../dist/sample1.webp']);
+    await expect(page.getByRole('img',{name:/photo 3$/})).toBeVisible();
+    await page.getByRole('button',{name:'Remove photo 3'}).click();await expect(page.getByRole('img',{name:/photo 3$/})).toHaveCount(0);
+    await page.locator('.product-photos').screenshot({path:'/private/tmp/looku-layout/'+info.project.name+'/product-photos.png'});
     await page.getByLabel('Price in KSh').fill('2500');
-    await page.getByLabel('Description',{exact:true}).fill('Size M, gently worn. Nairobi collection.');
+    await page.getByLabel('Sizes available').fill('S, M, L, M');
+    await page.getByLabel('Colours available').fill('Lilac, Black');
+    await page.getByLabel('Description',{exact:true}).fill('Gently worn. Nairobi collection.');
     await page.getByRole('button',{name:'Publish product',exact:true}).click();
     await expect(page.getByText(/Lilac occasion jacket · available · (KES|Ksh)\s*2,500/)).toBeVisible();
     const customer=await guest.newPage();await customer.goto('/store/'+slug);
     await expect(customer.getByRole('heading',{name,exact:true})).toBeVisible();
     await expect(customer.getByRole('heading',{name:'Lilac occasion jacket'})).toBeVisible();
+    await expect(customer.getByRole('button',{name:/^Show photo \d of 2$/})).toHaveCount(2);
+    await customer.getByRole('button',{name:'Show photo 2 of 2'}).click();
+    await expect(customer.getByRole('button',{name:'Show photo 2 of 2'})).toHaveAttribute('aria-pressed','true');
+    await expect(customer.getByLabel('Size')).toHaveText(/S\s*M\s*L/);
+    await customer.getByLabel('Size').selectOption('L');await customer.getByLabel('Colour').selectOption('Black');
+    await expect(customer.getByRole('link',{name:'Ask about this piece'})).toHaveAttribute('href',/Size%3A%20L.*Colour%3A%20Black/);
+    await customer.locator('.merchant-product').first().screenshot({path:'/private/tmp/looku-layout/'+info.project.name+'/product-card.png'});
     await expect(customer.getByRole('img',{name:name+' logo'})).toBeVisible();
     await expect(customer.getByRole('img',{name:name+' banner'})).toBeVisible();
     await expect(customer.locator('body')).toHaveClass(/has-store-background/);
@@ -185,6 +197,9 @@ test('merchants own stores, approved stores publish immediately, and suspension 
     expect(publicStore).not.toHaveProperty('owner');expect(publicStore).not.toHaveProperty('revision');
     const products=(await (await page.request.get('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders})).json()).items;
     const product=products[0];
+    expect(product.photos).toHaveLength(2);expect(product.sizes).toEqual(['S','M','L']);expect(product.colours).toEqual(['Lilac','Black']);
+    for(const bad of [{photos:Array(6).fill(product.photo)},{photos:[]},{sizes:['x'.repeat(25)]},{colours:'Lilac'}])
+      expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:ownHeaders,data:{...product,...bad}})).status()).toBe(400);
     expect((await other.request.post('/api/merchant-stores/'+slug+'/products',{headers:otherHeaders,data:product})).status()).toBe(404);
     expect((await page.request.post('/api/merchant-stores/'+slug+'/products',{headers:{...ownHeaders,Origin:'https://wrong.example'},data:product})).status()).toBe(403);
     const detail=page.locator('details').filter({has:page.locator('summary').filter({hasText:'Lilac occasion jacket'})});
